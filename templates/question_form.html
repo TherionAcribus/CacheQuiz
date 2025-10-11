@@ -107,10 +107,7 @@
                     <label for="broad_theme_id">Thématique large</label>
                     <select id="broad_theme_id"
                             name="broad_theme_id"
-                            hx-get="/api/specific-themes/for-theme/"
-                            hx-target="#specific_theme_id"
-                            hx-include="[name='broad_theme_id']"
-                            hx-trigger="change">
+                            onchange="updateSpecificThemes(this.value)">
                         <option value="">-- Aucun thème --</option>
                         {% for theme in themes %}
                         <option value="{{ theme.id }}"
@@ -203,4 +200,35 @@
         </div>
     </form>
 </div>
+
+<script>
+function updateSpecificThemes(broadThemeId) {
+    const specificThemeSelect = document.getElementById('specific_theme_id');
+
+    if (!broadThemeId) {
+        // Aucun thème sélectionné, vider la liste
+        specificThemeSelect.innerHTML = '<option value="">-- Aucun sous-thème --</option>';
+        return;
+    }
+
+    // Faire une requête pour récupérer les sous-thèmes
+    fetch(`/api/specific-themes/for-theme/?broad_theme_id=${broadThemeId}`)
+        .then(response => response.text())
+        .then(html => {
+            specificThemeSelect.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erreur lors de la récupération des sous-thèmes:', error);
+            specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
+        });
+}
+
+// Initialiser les sous-thèmes au chargement si un thème est déjà sélectionné
+document.addEventListener('DOMContentLoaded', function() {
+    const broadThemeSelect = document.getElementById('broad_theme_id');
+    if (broadThemeSelect.value) {
+        updateSpecificThemes(broadThemeSelect.value);
+    }
+});
+</script>
 

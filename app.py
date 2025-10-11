@@ -386,9 +386,10 @@ def delete_specific_theme(specific_theme_id):
         return f"Erreur: {str(e)}", 400
 
 
-@app.route('/api/specific-themes/for-theme/<broad_theme_id>')
-def get_specific_themes_for_broad_theme(broad_theme_id):
+@app.route('/api/specific-themes/for-theme/')
+def get_specific_themes_for_broad_theme():
     """Obtenir les sous-thèmes pour un thème large (retourne HTML pour HTMX)"""
+    broad_theme_id = request.args.get('broad_theme_id')
     if broad_theme_id and broad_theme_id.isdigit():
         specific_themes = SpecificTheme.query.filter_by(broad_theme_id=int(broad_theme_id)).order_by(SpecificTheme.name).all()
     else:
