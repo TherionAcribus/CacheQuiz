@@ -4,6 +4,13 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 
+# Table d'association many-to-many entre Question et Country
+question_countries = db.Table('question_countries',
+    db.Column('question_id', db.Integer, db.ForeignKey('questions.id'), primary_key=True),
+    db.Column('country_id', db.Integer, db.ForeignKey('countries.id'), primary_key=True)
+)
+
+
 class BroadTheme(db.Model):
     __tablename__ = 'broad_themes'
     
@@ -136,6 +143,53 @@ class User(db.Model):
         }
 
 
+class Country(db.Model):
+    __tablename__ = 'countries'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Informations
+    name = db.Column(db.String(100), nullable=False)  # Nom du pays
+    code = db.Column(db.String(10))  # Code ISO (FR, BE, CA, etc.)
+    flag = db.Column(db.String(10))  # Emoji du drapeau
+    language = db.Column(db.String(10), nullable=False, default='fr')  # Code langue
+    description = db.Column(db.Text)  # Description optionnelle
+
+    # Traduction
+    translation_id = db.Column(db.Integer, db.ForeignKey('countries.id'), nullable=True)
+
+    # Relations
+    translations = db.relationship('Country',
+                                   backref=db.backref('original', remote_side=[id]),
+                                   foreign_keys=[translation_id])
+
+    # Relation inverse avec les questions (many-to-many)
+    questions = db.relationship('Question',
+                                secondary=question_countries,
+                                back_populates='countries',
+                                lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Country {self.id}: {self.flag} {self.name} ({self.code})>'
+
+    def to_dict(self):
+        """Convertir le pays en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'code': self.code,
+            'flag': self.flag,
+            'language': self.language,
+            'description': self.description,
+            'translation_id': self.translation_id,
+            'question_count': self.questions.count()
+        }
+
+
 class Question(db.Model):
     __tablename__ = 'questions'
     
@@ -167,8 +221,13 @@ class Question(db.Model):
     theme = db.relationship('BroadTheme', back_populates='questions')
     specific_theme_obj = db.relationship('SpecificTheme', back_populates='questions')
     
-    # Localisation et difficulté
-    country = db.Column(db.String(100))  # Pays spécifique si applicable
+    # Relation avec les pays (many-to-many)
+    countries = db.relationship('Country',
+                                secondary=question_countries,
+                                back_populates='questions',
+                                lazy='subquery')
+    
+    # Difficulté
     difficulty_level = db.Column(db.Integer)  # 1-5 par exemple
     
     # Statistiques
@@ -205,7 +264,7 @@ class Question(db.Model):
             'broad_theme_name': self.theme.name if self.theme else None,
             'specific_theme_id': self.specific_theme_id,
             'specific_theme_name': self.specific_theme_obj.name if self.specific_theme_obj else None,
-            'country': self.country,
+            'countries': [{'id': c.id, 'name': c.name, 'code': c.code, 'flag': c.flag} for c in self.countries],
             'difficulty_level': self.difficulty_level,
             'success_rate': self.success_rate,
             'times_answered': self.times_answered,

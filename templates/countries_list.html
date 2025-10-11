@@ -1,0 +1,164 @@
+{% if countries %}
+<div class="countries-grid">
+    {% for country in countries %}
+    <div class="country-card">
+        <div class="country-header">
+            <div class="country-info">
+                {% if country.flag %}
+                <span class="country-flag">{{ country.flag }}</span>
+                {% endif %}
+                <h3>{{ country.name }}</h3>
+                {% if country.code %}
+                <span class="badge badge-code">{{ country.code }}</span>
+                {% endif %}
+                <span class="badge badge-language">{{ country.language.upper() }}</span>
+            </div>
+            <div class="country-actions">
+                <button class="btn-icon" 
+                        type="button"
+                        onclick="document.getElementById('country-form-container').classList.remove('hidden')"
+                        hx-get="/country/{{ country.id }}/edit"
+                        hx-target="#country-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger" 
+                        hx-delete="/api/country/{{ country.id }}"
+                        hx-target="#countries-list"
+                        hx-confirm="Êtes-vous sûr de vouloir supprimer ce pays ?"
+                        title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+        
+        {% if country.description %}
+        <div class="country-description">
+            <p>{{ country.description }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="country-stats">
+            <span class="badge badge-count">{{ country.questions.count() }} question(s)</span>
+            {% if country.translation_id %}
+            <span class="badge badge-translation">📝 Traduction de #{{ country.translation_id }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="country-footer">
+            <small>Créé: {{ country.created_at.strftime('%d/%m/%Y %H:%M') if country.created_at }}</small>
+            <small>ID: {{ country.id }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-countries">
+    <p>🌍 Aucun pays trouvé. Commencez par en créer un !</p>
+</div>
+{% endif %}
+
+<style>
+    .countries-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .country-card {
+        background-color: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+    }
+    
+    .country-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+    
+    .country-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .country-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .country-flag {
+        font-size: 2rem;
+    }
+    
+    .country-info h3 {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+    
+    .badge-code {
+        background-color: #c3dafe;
+        color: #2c5282;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .badge-language {
+        background-color: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.75rem;
+    }
+    
+    .country-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+    
+    .country-description {
+        margin-bottom: 1rem;
+        color: var(--text-light);
+        font-size: 0.875rem;
+    }
+    
+    .country-stats {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .badge-count {
+        background-color: #bee3f8;
+        color: #2c5282;
+    }
+    
+    .badge-translation {
+        background-color: #fbd38d;
+        color: #7c2d12;
+    }
+    
+    .country-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+    
+    .no-countries {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-light);
+        font-size: 1.25rem;
+    }
+</style>
+

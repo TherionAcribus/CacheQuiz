@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Question, BroadTheme, SpecificTheme, User
+from models import db, Question, BroadTheme, SpecificTheme, User, Country
 from datetime import datetime
 import os
 
@@ -34,7 +34,8 @@ def new_question():
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
-    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users)
+    countries = Country.query.order_by(Country.name).all()
+    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users, countries=countries)
 
 
 @app.route('/question/<int:question_id>')
@@ -51,7 +52,8 @@ def edit_question(question_id):
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
-    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users)
+    countries = Country.query.order_by(Country.name).all()
+    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users, countries=countries)
 
 
 @app.route('/api/question', methods=['POST'])
@@ -81,11 +83,16 @@ def create_question():
             hint=data.get('hint'),
             broad_theme_id=int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None,
             specific_theme_id=int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None,
-            country=data.get('country'),
             difficulty_level=int(data.get('difficulty_level', 1)),
             translation_id=int(data.get('translation_id')) if data.get('translation_id') else None,
             is_published=data.get('is_published') == 'on'
         )
+        
+        # Gérer les pays (relation many-to-many)
+        country_ids = request.form.getlist('countries')
+        if country_ids:
+            countries = Country.query.filter(Country.id.in_(country_ids)).all()
+            question.countries = countries
         
         db.session.add(question)
         db.session.commit()
@@ -126,11 +133,18 @@ def update_question(question_id):
         question.hint = data.get('hint')
         question.broad_theme_id = int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None
         question.specific_theme_id = int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None
-        question.country = data.get('country')
         question.difficulty_level = int(data.get('difficulty_level', 1))
         question.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
         question.is_published = data.get('is_published') == 'on'
         question.updated_at = datetime.utcnow()
+        
+        # Gérer les pays (relation many-to-many)
+        country_ids = request.form.getlist('countries')
+        if country_ids:
+            countries = Country.query.filter(Country.id.in_(country_ids)).all()
+            question.countries = countries
+        else:
+            question.countries = []
         
         db.session.commit()
         
@@ -492,6 +506,115 @@ def delete_user(user_id):
         users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
         return render_template('users_list.html', users=users)
 
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+# ============ Routes pour la gestion des Pays ============
+
+@app.route('/countries')
+def countries():
+    """Page de gestion des pays"""
+    return render_template('countries.html')
+
+
+@app.route('/api/countries')
+def list_countries_api():
+    """Retourner la liste des pays en HTML (pour HTMX)"""
+    search = request.args.get('search', '')
+    query = Country.query
+    
+    if search:
+        query = query.filter(Country.name.like(f'%{search}%'))
+    
+    countries = query.order_by(Country.name).all()
+    return render_template('countries_list.html', countries=countries)
+
+
+@app.route('/country/new')
+def new_country():
+    """Formulaire pour créer un nouveau pays"""
+    countries = Country.query.order_by(Country.name).all()
+    return render_template('country_form.html', country=None, countries=countries)
+
+
+@app.route('/country/<int:country_id>/edit')
+def edit_country(country_id):
+    """Formulaire pour éditer un pays"""
+    country = Country.query.get_or_404(country_id)
+    countries = Country.query.order_by(Country.name).all()
+    return render_template('country_form.html', country=country, countries=countries)
+
+
+@app.route('/api/country', methods=['POST'])
+def create_country():
+    """Créer un nouveau pays"""
+    try:
+        data = request.form
+        
+        country = Country(
+            name=data.get('name'),
+            code=data.get('code'),
+            flag=data.get('flag'),
+            language=data.get('language', 'fr'),
+            description=data.get('description'),
+            translation_id=int(data.get('translation_id')) if data.get('translation_id') else None
+        )
+        
+        db.session.add(country)
+        db.session.commit()
+        
+        # Retourner la liste mise à jour
+        countries = Country.query.order_by(Country.name).all()
+        return render_template('countries_list.html', countries=countries)
+    
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/country/<int:country_id>', methods=['PUT', 'POST'])
+def update_country(country_id):
+    """Mettre à jour un pays existant"""
+    try:
+        country = Country.query.get_or_404(country_id)
+        data = request.form
+        
+        # Mettre à jour les champs
+        country.name = data.get('name')
+        country.code = data.get('code')
+        country.flag = data.get('flag')
+        country.language = data.get('language', 'fr')
+        country.description = data.get('description')
+        country.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
+        country.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Retourner la liste mise à jour
+        countries = Country.query.order_by(Country.name).all()
+        return render_template('countries_list.html', countries=countries)
+    
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/country/<int:country_id>', methods=['DELETE'])
+def delete_country(country_id):
+    """Supprimer un pays"""
+    try:
+        country = Country.query.get_or_404(country_id)
+        
+        # Vérifier si le pays est utilisé dans des questions
+        question_count = country.questions.count()
+        if question_count > 0:
+            return f"Impossible de supprimer ce pays : {question_count} question(s) l'utilisent encore.", 400
+        
+        db.session.delete(country)
+        db.session.commit()
+        
+        countries = Country.query.order_by(Country.name).all()
+        return render_template('countries_list.html', countries=countries)
+    
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 

@@ -50,8 +50,12 @@
                 {% if question.hint %}
                 <p><strong>Indice:</strong> {{ question.hint }}</p>
                 {% endif %}
-                {% if question.country %}
-                <p><strong>Pays:</strong> {{ question.country }}</p>
+                {% if question.countries %}
+                <p><strong>Pays:</strong> 
+                    {% for country in question.countries %}
+                        {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
                 {% endif %}
             </div>
             

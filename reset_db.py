@@ -2,7 +2,7 @@
 Script pour réinitialiser complètement la base de données
 """
 from app import app
-from models import db, Question, BroadTheme, SpecificTheme, User
+from models import db, Question, BroadTheme, SpecificTheme, User, Country
 import os
 
 def reset_database():
@@ -22,6 +22,13 @@ def reset_database():
 
     with app.app_context():
         print("\n[CREATION] Creation des tables...")
+
+        # Supprimer toutes les tables existantes (pour éviter les conflits)
+        try:
+            db.drop_all()
+            print("[INFO] Tables existantes supprimees")
+        except Exception as e:
+            print(f"[WARN] Erreur lors de la suppression des tables: {e}")
 
         # Créer toutes les tables avec le nouveau schéma
         db.create_all()
@@ -273,6 +280,26 @@ def reset_database():
         db.session.commit()
         print(f"[OK] {len(sample_users)} utilisateurs crees")
 
+        # Créer des pays par défaut
+        print("\n[PAYS] Creation des pays par defaut...")
+        sample_countries = [
+            { 'name': 'France',   'code': 'FR', 'flag': '🇫🇷', 'language': 'fr' },
+            { 'name': 'Belgique', 'code': 'BE', 'flag': '🇧🇪', 'language': 'fr' },
+            { 'name': 'Suisse',   'code': 'CH', 'flag': '🇨🇭', 'language': 'fr' },
+            { 'name': 'Canada',   'code': 'CA', 'flag': '🇨🇦', 'language': 'fr' },
+        ]
+
+        countries_by_code = {}
+        for c_data in sample_countries:
+            country = Country(**c_data)
+            db.session.add(country)
+            db.session.flush()
+            countries_by_code[c_data['code']] = country
+            print(f"   [CREE] {c_data['flag']} {c_data['name']} ({c_data['code']})")
+
+        db.session.commit()
+        print(f"[OK] {len(sample_countries)} pays crees")
+
         # Créer des questions d'exemple
         print("\n[QUESTIONS] Creation des questions d'exemple...")
         sample_questions = [
@@ -286,9 +313,9 @@ def reset_database():
                 'hint': "Pensez à un objet photo ancien",
                 'broad_theme_id': themes['Règles'],
                 'specific_theme_id': specific_themes_created.get('Tailles de caches'),
-                'country': None,
                 'difficulty_level': 1,
-                'is_published': True
+                'is_published': True,
+                'country_codes': ['FR']
             },
             {
                 'author_id': users_created['geocacheur_pro'],
@@ -300,9 +327,9 @@ def reset_database():
                 'hint': "C'est un honneur pour les géocacheurs compétitifs",
                 'broad_theme_id': themes['Terminologie'],
                 'specific_theme_id': specific_themes_created.get('Acronymes courants'),
-                'country': None,
                 'difficulty_level': 1,
-                'is_published': True
+                'is_published': True,
+                'country_codes': ['FR', 'BE']
             },
             {
                 'author_id': users_created['cacher_lover'],
@@ -314,15 +341,21 @@ def reset_database():
                 'hint': "Le nom contient le mot 'mystère'",
                 'broad_theme_id': themes['Types de caches'],
                 'specific_theme_id': specific_themes_created.get('Mystery/Puzzle Cache'),
-                'country': None,
                 'difficulty_level': 2,
-                'is_published': True
+                'is_published': True,
+                'country_codes': ['CA']
             }
         ]
 
+        questions_created = []
         for q_data in sample_questions:
+            country_codes = q_data.pop('country_codes', [])
             question = Question(**q_data)
             db.session.add(question)
+            db.session.flush()
+            if country_codes:
+                question.countries = [countries_by_code[code] for code in country_codes if code in countries_by_code]
+            questions_created.append(question)
             print(f"   [CREE] Question: {q_data['question_text'][:50]}...")
 
         db.session.commit()

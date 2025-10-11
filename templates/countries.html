@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gestion des pays</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary" 
+                onclick="document.getElementById('country-form-container').classList.remove('hidden')"
+                hx-get="/country/new"
+                hx-target="#country-form-container"
+                hx-swap="innerHTML">
+            + Nouveau Pays
+        </button>
+    </div>
+</div>
+
+<!-- Conteneur pour le formulaire (caché par défaut) -->
+<div id="country-form-container" class="hidden form-modal">
+    <!-- Le formulaire sera chargé ici via HTMX -->
+</div>
+
+<!-- Barre de recherche -->
+<div class="search-bar">
+    <input type="text" 
+           name="search" 
+           placeholder="Rechercher un pays..."
+           hx-get="/api/countries"
+           hx-trigger="keyup changed delay:300ms"
+           hx-target="#countries-list"
+           hx-include="[name='search']">
+</div>
+
+<!-- Liste des pays -->
+<div id="countries-list" 
+     hx-get="/api/countries" 
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement des pays...</div>
+</div>
+
+<style>
+    .hidden {
+        display: none;
+    }
+    
+    .form-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+    
+    .form-modal.hidden {
+        display: none;
+    }
+    
+    .search-bar {
+        margin: 2rem 0;
+    }
+    
+    .search-bar input {
+        width: 100%;
+        max-width: 500px;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}
+

@@ -1,0 +1,112 @@
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2>{% if country %}Éditer le pays{% else %}Nouveau pays{% endif %}</h2>
+        <button class="btn-close" 
+                type="button"
+                onclick="document.getElementById('country-form-container').classList.add('hidden')">✕</button>
+    </div>
+    
+    <form {% if country %}
+          hx-post="/api/country/{{ country.id }}"
+          {% else %}
+          hx-post="/api/country"
+          {% endif %}
+          hx-target="#countries-list"
+          hx-swap="innerHTML"
+          hx-on::after-request="document.getElementById('country-form-container').classList.add('hidden')">
+        
+        <div class="form-grid">
+            <!-- Colonne gauche -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="name">Nom du pays *</label>
+                    <input type="text" 
+                           id="name" 
+                           name="name" 
+                           value="{{ country.name if country else '' }}"
+                           placeholder="Ex: France, Belgique, Canada"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="code">Code ISO</label>
+                    <input type="text" 
+                           id="code" 
+                           name="code" 
+                           value="{{ country.code if country else '' }}"
+                           placeholder="Ex: FR, BE, CA"
+                           maxlength="10">
+                    <small>Code ISO du pays (2 ou 3 lettres)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="flag">Drapeau (emoji) *</label>
+                    <input type="text" 
+                           id="flag" 
+                           name="flag" 
+                           value="{{ country.flag if country else '' }}"
+                           placeholder="Ex: 🇫🇷, 🇧🇪, 🇨🇦"
+                           maxlength="10"
+                           required>
+                    <small>Emoji du drapeau pour représenter le pays</small>
+                </div>
+            </div>
+            
+            <!-- Colonne droite -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="language">Langue *</label>
+                    <select id="language" name="language" required>
+                        <option value="fr" {% if country and country.language == 'fr' %}selected{% elif not country %}selected{% endif %}>🇫🇷 Français (fr)</option>
+                        <option value="en" {% if country and country.language == 'en' %}selected{% endif %}>🇬🇧 English (en)</option>
+                        <option value="de" {% if country and country.language == 'de' %}selected{% endif %}>🇩🇪 Deutsch (de)</option>
+                        <option value="es" {% if country and country.language == 'es' %}selected{% endif %}>🇪🇸 Español (es)</option>
+                        <option value="it" {% if country and country.language == 'it' %}selected{% endif %}>🇮🇹 Italiano (it)</option>
+                        <option value="nl" {% if country and country.language == 'nl' %}selected{% endif %}>🇳🇱 Nederlands (nl)</option>
+                        <option value="pt" {% if country and country.language == 'pt' %}selected{% endif %}>🇵🇹 Português (pt)</option>
+                    </select>
+                    <small>Langue utilisée pour le nom du pays</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" 
+                              name="description" 
+                              rows="4"
+                              placeholder="Description ou informations complémentaires (optionnel)">{{ country.description if country else '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="translation_id">ID de traduction (pays lié)</label>
+                    <input type="number" 
+                           id="translation_id" 
+                           name="translation_id" 
+                           placeholder="ID du pays dans une autre langue"
+                           value="{{ country.translation_id if country and country.translation_id else '' }}">
+                    <small>Utilisé pour lier des traductions du nom du pays</small>
+                </div>
+                
+                {% if country %}
+                <div class="form-info">
+                    <p><strong>Statistiques:</strong></p>
+                    <p>Questions utilisant ce pays: {{ country.questions.count() }}</p>
+                    <p>ID: {{ country.id }}</p>
+                    <p>Créé: {{ country.created_at.strftime('%d/%m/%Y %H:%M') if country.created_at }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" 
+                    class="btn btn-secondary"
+                    onclick="document.getElementById('country-form-container').classList.add('hidden')">
+                Annuler
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if country %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
