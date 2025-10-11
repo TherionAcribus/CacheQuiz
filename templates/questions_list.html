@@ -8,6 +8,11 @@
                 <span class="badge badge-theme" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
                     {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
                 </span>
+                {% if question.specific_theme_obj %}
+                <span class="badge badge-specific-theme" {% if question.specific_theme_obj.color %}style="background-color: {{ question.specific_theme_obj.color }}20; color: {{ question.specific_theme_obj.color }}; border: 1px solid {{ question.specific_theme_obj.color }}"{% endif %}>
+                    {% if question.specific_theme_obj.icon %}{{ question.specific_theme_obj.icon }} {% endif %}{{ question.specific_theme_obj.name }}
+                </span>
+                {% endif %}
                 {% else %}
                 <span class="badge badge-theme">Sans thème</span>
                 {% endif %}
@@ -88,4 +93,12 @@
     <p>📋 Aucune question trouvée. Commencez par en créer une !</p>
 </div>
 {% endif %}
+
+<style>
+    .badge-specific-theme {
+        background-color: #fef3c7;
+        color: #92400e;
+        font-weight: 500;
+    }
+</style>
 

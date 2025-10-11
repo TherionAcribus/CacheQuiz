@@ -99,10 +99,15 @@
             <div class="form-column">
                 <div class="form-group">
                     <label for="broad_theme_id">Thématique large</label>
-                    <select id="broad_theme_id" name="broad_theme_id">
+                    <select id="broad_theme_id"
+                            name="broad_theme_id"
+                            hx-get="/api/specific-themes/for-theme/"
+                            hx-target="#specific_theme_id"
+                            hx-include="[name='broad_theme_id']"
+                            hx-trigger="change">
                         <option value="">-- Aucun thème --</option>
                         {% for theme in themes %}
-                        <option value="{{ theme.id }}" 
+                        <option value="{{ theme.id }}"
                                 {% if question and question.broad_theme_id == theme.id %}selected{% endif %}>
                             {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }} ({{ theme.language.upper() }})
                         </option>
@@ -114,12 +119,20 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="specific_theme">Thématique précise</label>
-                    <input type="text" 
-                           id="specific_theme" 
-                           name="specific_theme" 
-                           placeholder="Ex: Reviewers, Types de caches, GPS"
-                           value="{{ question.specific_theme if question else '' }}">
+                    <label for="specific_theme_id">Sous-thématique</label>
+                    <select id="specific_theme_id" name="specific_theme_id">
+                        <option value="">-- Aucun sous-thème --</option>
+                        {% for specific_theme in specific_themes %}
+                        <option value="{{ specific_theme.id }}"
+                                {% if question and question.specific_theme_id == specific_theme.id %}selected{% endif %}>
+                            {% if specific_theme.icon %}{{ specific_theme.icon }} {% endif %}{{ specific_theme.name }}
+                            ({{ specific_theme.broad_theme.name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>
+                        <a href="/specific-themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
+                    </small>
                 </div>
                 
                 <div class="form-group">

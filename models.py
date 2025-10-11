@@ -30,6 +30,9 @@ class BroadTheme(db.Model):
     
     # Relation inverse avec les questions
     questions = db.relationship('Question', back_populates='theme', lazy='dynamic')
+
+    # Relation inverse avec les sous-thèmes
+    specific_themes = db.relationship('SpecificTheme', back_populates='broad_theme', lazy='dynamic')
     
     def __repr__(self):
         return f'<BroadTheme {self.id}: {self.name} ({self.language})>'
@@ -43,6 +46,58 @@ class BroadTheme(db.Model):
             'language': self.language,
             'icon': self.icon,
             'color': self.color,
+            'translation_id': self.translation_id,
+            'question_count': self.questions.count()
+        }
+
+
+class SpecificTheme(db.Model):
+    __tablename__ = 'specific_themes'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Informations
+    name = db.Column(db.String(100), nullable=False)  # Nom du sous-thème
+    description = db.Column(db.Text)  # Description optionnelle
+    language = db.Column(db.String(10), nullable=False, default='fr')  # Code langue
+    icon = db.Column(db.String(50))  # Emoji ou icône optionnelle
+    color = db.Column(db.String(20))  # Couleur optionnelle
+
+    # Relation avec le thème large
+    broad_theme_id = db.Column(db.Integer, db.ForeignKey('broad_themes.id'), nullable=False)
+
+    # Traduction
+    translation_id = db.Column(db.Integer, db.ForeignKey('specific_themes.id'), nullable=True)
+
+    # Relations
+    translations = db.relationship('SpecificTheme',
+                                   backref=db.backref('original', remote_side=[id]),
+                                   foreign_keys=[translation_id])
+
+    # Relation avec le thème large
+    broad_theme = db.relationship('BroadTheme', back_populates='specific_themes')
+
+    # Relation inverse avec les questions
+    questions = db.relationship('Question', back_populates='specific_theme_obj', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<SpecificTheme {self.id}: {self.name} (theme: {self.broad_theme.name if self.broad_theme else "None"})>'
+
+    def to_dict(self):
+        """Convertir le sous-thème en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'language': self.language,
+            'icon': self.icon,
+            'color': self.color,
+            'broad_theme_id': self.broad_theme_id,
+            'broad_theme_name': self.broad_theme.name if self.broad_theme else None,
             'translation_id': self.translation_id,
             'question_count': self.questions.count()
         }
@@ -70,10 +125,11 @@ class Question(db.Model):
     
     # Thématiques
     broad_theme_id = db.Column(db.Integer, db.ForeignKey('broad_themes.id'), nullable=True)
-    specific_theme = db.Column(db.String(100))  # Ex: "Reviewers", "Types de caches", "GPS"
-    
-    # Relation avec le thème
+    specific_theme_id = db.Column(db.Integer, db.ForeignKey('specific_themes.id'), nullable=True)
+
+    # Relations avec les thèmes
     theme = db.relationship('BroadTheme', back_populates='questions')
+    specific_theme_obj = db.relationship('SpecificTheme', back_populates='questions')
     
     # Localisation et difficulté
     country = db.Column(db.String(100))  # Pays spécifique si applicable
@@ -110,7 +166,8 @@ class Question(db.Model):
             'hint': self.hint,
             'broad_theme_id': self.broad_theme_id,
             'broad_theme_name': self.theme.name if self.theme else None,
-            'specific_theme': self.specific_theme,
+            'specific_theme_id': self.specific_theme_id,
+            'specific_theme_name': self.specific_theme_obj.name if self.specific_theme_obj else None,
             'country': self.country,
             'difficulty_level': self.difficulty_level,
             'success_rate': self.success_rate,

@@ -1,0 +1,135 @@
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2>{% if specific_theme %}Éditer le sous-thème{% else %}Nouveau sous-thème{% endif %}</h2>
+        <button class="btn-close"
+                type="button"
+                onclick="document.getElementById('specific-theme-form-container').classList.add('hidden')">✕</button>
+    </div>
+
+    <form {% if specific_theme %}
+          hx-post="/api/specific-theme/{{ specific_theme.id }}"
+          {% else %}
+          hx-post="/api/specific-theme"
+          {% endif %}
+          hx-target="#specific-themes-list"
+          hx-swap="innerHTML"
+          hx-on::after-request="document.getElementById('specific-theme-form-container').classList.add('hidden')">
+
+        <div class="form-grid">
+            <!-- Colonne gauche -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="broad_theme_id">Thème large parent *</label>
+                    <select id="broad_theme_id" name="broad_theme_id" required>
+                        {% for theme in broad_themes %}
+                        <option value="{{ theme.id }}"
+                                {% if specific_theme and specific_theme.broad_theme_id == theme.id %}selected{% endif %}>
+                            {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Nom du sous-thème *</label>
+                    <input type="text"
+                           id="name"
+                           name="name"
+                           value="{{ specific_theme.name if specific_theme else '' }}"
+                           placeholder="Ex: Tailles de caches, Reviewers, GPS"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description"
+                              name="description"
+                              rows="3"
+                              placeholder="Description du sous-thème (optionnel)">{{ specific_theme.description if specific_theme else '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="language">Langue *</label>
+                    <select id="language" name="language" required>
+                        <option value="fr" {% if specific_theme and specific_theme.language == 'fr' %}selected{% elif not specific_theme %}selected{% endif %}>🇫🇷 Français (fr)</option>
+                        <option value="en" {% if specific_theme and specific_theme.language == 'en' %}selected{% endif %}>🇬🇧 English (en)</option>
+                        <option value="de" {% if specific_theme and specific_theme.language == 'de' %}selected{% endif %}>🇩🇪 Deutsch (de)</option>
+                        <option value="es" {% if specific_theme and specific_theme.language == 'es' %}selected{% endif %}>🇪🇸 Español (es)</option>
+                        <option value="it" {% if specific_theme and specific_theme.language == 'it' %}selected{% endif %}>🇮🇹 Italiano (it)</option>
+                        <option value="nl" {% if specific_theme and specific_theme.language == 'nl' %}selected{% endif %}>🇳🇱 Nederlands (nl)</option>
+                        <option value="pt" {% if specific_theme and specific_theme.language == 'pt' %}selected{% endif %}>🇵🇹 Português (pt)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Colonne droite -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="icon">Icône (emoji)</label>
+                    <input type="text"
+                           id="icon"
+                           name="icon"
+                           value="{{ specific_theme.icon if specific_theme else '' }}"
+                           placeholder="Ex: 📏, 👀, 🛰️, 🎯"
+                           maxlength="10">
+                    <small>Utilisez un emoji pour représenter visuellement ce sous-thème</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="color">Couleur</label>
+                    <input type="color"
+                           id="color"
+                           name="color"
+                           value="{{ specific_theme.color if specific_theme and specific_theme.color else '#6b7280' }}">
+                    <small>Couleur d'accent pour l'affichage du sous-thème</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="translation_id">ID de traduction (sous-thème lié)</label>
+                    <input type="number"
+                           id="translation_id"
+                           name="translation_id"
+                           placeholder="ID du sous-thème dans une autre langue"
+                           value="{{ specific_theme.translation_id if specific_theme and specific_theme.translation_id else '' }}">
+                    <small>Utilisé pour lier des sous-thèmes dans différentes langues</small>
+                </div>
+
+                {% if specific_theme %}
+                <div class="form-info">
+                    <p><strong>Statistiques:</strong></p>
+                    <p>Questions utilisant ce sous-thème: {{ specific_theme.questions.count() }}</p>
+                    <p>Thème parent: {% if specific_theme.broad_theme %}{{ specific_theme.broad_theme.name }}{% else %}Aucun{% endif %}</p>
+                    <p>ID: {{ specific_theme.id }}</p>
+                    <p>Créé: {{ specific_theme.created_at.strftime('%d/%m/%Y %H:%M') if specific_theme.created_at }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button"
+                    class="btn btn-secondary"
+                    onclick="document.getElementById('specific-theme-form-container').classList.add('hidden')">
+                Annuler
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if specific_theme %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="color"] {
+        width: 100%;
+        height: 50px;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        cursor: pointer;
+    }
+
+    input[type="color"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+</style>

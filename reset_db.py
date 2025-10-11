@@ -2,7 +2,7 @@
 Script pour réinitialiser complètement la base de données
 """
 from app import app
-from models import db, Question, BroadTheme
+from models import db, Question, BroadTheme, SpecificTheme
 import os
 
 def reset_database():
@@ -85,6 +85,154 @@ def reset_database():
         db.session.commit()
         print(f"[OK] {len(sample_themes)} themes crees")
 
+        # Créer les sous-thèmes d'exemple
+        print("\n[SOUS-THEMES] Creation des sous-themes d'exemple...")
+        sample_specific_themes = [
+            # Pour le thème "Règles"
+            {
+                'name': 'Tailles de caches',
+                'description': 'Questions sur les différentes tailles de geocaches',
+                'language': 'fr',
+                'icon': '📏',
+                'color': '#3b82f6',
+                'broad_theme_name': 'Règles'
+            },
+            {
+                'name': 'Règles de publication',
+                'description': 'Règles pour publier une cache',
+                'language': 'fr',
+                'icon': '📋',
+                'color': '#3b82f6',
+                'broad_theme_name': 'Règles'
+            },
+            {
+                'name': 'Attributs',
+                'description': 'Signification des attributs des caches',
+                'language': 'fr',
+                'icon': '🏷️',
+                'color': '#3b82f6',
+                'broad_theme_name': 'Règles'
+            },
+
+            # Pour le thème "Terminologie"
+            {
+                'name': 'Acronymes courants',
+                'description': 'FTF, DNF, TFTC et autres acronymes',
+                'language': 'fr',
+                'icon': '💬',
+                'color': '#8b5cf6',
+                'broad_theme_name': 'Terminologie'
+            },
+            {
+                'name': 'Termes techniques',
+                'description': 'Vocabulaire spécifique au géocaching',
+                'language': 'fr',
+                'icon': '🔧',
+                'color': '#8b5cf6',
+                'broad_theme_name': 'Terminologie'
+            },
+
+            # Pour le thème "Types de caches"
+            {
+                'name': 'Traditional Cache',
+                'description': 'Le type de cache le plus classique',
+                'language': 'fr',
+                'icon': '📦',
+                'color': '#ec4899',
+                'broad_theme_name': 'Types de caches'
+            },
+            {
+                'name': 'Mystery/Puzzle Cache',
+                'description': 'Caches nécessitant de résoudre une énigme',
+                'language': 'fr',
+                'icon': '🧩',
+                'color': '#ec4899',
+                'broad_theme_name': 'Types de caches'
+            },
+            {
+                'name': 'Multi-cache',
+                'description': 'Caches avec plusieurs étapes',
+                'language': 'fr',
+                'icon': '📍',
+                'color': '#ec4899',
+                'broad_theme_name': 'Types de caches'
+            },
+
+            # Pour le thème "Histoire"
+            {
+                'name': 'Création du géocaching',
+                'description': 'Comment le géocaching a été inventé',
+                'language': 'fr',
+                'icon': '🕰️',
+                'color': '#f59e0b',
+                'broad_theme_name': 'Histoire'
+            },
+            {
+                'name': 'Évolution',
+                'description': 'Comment le géocaching a évolué',
+                'language': 'fr',
+                'icon': '📈',
+                'color': '#f59e0b',
+                'broad_theme_name': 'Histoire'
+            },
+
+            # Pour le thème "Technique"
+            {
+                'name': 'GPS et coordonnées',
+                'description': 'Utilisation du GPS et format des coordonnées',
+                'language': 'fr',
+                'icon': '🛰️',
+                'color': '#10b981',
+                'broad_theme_name': 'Technique'
+            },
+            {
+                'name': 'Applications',
+                'description': 'Logiciels et applications de géocaching',
+                'language': 'fr',
+                'icon': '📱',
+                'color': '#10b981',
+                'broad_theme_name': 'Technique'
+            },
+
+            # Pour le thème "Communauté"
+            {
+                'name': 'Events',
+                'description': 'Organisation d\'événements de géocaching',
+                'language': 'fr',
+                'icon': '🎉',
+                'color': '#06b6d4',
+                'broad_theme_name': 'Communauté'
+            },
+            {
+                'name': 'Reviewers',
+                'description': 'Rôle et fonctionnement des reviewers',
+                'language': 'fr',
+                'icon': '👀',
+                'color': '#06b6d4',
+                'broad_theme_name': 'Communauté'
+            }
+        ]
+
+        specific_themes_created = {}
+        for st_data in sample_specific_themes:
+            broad_theme = themes.get(st_data['broad_theme_name'])
+            if broad_theme:
+                specific_theme = SpecificTheme(
+                    name=st_data['name'],
+                    description=st_data['description'],
+                    language=st_data['language'],
+                    icon=st_data['icon'],
+                    color=st_data['color'],
+                    broad_theme_id=broad_theme
+                )
+                db.session.add(specific_theme)
+                db.session.flush()
+                specific_themes_created[st_data['name']] = specific_theme.id
+                print(f"   [CREE] {st_data['name']} (theme: {st_data['broad_theme_name']})")
+
+        db.session.commit()
+        print(f"[OK] {len(sample_specific_themes)} sous-themes crees")
+
         # Créer des questions d'exemple
         print("\n[QUESTIONS] Creation des questions d'exemple...")
         sample_questions = [
@@ -97,7 +245,7 @@ def reset_database():
                 'detailed_answer': "Un cache Micro est de la taille approximative d'un film 35mm. C'est l'une des plus petites tailles de geocaches.",
                 'hint': "Pensez à un objet photo ancien",
                 'broad_theme_id': themes['Règles'],
-                'specific_theme': 'Tailles de caches',
+                'specific_theme_id': specific_themes_created.get('Tailles de caches'),
                 'country': None,
                 'difficulty_level': 1,
                 'is_published': True
@@ -111,7 +259,7 @@ def reset_database():
                 'detailed_answer': "FTF signifie 'First To Find', c'est-à-dire être la première personne à trouver une cache après sa publication. C'est un honneur recherché par de nombreux géocacheurs!",
                 'hint': "C'est un honneur pour les géocacheurs compétitifs",
                 'broad_theme_id': themes['Terminologie'],
-                'specific_theme': 'Acronymes',
+                'specific_theme_id': specific_themes_created.get('Acronymes courants'),
                 'country': None,
                 'difficulty_level': 1,
                 'is_published': True
@@ -125,7 +273,7 @@ def reset_database():
                 'detailed_answer': "Un Mystery Cache (ou Unknown Cache) nécessite de résoudre une énigme ou un puzzle pour obtenir les coordonnées finales. Les coordonnées publiées ne sont qu'un point de référence.",
                 'hint': "Le nom contient le mot 'mystère'",
                 'broad_theme_id': themes['Types de caches'],
-                'specific_theme': 'Mystery Cache',
+                'specific_theme_id': specific_themes_created.get('Mystery/Puzzle Cache'),
                 'country': None,
                 'difficulty_level': 2,
                 'is_published': True

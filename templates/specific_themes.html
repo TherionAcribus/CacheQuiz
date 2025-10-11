@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gestion des sous-thèmes</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                onclick="document.getElementById('specific-theme-form-container').classList.remove('hidden')"
+                hx-get="/specific-theme/new"
+                hx-target="#specific-theme-form-container"
+                hx-swap="innerHTML">
+            + Nouveau Sous-thème
+        </button>
+    </div>
+</div>
+
+<!-- Conteneur pour le formulaire (caché par défaut) -->
+<div id="specific-theme-form-container" class="hidden form-modal">
+    <!-- Le formulaire sera chargé ici via HTMX -->
+</div>
+
+<!-- Liste des sous-thèmes -->
+<div id="specific-themes-list"
+     hx-get="/api/specific-themes"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement des sous-thèmes...</div>
+</div>
+
+<style>
+    .hidden {
+        display: none;
+    }
+
+    .form-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+    .form-modal.hidden {
+        display: none;
+    }
+</style>
+{% endblock %}

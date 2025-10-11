@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Question, BroadTheme
+from models import db, Question, BroadTheme, SpecificTheme
 from datetime import datetime
 import os
 
@@ -32,7 +32,8 @@ def list_questions():
 def new_question():
     """Formulaire pour créer une nouvelle question"""
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return render_template('question_form.html', question=None, themes=themes)
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes)
 
 
 @app.route('/question/<int:question_id>')
@@ -47,7 +48,8 @@ def edit_question(question_id):
     """Formulaire pour éditer une question"""
     question = Question.query.get_or_404(question_id)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return render_template('question_form.html', question=question, themes=themes)
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes)
 
 
 @app.route('/api/question', methods=['POST'])
@@ -76,7 +78,7 @@ def create_question():
             detailed_answer=data.get('detailed_answer'),
             hint=data.get('hint'),
             broad_theme_id=int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None,
-            specific_theme=data.get('specific_theme'),
+            specific_theme_id=int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None,
             country=data.get('country'),
             difficulty_level=int(data.get('difficulty_level', 1)),
             translation_id=int(data.get('translation_id')) if data.get('translation_id') else None,
@@ -121,7 +123,7 @@ def update_question(question_id):
         question.detailed_answer = data.get('detailed_answer')
         question.hint = data.get('hint')
         question.broad_theme_id = int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None
-        question.specific_theme = data.get('specific_theme')
+        question.specific_theme_id = int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None
         question.country = data.get('country')
         question.difficulty_level = int(data.get('difficulty_level', 1))
         question.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
@@ -259,21 +261,137 @@ def delete_theme(theme_id):
     """Supprimer un thème"""
     try:
         theme = BroadTheme.query.get_or_404(theme_id)
-        
+
         # Vérifier si des questions utilisent ce thème
         question_count = theme.questions.count()
         if question_count > 0:
             return f"Impossible de supprimer ce thème : {question_count} question(s) l'utilisent encore.", 400
-        
+
         db.session.delete(theme)
         db.session.commit()
-        
+
         # Retourner la liste mise à jour
         themes = BroadTheme.query.order_by(BroadTheme.name).all()
         return render_template('themes_list.html', themes=themes)
-    
+
     except Exception as e:
         return f"Erreur: {str(e)}", 400
+
+
+# ===== Routes pour les sous-thèmes =====
+
+@app.route('/specific-themes')
+def specific_themes_page():
+    """Page de gestion des sous-thèmes"""
+    return render_template('specific_themes.html')
+
+
+@app.route('/api/specific-themes')
+def list_specific_themes():
+    """Retourner la liste des sous-thèmes en HTML (pour HTMX)"""
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    return render_template('specific_themes_list.html', specific_themes=specific_themes)
+
+
+@app.route('/specific-theme/new')
+def new_specific_theme():
+    """Formulaire pour créer un nouveau sous-thème"""
+    broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes)
+
+
+@app.route('/specific-theme/<int:specific_theme_id>/edit')
+def edit_specific_theme(specific_theme_id):
+    """Formulaire pour éditer un sous-thème"""
+    specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
+    broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('specific_theme_form.html', specific_theme=specific_theme, broad_themes=broad_themes)
+
+
+@app.route('/api/specific-theme', methods=['POST'])
+def create_specific_theme():
+    """Créer un nouveau sous-thème"""
+    try:
+        data = request.form
+
+        specific_theme = SpecificTheme(
+            name=data.get('name'),
+            description=data.get('description'),
+            language=data.get('language', 'fr'),
+            icon=data.get('icon'),
+            color=data.get('color'),
+            broad_theme_id=int(data.get('broad_theme_id')),
+            translation_id=int(data.get('translation_id')) if data.get('translation_id') else None
+        )
+
+        db.session.add(specific_theme)
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/specific-theme/<int:specific_theme_id>', methods=['PUT', 'POST'])
+def update_specific_theme(specific_theme_id):
+    """Mettre à jour un sous-thème existant"""
+    try:
+        specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
+        data = request.form
+
+        # Mettre à jour les champs
+        specific_theme.name = data.get('name')
+        specific_theme.description = data.get('description')
+        specific_theme.language = data.get('language', 'fr')
+        specific_theme.icon = data.get('icon')
+        specific_theme.color = data.get('color')
+        specific_theme.broad_theme_id = int(data.get('broad_theme_id'))
+        specific_theme.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
+        specific_theme.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/specific-theme/<int:specific_theme_id>', methods=['DELETE'])
+def delete_specific_theme(specific_theme_id):
+    """Supprimer un sous-thème"""
+    try:
+        specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
+
+        # Vérifier si des questions utilisent ce sous-thème
+        question_count = specific_theme.questions.count()
+        if question_count > 0:
+            return f"Impossible de supprimer ce sous-thème : {question_count} question(s) l'utilisent encore.", 400
+
+        db.session.delete(specific_theme)
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/specific-themes/for-theme/<broad_theme_id>')
+def get_specific_themes_for_broad_theme(broad_theme_id):
+    """Obtenir les sous-thèmes pour un thème large (retourne HTML pour HTMX)"""
+    if broad_theme_id and broad_theme_id.isdigit():
+        specific_themes = SpecificTheme.query.filter_by(broad_theme_id=int(broad_theme_id)).order_by(SpecificTheme.name).all()
+    else:
+        specific_themes = []
+    return render_template('specific_theme_options.html', specific_themes=specific_themes)
 
 
 if __name__ == '__main__':

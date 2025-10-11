@@ -1,0 +1,187 @@
+{% if specific_themes %}
+<div class="specific-themes-grid">
+    {% for specific_theme in specific_themes %}
+    <div class="specific-theme-card" {% if specific_theme.color %}style="border-left: 4px solid {{ specific_theme.color }}"{% endif %}>
+        <div class="specific-theme-header">
+            <div class="specific-theme-info">
+                {% if specific_theme.icon %}
+                <span class="specific-theme-icon">{{ specific_theme.icon }}</span>
+                {% endif %}
+                <h3>{{ specific_theme.name }}</h3>
+                <span class="badge badge-language">{{ specific_theme.language.upper() }}</span>
+            </div>
+            <div class="specific-theme-actions">
+                <button class="btn-icon"
+                        type="button"
+                        onclick="document.getElementById('specific-theme-form-container').classList.remove('hidden')"
+                        hx-get="/specific-theme/{{ specific_theme.id }}/edit"
+                        hx-target="#specific-theme-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger"
+                        hx-delete="/api/specific-theme/{{ specific_theme.id }}"
+                        hx-target="#specific-themes-list"
+                        hx-confirm="Êtes-vous sûr de vouloir supprimer ce sous-thème ?"
+                        title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+
+        {% if specific_theme.description %}
+        <div class="specific-theme-description">
+            <p>{{ specific_theme.description }}</p>
+        </div>
+        {% endif %}
+
+        <div class="specific-theme-parent">
+            <span class="badge badge-parent">
+                {% if specific_theme.broad_theme.icon %}{{ specific_theme.broad_theme.icon }} {% endif %}
+                {{ specific_theme.broad_theme.name }}
+            </span>
+        </div>
+
+        <div class="specific-theme-stats">
+            <span class="badge badge-count">{{ specific_theme.questions.count() }} question(s)</span>
+            {% if specific_theme.translation_id %}
+            <span class="badge badge-translation">📝 Traduction de #{{ specific_theme.translation_id }}</span>
+            {% endif %}
+            {% if specific_theme.color %}
+            <span class="color-badge" style="background-color: {{ specific_theme.color }}"></span>
+            {% endif %}
+        </div>
+
+        <div class="specific-theme-footer">
+            <small>Créé: {{ specific_theme.created_at.strftime('%d/%m/%Y %H:%M') if specific_theme.created_at }}</small>
+            <small>ID: {{ specific_theme.id }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-specific-themes">
+    <p>📋 Aucun sous-thème trouvé. Commencez par en créer un !</p>
+    <p><small>Les sous-thèmes dépendent des thèmes larges existants.</small></p>
+</div>
+{% endif %}
+
+<style>
+    .specific-themes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .specific-theme-card {
+        background-color: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+    }
+
+    .specific-theme-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .specific-theme-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .specific-theme-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .specific-theme-icon {
+        font-size: 1.5rem;
+    }
+
+    .specific-theme-info h3 {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+
+    .badge-language {
+        background-color: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.75rem;
+    }
+
+    .specific-theme-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .specific-theme-description {
+        margin-bottom: 1rem;
+        color: var(--text-light);
+        font-size: 0.875rem;
+    }
+
+    .specific-theme-parent {
+        margin-bottom: 1rem;
+    }
+
+    .badge-parent {
+        background-color: #fef3c7;
+        color: #92400e;
+        font-weight: 500;
+    }
+
+    .specific-theme-stats {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .badge-count {
+        background-color: #bee3f8;
+        color: #2c5282;
+    }
+
+    .badge-translation {
+        background-color: #fbd38d;
+        color: #7c2d12;
+    }
+
+    .color-badge {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .specific-theme-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+
+    .no-specific-themes {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-light);
+        font-size: 1.25rem;
+    }
+
+    .no-specific-themes small {
+        display: block;
+        margin-top: 0.5rem;
+        color: var(--text-light);
+    }
+</style>
