@@ -3,6 +3,51 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
+
+class BroadTheme(db.Model):
+    __tablename__ = 'broad_themes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Informations
+    name = db.Column(db.String(100), nullable=False)  # Nom du thème
+    description = db.Column(db.Text)  # Description optionnelle
+    language = db.Column(db.String(10), nullable=False, default='fr')  # Code langue (fr, en, de, etc.)
+    icon = db.Column(db.String(50))  # Emoji ou icône optionnelle
+    color = db.Column(db.String(20))  # Couleur optionnelle pour l'affichage
+    
+    # Traduction
+    translation_id = db.Column(db.Integer, db.ForeignKey('broad_themes.id'), nullable=True)
+    
+    # Relations
+    translations = db.relationship('BroadTheme',
+                                   backref=db.backref('original', remote_side=[id]),
+                                   foreign_keys=[translation_id])
+    
+    # Relation inverse avec les questions
+    questions = db.relationship('Question', back_populates='theme', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<BroadTheme {self.id}: {self.name} ({self.language})>'
+    
+    def to_dict(self):
+        """Convertir le thème en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'language': self.language,
+            'icon': self.icon,
+            'color': self.color,
+            'translation_id': self.translation_id,
+            'question_count': self.questions.count()
+        }
+
+
 class Question(db.Model):
     __tablename__ = 'questions'
     
@@ -24,8 +69,11 @@ class Question(db.Model):
     hint = db.Column(db.Text)
     
     # Thématiques
-    broad_theme = db.Column(db.String(100))  # Ex: "Règles", "Histoire", "Technique"
+    broad_theme_id = db.Column(db.Integer, db.ForeignKey('broad_themes.id'), nullable=True)
     specific_theme = db.Column(db.String(100))  # Ex: "Reviewers", "Types de caches", "GPS"
+    
+    # Relation avec le thème
+    theme = db.relationship('BroadTheme', back_populates='questions')
     
     # Localisation et difficulté
     country = db.Column(db.String(100))  # Pays spécifique si applicable
@@ -60,7 +108,8 @@ class Question(db.Model):
             'correct_answer': self.correct_answer,
             'detailed_answer': self.detailed_answer,
             'hint': self.hint,
-            'broad_theme': self.broad_theme,
+            'broad_theme_id': self.broad_theme_id,
+            'broad_theme_name': self.theme.name if self.theme else None,
             'specific_theme': self.specific_theme,
             'country': self.country,
             'difficulty_level': self.difficulty_level,

@@ -98,12 +98,19 @@
             <!-- Colonne droite -->
             <div class="form-column">
                 <div class="form-group">
-                    <label for="broad_theme">Thématique large</label>
-                    <input type="text" 
-                           id="broad_theme" 
-                           name="broad_theme" 
-                           placeholder="Ex: Règles, Histoire, Technique"
-                           value="{{ question.broad_theme if question else '' }}">
+                    <label for="broad_theme_id">Thématique large</label>
+                    <select id="broad_theme_id" name="broad_theme_id">
+                        <option value="">-- Aucun thème --</option>
+                        {% for theme in themes %}
+                        <option value="{{ theme.id }}" 
+                                {% if question and question.broad_theme_id == theme.id %}selected{% endif %}>
+                            {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }} ({{ theme.language.upper() }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>
+                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
+                    </small>
                 </div>
                 
                 <div class="form-group">

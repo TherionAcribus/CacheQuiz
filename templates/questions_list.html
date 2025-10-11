@@ -4,7 +4,13 @@
     <div class="question-card">
         <div class="question-header">
             <div class="question-meta">
-                <span class="badge badge-theme">{{ question.broad_theme or 'Sans thème' }}</span>
+                {% if question.theme %}
+                <span class="badge badge-theme" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+                    {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+                </span>
+                {% else %}
+                <span class="badge badge-theme">Sans thème</span>
+                {% endif %}
                 <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
                 {% if question.is_published %}
                 <span class="badge badge-published">En ligne</span>

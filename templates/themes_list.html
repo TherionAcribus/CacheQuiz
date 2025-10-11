@@ -1,0 +1,164 @@
+{% if themes %}
+<div class="themes-grid">
+    {% for theme in themes %}
+    <div class="theme-card" {% if theme.color %}style="border-left: 4px solid {{ theme.color }}"{% endif %}>
+        <div class="theme-header">
+            <div class="theme-info">
+                {% if theme.icon %}
+                <span class="theme-icon">{{ theme.icon }}</span>
+                {% endif %}
+                <h3>{{ theme.name }}</h3>
+                <span class="badge badge-language">{{ theme.language.upper() }}</span>
+            </div>
+            <div class="theme-actions">
+                <button class="btn-icon" 
+                        type="button"
+                        onclick="document.getElementById('theme-form-container').classList.remove('hidden')"
+                        hx-get="/theme/{{ theme.id }}/edit"
+                        hx-target="#theme-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger" 
+                        hx-delete="/api/theme/{{ theme.id }}"
+                        hx-target="#themes-list"
+                        hx-confirm="Êtes-vous sûr de vouloir supprimer ce thème ?"
+                        title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+        
+        {% if theme.description %}
+        <div class="theme-description">
+            <p>{{ theme.description }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="theme-stats">
+            <span class="badge badge-count">{{ theme.questions.count() }} question(s)</span>
+            {% if theme.translation_id %}
+            <span class="badge badge-translation">📝 Traduction de #{{ theme.translation_id }}</span>
+            {% endif %}
+            {% if theme.color %}
+            <span class="color-badge" style="background-color: {{ theme.color }}"></span>
+            {% endif %}
+        </div>
+        
+        <div class="theme-footer">
+            <small>Créé: {{ theme.created_at.strftime('%d/%m/%Y %H:%M') if theme.created_at }}</small>
+            <small>ID: {{ theme.id }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-themes">
+    <p>📋 Aucun thème trouvé. Commencez par en créer un !</p>
+</div>
+{% endif %}
+
+<style>
+    .themes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .theme-card {
+        background-color: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+    }
+    
+    .theme-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+    
+    .theme-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+    
+    .theme-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .theme-icon {
+        font-size: 1.5rem;
+    }
+    
+    .theme-info h3 {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+    
+    .badge-language {
+        background-color: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.75rem;
+    }
+    
+    .theme-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+    
+    .theme-description {
+        margin-bottom: 1rem;
+        color: var(--text-light);
+        font-size: 0.875rem;
+    }
+    
+    .theme-stats {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .badge-count {
+        background-color: #bee3f8;
+        color: #2c5282;
+    }
+    
+    .badge-translation {
+        background-color: #fbd38d;
+        color: #7c2d12;
+    }
+    
+    .color-badge {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--border-color);
+    }
+    
+    .theme-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+    
+    .no-themes {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-light);
+        font-size: 1.25rem;
+    }
+</style>
+

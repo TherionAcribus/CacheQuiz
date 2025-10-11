@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Question
+from models import db, Question, BroadTheme
 from datetime import datetime
 import os
 
@@ -31,7 +31,8 @@ def list_questions():
 @app.route('/question/new')
 def new_question():
     """Formulaire pour créer une nouvelle question"""
-    return render_template('question_form.html', question=None)
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('question_form.html', question=None, themes=themes)
 
 
 @app.route('/question/<int:question_id>')
@@ -45,7 +46,8 @@ def view_question(question_id):
 def edit_question(question_id):
     """Formulaire pour éditer une question"""
     question = Question.query.get_or_404(question_id)
-    return render_template('question_form.html', question=question)
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('question_form.html', question=question, themes=themes)
 
 
 @app.route('/api/question', methods=['POST'])
@@ -73,7 +75,7 @@ def create_question():
             correct_answer=data.get('correct_answer'),
             detailed_answer=data.get('detailed_answer'),
             hint=data.get('hint'),
-            broad_theme=data.get('broad_theme'),
+            broad_theme_id=int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None,
             specific_theme=data.get('specific_theme'),
             country=data.get('country'),
             difficulty_level=int(data.get('difficulty_level', 1)),
@@ -118,7 +120,7 @@ def update_question(question_id):
         question.correct_answer = data.get('correct_answer')
         question.detailed_answer = data.get('detailed_answer')
         question.hint = data.get('hint')
-        question.broad_theme = data.get('broad_theme')
+        question.broad_theme_id = int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None
         question.specific_theme = data.get('specific_theme')
         question.country = data.get('country')
         question.difficulty_level = int(data.get('difficulty_level', 1))
@@ -158,11 +160,11 @@ def search_questions():
     query = request.args.get('q', '').strip()
     
     if query:
-        questions = Question.query.filter(
+        questions = Question.query.join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).filter(
             db.or_(
                 Question.question_text.contains(query),
                 Question.author.contains(query),
-                Question.broad_theme.contains(query),
+                BroadTheme.name.contains(query),
                 Question.specific_theme.contains(query)
             )
         ).order_by(Question.updated_at.desc()).all()
@@ -170,6 +172,108 @@ def search_questions():
         questions = Question.query.order_by(Question.updated_at.desc()).all()
     
     return render_template('questions_list.html', questions=questions)
+
+
+# ===== Routes pour les thèmes =====
+
+@app.route('/themes')
+def themes_page():
+    """Page de gestion des thèmes"""
+    return render_template('themes.html')
+
+
+@app.route('/api/themes')
+def list_themes():
+    """Retourner la liste des thèmes en HTML (pour HTMX)"""
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('themes_list.html', themes=themes)
+
+
+@app.route('/theme/new')
+def new_theme():
+    """Formulaire pour créer un nouveau thème"""
+    return render_template('theme_form.html', theme=None)
+
+
+@app.route('/theme/<int:theme_id>/edit')
+def edit_theme(theme_id):
+    """Formulaire pour éditer un thème"""
+    theme = BroadTheme.query.get_or_404(theme_id)
+    return render_template('theme_form.html', theme=theme)
+
+
+@app.route('/api/theme', methods=['POST'])
+def create_theme():
+    """Créer un nouveau thème"""
+    try:
+        data = request.form
+        
+        theme = BroadTheme(
+            name=data.get('name'),
+            description=data.get('description'),
+            language=data.get('language', 'fr'),
+            icon=data.get('icon'),
+            color=data.get('color'),
+            translation_id=int(data.get('translation_id')) if data.get('translation_id') else None
+        )
+        
+        db.session.add(theme)
+        db.session.commit()
+        
+        # Retourner la liste mise à jour
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_list.html', themes=themes)
+    
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/theme/<int:theme_id>', methods=['PUT', 'POST'])
+def update_theme(theme_id):
+    """Mettre à jour un thème existant"""
+    try:
+        theme = BroadTheme.query.get_or_404(theme_id)
+        data = request.form
+        
+        # Mettre à jour les champs
+        theme.name = data.get('name')
+        theme.description = data.get('description')
+        theme.language = data.get('language', 'fr')
+        theme.icon = data.get('icon')
+        theme.color = data.get('color')
+        theme.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
+        theme.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Retourner la liste mise à jour
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_list.html', themes=themes)
+    
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/theme/<int:theme_id>', methods=['DELETE'])
+def delete_theme(theme_id):
+    """Supprimer un thème"""
+    try:
+        theme = BroadTheme.query.get_or_404(theme_id)
+        
+        # Vérifier si des questions utilisent ce thème
+        question_count = theme.questions.count()
+        if question_count > 0:
+            return f"Impossible de supprimer ce thème : {question_count} question(s) l'utilisent encore.", 400
+        
+        db.session.delete(theme)
+        db.session.commit()
+        
+        # Retourner la liste mise à jour
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_list.html', themes=themes)
+    
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
 
 
 if __name__ == '__main__':
