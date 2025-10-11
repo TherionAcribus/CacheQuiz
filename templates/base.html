@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quiz Géocaching{% endblock %}</title>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Hyperscript -->
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🗺️ Quiz Géocaching - Gestion des Questions</h1>
+            <nav>
+                <a href="/" class="nav-link">Accueil</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Quiz Géocaching - Propulsé par Flask, HTMX & hyperscript</p>
+        </div>
+    </footer>
+</body>
+</html>
+

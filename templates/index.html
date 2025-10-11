@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Base de données des questions</h2>
+    <div class="header-actions">
+        <input type="text" 
+               id="search-input" 
+               placeholder="Rechercher une question..."
+               hx-get="/api/questions/search"
+               hx-trigger="keyup changed delay:500ms"
+               hx-target="#questions-list"
+               hx-include="this"
+               name="q">
+        
+        <button class="btn btn-primary" 
+                onclick="document.getElementById('question-form-container').classList.remove('hidden')"
+                hx-get="/question/new"
+                hx-target="#question-form-container"
+                hx-swap="innerHTML">
+            + Nouvelle Question
+        </button>
+    </div>
+</div>
+
+<!-- Conteneur pour le formulaire (caché par défaut) -->
+<div id="question-form-container" class="hidden form-modal">
+    <!-- Le formulaire sera chargé ici via HTMX -->
+</div>
+
+<!-- Liste des questions -->
+<div id="questions-list" 
+     hx-get="/questions" 
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement des questions...</div>
+</div>
+
+<style>
+    .hidden {
+        display: none;
+    }
+    
+    .form-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+    
+    .form-modal.hidden {
+        display: none;
+    }
+</style>
+{% endblock %}
+

@@ -1,0 +1,85 @@
+{% if questions %}
+<div class="questions-grid">
+    {% for question in questions %}
+    <div class="question-card">
+        <div class="question-header">
+            <div class="question-meta">
+                <span class="badge badge-theme">{{ question.broad_theme or 'Sans thème' }}</span>
+                <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+                {% if question.is_published %}
+                <span class="badge badge-published">En ligne</span>
+                {% else %}
+                <span class="badge badge-draft">Brouillon</span>
+                {% endif %}
+            </div>
+            <div class="question-actions">
+                <button class="btn-icon" 
+                        type="button"
+                        onclick="document.getElementById('question-form-container').classList.remove('hidden')"
+                        hx-get="/question/{{ question.id }}/edit"
+                        hx-target="#question-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger" 
+                        hx-delete="/api/question/{{ question.id }}"
+                        hx-target="#questions-list"
+                        hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
+                        title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+        
+        <div class="question-content">
+            <h3>{{ question.question_text }}</h3>
+            <div class="question-info">
+                <p><strong>Auteur:</strong> {{ question.author }}</p>
+                {% if question.hint %}
+                <p><strong>Indice:</strong> {{ question.hint }}</p>
+                {% endif %}
+                {% if question.country %}
+                <p><strong>Pays:</strong> {{ question.country }}</p>
+                {% endif %}
+            </div>
+            
+            {% set answers = question.possible_answers.split('|||') %}
+            {% if answers %}
+            <div class="answers-preview">
+                <strong>Réponses possibles:</strong>
+                <ul>
+                    {% for answer in answers %}
+                    <li {% if loop.index == question.correct_answer|int %}class="correct-answer"{% endif %}>
+                        {{ answer }}
+                        {% if loop.index == question.correct_answer|int %}✓{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            {% if question.detailed_answer %}
+            <div class="detailed-answer">
+                <strong>Explication:</strong>
+                <p>{{ question.detailed_answer }}</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="question-footer">
+            <small>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</small>
+            <small>Modifié: {{ question.updated_at.strftime('%d/%m/%Y %H:%M') if question.updated_at }}</small>
+            {% if question.times_answered > 0 %}
+            <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.times_answered }} réponses)</small>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-questions">
+    <p>📋 Aucune question trouvée. Commencez par en créer une !</p>
+</div>
+{% endif %}
+

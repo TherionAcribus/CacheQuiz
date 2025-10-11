@@ -1,0 +1,180 @@
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2>{% if question %}Éditer la question{% else %}Nouvelle question{% endif %}</h2>
+        <button class="btn-close" 
+                type="button"
+                onclick="document.getElementById('question-form-container').classList.add('hidden')">✕</button>
+    </div>
+    
+    <form {% if question %}
+          hx-post="/api/question/{{ question.id }}"
+          {% else %}
+          hx-post="/api/question"
+          {% endif %}
+          hx-target="#questions-list"
+          hx-swap="innerHTML"
+          hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden')">
+        
+        <div class="form-grid">
+            <!-- Colonne gauche -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="author">Auteur *</label>
+                    <input type="text" 
+                           id="author" 
+                           name="author" 
+                           value="{{ question.author if question else '' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="question_text">Question *</label>
+                    <textarea id="question_text" 
+                              name="question_text" 
+                              rows="4" 
+                              required>{{ question.question_text if question else '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Réponses possibles *</label>
+                    <div id="answers-container">
+                        {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
+                        {% set images = question.answer_images.split('|||') if question and question.answer_images else ['', '', '', ''] %}
+                        {% for i in range(1, 5) %}
+                        <div class="answer-input-group">
+                            <span class="answer-number">{{ i }}.</span>
+                            <input type="text" 
+                                   name="answer_{{ i }}" 
+                                   placeholder="Réponse {{ i }}"
+                                   value="{{ answers[i-1] if i <= answers|length else '' }}">
+                            <input type="text" 
+                                   name="answer_image_{{ i }}" 
+                                   placeholder="URL image (optionnel)"
+                                   class="answer-image"
+                                   value="{{ images[i-1] if i <= images|length else '' }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" 
+                            class="btn btn-secondary"
+                            _="on click
+                               set count to #answers-container.children.length + 1
+                               make a <div.answer-input-group/>
+                               put `<span class='answer-number'>${count}.</span>
+                                    <input type='text' name='answer_${count}' placeholder='Réponse ${count}'>
+                                    <input type='text' name='answer_image_${count}' placeholder='URL image (optionnel)' class='answer-image'>`
+                                    into it
+                               put it at the end of #answers-container">
+                        + Ajouter une réponse
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="correct_answer">Bonne réponse (numéro) *</label>
+                    <input type="number" 
+                           id="correct_answer" 
+                           name="correct_answer" 
+                           min="1" 
+                           value="{{ question.correct_answer if question else '1' }}"
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="detailed_answer">Explication détaillée</label>
+                    <textarea id="detailed_answer" 
+                              name="detailed_answer" 
+                              rows="4">{{ question.detailed_answer if question else '' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="hint">Indice</label>
+                    <input type="text" 
+                           id="hint" 
+                           name="hint" 
+                           value="{{ question.hint if question else '' }}">
+                </div>
+            </div>
+            
+            <!-- Colonne droite -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="broad_theme">Thématique large</label>
+                    <input type="text" 
+                           id="broad_theme" 
+                           name="broad_theme" 
+                           placeholder="Ex: Règles, Histoire, Technique"
+                           value="{{ question.broad_theme if question else '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="specific_theme">Thématique précise</label>
+                    <input type="text" 
+                           id="specific_theme" 
+                           name="specific_theme" 
+                           placeholder="Ex: Reviewers, Types de caches, GPS"
+                           value="{{ question.specific_theme if question else '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="country">Pays spécifique</label>
+                    <input type="text" 
+                           id="country" 
+                           name="country" 
+                           placeholder="Ex: France, Belgique, Canada"
+                           value="{{ question.country if question else '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="difficulty_level">Niveau de difficulté</label>
+                    <select id="difficulty_level" name="difficulty_level">
+                        <option value="1" {% if question and question.difficulty_level == 1 %}selected{% endif %}>1 - Très facile</option>
+                        <option value="2" {% if question and question.difficulty_level == 2 %}selected{% endif %}>2 - Facile</option>
+                        <option value="3" {% if question and question.difficulty_level == 3 %}selected{% endif %}>3 - Moyen</option>
+                        <option value="4" {% if question and question.difficulty_level == 4 %}selected{% endif %}>4 - Difficile</option>
+                        <option value="5" {% if question and question.difficulty_level == 5 %}selected{% endif %}>5 - Très difficile</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="translation_id">ID de traduction (question liée)</label>
+                    <input type="number" 
+                           id="translation_id" 
+                           name="translation_id" 
+                           placeholder="ID de la question dans une autre langue"
+                           value="{{ question.translation_id if question and question.translation_id else '' }}">
+                    <small>Utilisé pour lier des questions dans différentes langues</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" 
+                               name="is_published" 
+                               {% if question and question.is_published %}checked{% endif %}>
+                        Question en ligne (publiée)
+                    </label>
+                </div>
+                
+                {% if question %}
+                <div class="form-info">
+                    <p><strong>Statistiques:</strong></p>
+                    <p>Réponses: {{ question.times_answered }}</p>
+                    <p>Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</p>
+                    <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" 
+                    class="btn btn-secondary"
+                    onclick="document.getElementById('question-form-container').classList.add('hidden')">
+                Annuler
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if question %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
