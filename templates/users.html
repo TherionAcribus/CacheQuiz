@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gestion des utilisateurs</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                onclick="document.getElementById('user-form-container').classList.remove('hidden')"
+                hx-get="/user/new"
+                hx-target="#user-form-container"
+                hx-swap="innerHTML">
+            + Nouvel Utilisateur
+        </button>
+    </div>
+</div>
+
+<!-- Conteneur pour le formulaire (caché par défaut) -->
+<div id="user-form-container" class="hidden form-modal">
+    <!-- Le formulaire sera chargé ici via HTMX -->
+</div>
+
+<!-- Liste des utilisateurs -->
+<div id="users-list"
+     hx-get="/api/users"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement des utilisateurs...</div>
+</div>
+
+<style>
+    .hidden {
+        display: none;
+    }
+
+    .form-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+    .form-modal.hidden {
+        display: none;
+    }
+</style>
+{% endblock %}

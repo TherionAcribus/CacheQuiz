@@ -103,6 +103,39 @@ class SpecificTheme(db.Model):
         }
 
 
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Informations de base
+    username = db.Column(db.String(50), nullable=False, unique=True)  # Nom d'utilisateur unique
+    email = db.Column(db.String(120), nullable=True)  # Email optionnel
+    display_name = db.Column(db.String(100), nullable=False)  # Nom d'affichage
+    is_active = db.Column(db.Boolean, nullable=False, default=True)  # Utilisateur actif
+
+    # Relation inverse avec les questions
+    questions = db.relationship('Question', back_populates='author_user', lazy='dynamic')
+
+    def __repr__(self):
+        return f'<User {self.id}: {self.username} ({self.display_name})>'
+
+    def to_dict(self):
+        """Convertir l'utilisateur en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+            'display_name': self.display_name,
+            'is_active': self.is_active,
+            'question_count': self.questions.count(),
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
 class Question(db.Model):
     __tablename__ = 'questions'
     
@@ -113,8 +146,11 @@ class Question(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Informations de base
-    author = db.Column(db.String(100), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
+
+    # Relation avec l'auteur
+    author_user = db.relationship('User', back_populates='questions')
     
     # Réponses (stockées en JSON-like format, séparées par '|||')
     possible_answers = db.Column(db.Text, nullable=False)  # Format: "Réponse 1|||Réponse 2|||Réponse 3"
@@ -157,7 +193,8 @@ class Question(db.Model):
             'id': self.id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
-            'author': self.author,
+            'author_id': self.author_id,
+            'author_name': self.author_user.display_name if self.author_user else None,
             'question_text': self.question_text,
             'possible_answers': self.possible_answers.split('|||') if self.possible_answers else [],
             'answer_images': self.answer_images.split('|||') if self.answer_images else [],

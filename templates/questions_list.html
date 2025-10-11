@@ -46,7 +46,7 @@
         <div class="question-content">
             <h3>{{ question.question_text }}</h3>
             <div class="question-info">
-                <p><strong>Auteur:</strong> {{ question.author }}</p>
+                <p><strong>Auteur:</strong> {{ question.author_user.display_name if question.author_user else 'Auteur inconnu' }}</p>
                 {% if question.hint %}
                 <p><strong>Indice:</strong> {{ question.hint }}</p>
                 {% endif %}

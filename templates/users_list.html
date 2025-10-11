@@ -1,0 +1,152 @@
+{% if users %}
+<div class="users-grid">
+    {% for user in users %}
+    <div class="user-card">
+        <div class="user-header">
+            <div class="user-info">
+                <h3>{{ user.display_name }}</h3>
+                <span class="badge badge-username">@{{ user.username }}</span>
+                {% if user.is_active %}
+                <span class="badge badge-active">Actif</span>
+                {% else %}
+                <span class="badge badge-inactive">Inactif</span>
+                {% endif %}
+            </div>
+            <div class="user-actions">
+                <button class="btn-icon"
+                        type="button"
+                        onclick="document.getElementById('user-form-container').classList.remove('hidden')"
+                        hx-get="/user/{{ user.id }}/edit"
+                        hx-target="#user-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger"
+                        hx-delete="/api/user/{{ user.id }}"
+                        hx-target="#users-list"
+                        hx-confirm="Êtes-vous sûr de vouloir désactiver cet utilisateur ?"
+                        title="Désactiver">
+                    ❌
+                </button>
+            </div>
+        </div>
+
+        {% if user.email %}
+        <div class="user-contact">
+            <span class="email">📧 {{ user.email }}</span>
+        </div>
+        {% endif %}
+
+        <div class="user-stats">
+            <span class="badge badge-count">{{ user.questions.count() }} question(s)</span>
+        </div>
+
+        <div class="user-footer">
+            <small>Créé: {{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at }}</small>
+            <small>ID: {{ user.id }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-users">
+    <p>👥 Aucun utilisateur trouvé. Commencez par en créer un !</p>
+</div>
+{% endif %}
+
+<style>
+    .users-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .user-card {
+        background-color: var(--card-bg);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+    }
+
+    .user-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .user-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .user-info h3 {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+
+    .badge-username {
+        background-color: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.75rem;
+    }
+
+    .badge-active {
+        background-color: #c6f6d5;
+        color: #22543d;
+    }
+
+    .badge-inactive {
+        background-color: #fed7d7;
+        color: #742a2a;
+    }
+
+    .user-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .user-contact {
+        margin-bottom: 1rem;
+    }
+
+    .email {
+        font-size: 0.875rem;
+        color: var(--text-light);
+    }
+
+    .user-stats {
+        margin-bottom: 1rem;
+    }
+
+    .badge-count {
+        background-color: #bee3f8;
+        color: #2c5282;
+    }
+
+    .user-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+
+    .no-users {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-light);
+        font-size: 1.25rem;
+    }
+</style>

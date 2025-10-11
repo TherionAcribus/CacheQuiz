@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Question, BroadTheme, SpecificTheme
+from models import db, Question, BroadTheme, SpecificTheme, User
 from datetime import datetime
 import os
 
@@ -33,7 +33,8 @@ def new_question():
     """Formulaire pour créer une nouvelle question"""
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes)
+    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users)
 
 
 @app.route('/question/<int:question_id>')
@@ -49,7 +50,8 @@ def edit_question(question_id):
     question = Question.query.get_or_404(question_id)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes)
+    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users)
 
 
 @app.route('/api/question', methods=['POST'])
@@ -70,7 +72,7 @@ def create_question():
             i += 1
         
         question = Question(
-            author=data.get('author'),
+            author_id=int(data.get('author_id')),
             question_text=data.get('question_text'),
             possible_answers='|||'.join(possible_answers),
             answer_images='|||'.join(answer_images),
@@ -115,7 +117,7 @@ def update_question(question_id):
             i += 1
         
         # Mettre à jour les champs
-        question.author = data.get('author')
+        question.author_id = int(data.get('author_id'))
         question.question_text = data.get('question_text')
         question.possible_answers = '|||'.join(possible_answers)
         question.answer_images = '|||'.join(answer_images)
@@ -392,6 +394,104 @@ def get_specific_themes_for_broad_theme(broad_theme_id):
     else:
         specific_themes = []
     return render_template('specific_theme_options.html', specific_themes=specific_themes)
+
+
+# ===== Routes pour les utilisateurs =====
+
+@app.route('/users')
+def users_page():
+    """Page de gestion des utilisateurs"""
+    return render_template('users.html')
+
+
+@app.route('/api/users')
+def list_users():
+    """Retourner la liste des utilisateurs en HTML (pour HTMX)"""
+    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    return render_template('users_list.html', users=users)
+
+
+@app.route('/user/new')
+def new_user():
+    """Formulaire pour créer un nouvel utilisateur"""
+    return render_template('user_form.html', user=None)
+
+
+@app.route('/user/<int:user_id>/edit')
+def edit_user(user_id):
+    """Formulaire pour éditer un utilisateur"""
+    user = User.query.get_or_404(user_id)
+    return render_template('user_form.html', user=user)
+
+
+@app.route('/api/user', methods=['POST'])
+def create_user():
+    """Créer un nouvel utilisateur"""
+    try:
+        data = request.form
+
+        user = User(
+            username=data.get('username'),
+            email=data.get('email') or None,
+            display_name=data.get('display_name'),
+            is_active=data.get('is_active') == 'on'
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        return render_template('users_list.html', users=users)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/user/<int:user_id>', methods=['PUT', 'POST'])
+def update_user(user_id):
+    """Mettre à jour un utilisateur existant"""
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.form
+
+        # Mettre à jour les champs
+        user.username = data.get('username')
+        user.email = data.get('email') or None
+        user.display_name = data.get('display_name')
+        user.is_active = data.get('is_active') == 'on'
+
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        return render_template('users_list.html', users=users)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/user/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    """Désactiver un utilisateur (soft delete)"""
+    try:
+        user = User.query.get_or_404(user_id)
+
+        # Vérifier si l'utilisateur a des questions
+        question_count = user.questions.count()
+        if question_count > 0:
+            return f"Impossible de supprimer cet utilisateur : {question_count} question(s) lui appartiennent encore.", 400
+
+        # Soft delete : désactiver au lieu de supprimer
+        user.is_active = False
+        db.session.commit()
+
+        # Retourner la liste mise à jour
+        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        return render_template('users_list.html', users=users)
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
 
 
 if __name__ == '__main__':

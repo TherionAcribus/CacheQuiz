@@ -1,0 +1,107 @@
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2>{% if user %}Éditer l'utilisateur{% else %}Nouvel utilisateur{% endif %}</h2>
+        <button class="btn-close"
+                type="button"
+                onclick="document.getElementById('user-form-container').classList.add('hidden')">✕</button>
+    </div>
+
+    <form {% if user %}
+          hx-post="/api/user/{{ user.id }}"
+          {% else %}
+          hx-post="/api/user"
+          {% endif %}
+          hx-target="#users-list"
+          hx-swap="innerHTML"
+          hx-on::after-request="document.getElementById('user-form-container').classList.add('hidden')">
+
+        <div class="form-grid">
+            <!-- Colonne gauche -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="username">Nom d'utilisateur *</label>
+                    <input type="text"
+                           id="username"
+                           name="username"
+                           value="{{ user.username if user else '' }}"
+                           placeholder="nom_utilisateur"
+                           required
+                           pattern="[a-zA-Z0-9_]+"
+                           title="Lettres, chiffres et underscores uniquement">
+                    <small>Nom unique pour l'utilisateur (lettres, chiffres, _)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="display_name">Nom d'affichage *</label>
+                    <input type="text"
+                           id="display_name"
+                           name="display_name"
+                           value="{{ user.display_name if user else '' }}"
+                           placeholder="Prénom Nom"
+                           required>
+                    <small>Nom qui sera affiché dans l'interface</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           value="{{ user.email if user and user.email else '' }}"
+                           placeholder="email@exemple.com">
+                    <small>Email optionnel pour contacter l'utilisateur</small>
+                </div>
+            </div>
+
+            <!-- Colonne droite -->
+            <div class="form-column">
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox"
+                               name="is_active"
+                               {% if user and user.is_active or not user %}checked{% endif %}>
+                        Utilisateur actif
+                    </label>
+                    <small>Désactiver pour empêcher la création de nouvelles questions</small>
+                </div>
+
+                {% if user %}
+                <div class="form-info">
+                    <p><strong>Statistiques:</strong></p>
+                    <p>Questions créées: {{ user.questions.count() }}</p>
+                    <p>ID: {{ user.id }}</p>
+                    <p>Créé: {{ user.created_at.strftime('%d/%m/%Y %H:%M') if user.created_at }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button"
+                    class="btn btn-secondary"
+                    onclick="document.getElementById('user-form-container').classList.add('hidden')">
+                Annuler
+            </button>
+            <button type="submit" class="btn btn-primary">
+                {% if user %}Mettre à jour{% else %}Créer{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="email"] {
+        width: 100%;
+        padding: 0.625rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+
+    input[type="email"]:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+</style>

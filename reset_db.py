@@ -2,7 +2,7 @@
 Script pour réinitialiser complètement la base de données
 """
 from app import app
-from models import db, Question, BroadTheme, SpecificTheme
+from models import db, Question, BroadTheme, SpecificTheme, User
 import os
 
 def reset_database():
@@ -233,11 +233,51 @@ def reset_database():
         db.session.commit()
         print(f"[OK] {len(sample_specific_themes)} sous-themes crees")
 
+        # Créer les utilisateurs d'exemple
+        print("\n[UTILISATEURS] Creation des utilisateurs d'exemple...")
+        sample_users = [
+            {
+                'username': 'admin',
+                'display_name': 'Administrateur',
+                'email': 'admin@geocaching-quiz.com',
+                'is_active': True
+            },
+            {
+                'username': 'geocacheur_pro',
+                'display_name': 'Jean Dupont',
+                'email': 'jean.dupont@email.com',
+                'is_active': True
+            },
+            {
+                'username': 'cacher_lover',
+                'display_name': 'Marie Martin',
+                'email': 'marie.martin@email.com',
+                'is_active': True
+            },
+            {
+                'username': 'cache_expert',
+                'display_name': 'Pierre Durand',
+                'email': 'pierre.durand@email.com',
+                'is_active': True
+            }
+        ]
+
+        users_created = {}
+        for user_data in sample_users:
+            user = User(**user_data)
+            db.session.add(user)
+            db.session.flush()
+            users_created[user_data['username']] = user.id
+            print(f"   [CREE] {user_data['display_name']} (@{user_data['username']})")
+
+        db.session.commit()
+        print(f"[OK] {len(sample_users)} utilisateurs crees")
+
         # Créer des questions d'exemple
         print("\n[QUESTIONS] Creation des questions d'exemple...")
         sample_questions = [
             {
-                'author': 'Admin',
+                'author_id': users_created['admin'],
                 'question_text': "Quelle est la taille d'un cache 'Micro'?",
                 'possible_answers': "Plus petit qu'un film 35mm|||De la taille d'un film 35mm|||Entre un film 35mm et une boîte à chaussures|||Plus grand qu'une boîte à chaussures",
                 'answer_images': "|||",
@@ -251,7 +291,7 @@ def reset_database():
                 'is_published': True
             },
             {
-                'author': 'Admin',
+                'author_id': users_created['geocacheur_pro'],
                 'question_text': "Qu'est-ce qu'un 'FTF' en géocaching?",
                 'possible_answers': "First To Find (Premier à trouver)|||Fast To Find (Rapide à trouver)|||Far To Find (Loin à trouver)|||Failed To Find (Échec de recherche)",
                 'answer_images': "|||",
@@ -265,7 +305,7 @@ def reset_database():
                 'is_published': True
             },
             {
-                'author': 'Admin',
+                'author_id': users_created['cacher_lover'],
                 'question_text': "Quel type de cache nécessite de résoudre une énigme avant de connaître les coordonnées?",
                 'possible_answers': "Traditional Cache|||Multi-Cache|||Mystery Cache|||EarthCache",
                 'answer_images': "|||",
