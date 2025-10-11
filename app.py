@@ -164,12 +164,13 @@ def search_questions():
     query = request.args.get('q', '').strip()
     
     if query:
-        questions = Question.query.join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).filter(
+        questions = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True).filter(
             db.or_(
                 Question.question_text.contains(query),
-                Question.author.contains(query),
+                User.display_name.contains(query),
+                User.username.contains(query),
                 BroadTheme.name.contains(query),
-                Question.specific_theme.contains(query)
+                SpecificTheme.name.contains(query)
             )
         ).order_by(Question.updated_at.desc()).all()
     else:
