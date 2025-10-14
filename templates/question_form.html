@@ -45,7 +45,6 @@
                     <label>Réponses possibles *</label>
                     <div id="answers-container">
                         {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
-                        {% set images = question.answer_images.split('|||') if question and question.answer_images else ['', '', '', ''] %}
                         {% for i in range(1, 5) %}
                         <div class="answer-input-group">
                             <span class="answer-number">{{ i }}.</span>
@@ -53,11 +52,23 @@
                                    name="answer_{{ i }}" 
                                    placeholder="Réponse {{ i }}"
                                    value="{{ answers[i-1] if i <= answers|length else '' }}">
-                            <input type="text" 
-                                   name="answer_image_{{ i }}" 
-                                   placeholder="URL image (optionnel)"
-                                   class="answer-image"
-                                   value="{{ images[i-1] if i <= images|length else '' }}">
+                            <select name="answer_image_id_{{ i }}" class="answer-image-select">
+                                <option value="">-- Pas d'image --</option>
+                                {% for img in images %}
+                                <option value="{{ img.id }}"
+                                    {% set is_selected = false %}
+                                    {% if question and question.answer_image_links %}
+                                        {% for link in question.answer_image_links %}
+                                            {% if link.answer_index == i and link.image_id == img.id %}
+                                                {% set is_selected = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if is_selected %}selected{% endif %}>
+                                    {{ img.title }} ({{ img.filename }})
+                                </option>
+                                {% endfor %}
+                            </select>
                         </div>
                         {% endfor %}
                     </div>
@@ -68,7 +79,10 @@
                                make a <div.answer-input-group/>
                                put `<span class='answer-number'>${count}.</span>
                                     <input type='text' name='answer_${count}' placeholder='Réponse ${count}'>
-                                    <input type='text' name='answer_image_${count}' placeholder='URL image (optionnel)' class='answer-image'>`
+                                    <select name='answer_image_id_${count}' class='answer-image-select'>
+                                        <option value=''>-- Pas d'image --</option>
+                                        {% for img in images %}<option value='{{ img.id }}'>{{ img.title }} ({{ img.filename }})</option>{% endfor %}
+                                    </select>`
                                     into it
                                put it at the end of #answers-container">
                         + Ajouter une réponse
@@ -156,6 +170,21 @@
                     <small>
                         <a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a>
                     </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Images complémentaires de la question</label>
+                    <div class="images-grid-select">
+                        {% for img in images %}
+                        <label class="image-checkbox">
+                            <input type="checkbox" name="question_image_ids" value="{{ img.id }}"
+                                   {% if question and img in question.images %}checked{% endif %}>
+                            <span class="thumb"><img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}"></span>
+                            <span class="title">{{ img.title }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
                 
                 <div class="form-group">
@@ -277,5 +306,10 @@ document.addEventListener('DOMContentLoaded', function() {
         height: 1rem;
         cursor: pointer;
     }
+    .images-grid-select{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;max-height:240px;overflow:auto;border:2px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--bg-color)}
+    .image-checkbox{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-radius:.375rem;cursor:pointer}
+    .image-checkbox:hover{background:var(--card-bg)}
+    .image-checkbox .thumb{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--border-color);border-radius:.25rem;overflow:hidden}
+    .image-checkbox img{max-width:100%;max-height:100%;object-fit:cover}
 </style>
 

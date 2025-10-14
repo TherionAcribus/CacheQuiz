@@ -10,6 +10,12 @@ question_countries = db.Table('question_countries',
     db.Column('country_id', db.Integer, db.ForeignKey('countries.id'), primary_key=True)
 )
 
+# Table d'association many-to-many entre Question et Image (images complémentaires de la question)
+question_images = db.Table('question_images',
+    db.Column('question_id', db.Integer, db.ForeignKey('questions.id'), primary_key=True),
+    db.Column('image_id', db.Integer, db.ForeignKey('images.id'), primary_key=True)
+)
+
 
 class BroadTheme(db.Model):
     __tablename__ = 'broad_themes'
@@ -208,7 +214,8 @@ class Question(db.Model):
     
     # Réponses (stockées en JSON-like format, séparées par '|||')
     possible_answers = db.Column(db.Text, nullable=False)  # Format: "Réponse 1|||Réponse 2|||Réponse 3"
-    answer_images = db.Column(db.Text)  # URLs des images, séparées par '|||'
+    # answer_images est conservé pour compatibilité, mais remplacé par AnswerImageLink
+    answer_images = db.Column(db.Text)
     correct_answer = db.Column(db.String(10), nullable=False)  # Ex: "1", "2", "3", etc.
     detailed_answer = db.Column(db.Text)
     hint = db.Column(db.Text)
@@ -226,6 +233,18 @@ class Question(db.Model):
                                 secondary=question_countries,
                                 back_populates='questions',
                                 lazy='subquery')
+    
+    # Images complémentaires liées à la question (many-to-many)
+    images = db.relationship('ImageAsset',
+                             secondary=question_images,
+                             back_populates='questions',
+                             lazy='subquery')
+    
+    # Images associées aux réponses (one-to-many via table dédiée)
+    answer_image_links = db.relationship('AnswerImageLink',
+                                         back_populates='question',
+                                         cascade='all, delete-orphan',
+                                         lazy='subquery')
     
     # Difficulté
     difficulty_level = db.Column(db.Integer)  # 1-5 par exemple
@@ -256,7 +275,8 @@ class Question(db.Model):
             'author_name': self.author_user.display_name if self.author_user else None,
             'question_text': self.question_text,
             'possible_answers': self.possible_answers.split('|||') if self.possible_answers else [],
-            'answer_images': self.answer_images.split('|||') if self.answer_images else [],
+            'answer_images_legacy': self.answer_images.split('|||') if self.answer_images else [],
+            'answer_image_ids': [link.image_id for link in self.answer_image_links],
             'correct_answer': self.correct_answer,
             'detailed_answer': self.detailed_answer,
             'hint': self.hint,
@@ -271,4 +291,62 @@ class Question(db.Model):
             'translation_id': self.translation_id,
             'is_published': self.is_published
         }
+
+
+class ImageAsset(db.Model):
+    __tablename__ = 'images'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Métadonnées
+    title = db.Column(db.String(200), nullable=False)
+    filename = db.Column(db.String(255), nullable=False, unique=True)  # nom de fichier stocké
+    mime_type = db.Column(db.String(100))
+    size_bytes = db.Column(db.Integer)
+    alt_text = db.Column(db.String(255))
+
+    # Relations inverses
+    questions = db.relationship('Question',
+                                secondary=question_images,
+                                back_populates='images',
+                                lazy='dynamic')
+
+    def __repr__(self):
+        return f"<ImageAsset {self.id}: {self.title} ({self.filename})>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'filename': self.filename,
+            'mime_type': self.mime_type,
+            'size_bytes': self.size_bytes,
+            'alt_text': self.alt_text,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class AnswerImageLink(db.Model):
+    __tablename__ = 'answer_image_links'
+
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    answer_index = db.Column(db.Integer, nullable=False)  # 1,2,3,...
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'), nullable=False)
+
+    # Contraintes d'unicité: une seule image par index de réponse pour une question
+    __table_args__ = (
+        db.UniqueConstraint('question_id', 'answer_index', name='uq_question_answer_index'),
+    )
+
+    # Relations
+    question = db.relationship('Question', back_populates='answer_image_links')
+    image = db.relationship('ImageAsset')
+
+    def __repr__(self):
+        return f"<AnswerImageLink q={self.question_id} idx={self.answer_index} img={self.image_id}>"
 

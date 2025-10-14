@@ -1,0 +1,41 @@
+{% if images %}
+<div class="images-grid">
+    {% for image in images %}
+    <div class="image-card">
+        <div class="image-header">
+            <div class="image-info">
+                <h3>{{ image.title }}</h3>
+                <span class="badge">{{ image.mime_type or 'fichier' }}</span>
+                <span class="badge">{{ image.size_bytes or 0 }} o</span>
+            </div>
+            <div class="image-actions">
+                <button class="btn-icon" type="button"
+                        onclick="document.getElementById('image-form-container').classList.remove('hidden')"
+                        hx-get="/image/{{ image.id }}/edit" hx-target="#image-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
+                <button class="btn-icon btn-danger" hx-delete="/api/image/{{ image.id }}" hx-target="#images-list" hx-confirm="Supprimer cette image ?" title="Supprimer">🗑️</button>
+            </div>
+        </div>
+        <div class="image-preview">
+            <img src="/uploads/{{ image.filename }}" alt="{{ image.alt_text or image.title }}" />
+        </div>
+        <div class="image-footer">
+            <small>{{ image.filename }}</small>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="no-images"><p>Aucune image pour le moment.</p></div>
+{% endif %}
+
+<style>
+    .images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+    .image-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.75rem;padding:1rem;box-shadow:var(--shadow)}
+    .image-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+    .image-info{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+    .image-preview{display:flex;align-items:center;justify-content:center;background:var(--bg-color);border-radius:.5rem;overflow:hidden;aspect-ratio:4/3;margin:.5rem 0;border:1px dashed var(--border-color)}
+    .image-preview img{max-width:100%;max-height:100%;object-fit:contain}
+    .image-actions{display:flex;gap:.25rem}
+    .no-images{text-align:center;padding:2rem;color:var(--text-light)}
+</style>
+
+

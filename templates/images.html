@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gestion des images</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                onclick="document.getElementById('image-form-container').classList.remove('hidden')"
+                hx-get="/image/new"
+                hx-target="#image-form-container"
+                hx-swap="innerHTML">
+            + Nouvelle image
+        </button>
+    </div>
+</div>
+
+<div id="image-form-container" class="hidden form-modal"></div>
+
+<div class="search-bar">
+    <input type="text" name="search" placeholder="Rechercher une image..."
+           hx-get="/api/images" hx-trigger="keyup changed delay:300ms"
+           hx-target="#images-list" hx-include="[name='search']">
+    </input>
+</div>
+
+<div id="images-list" hx-get="/api/images" hx-trigger="load" hx-swap="innerHTML">
+    <div class="loading">Chargement des images...</div>
+    </div>
+
+<style>
+    .hidden{display:none}
+    .form-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem;overflow-y:auto}
+    .form-modal.hidden{display:none}
+    .search-bar{margin:2rem 0}
+    .search-bar input{width:100%;max-width:500px;padding:.75rem 1rem;border:2px solid var(--border-color);border-radius:.5rem;font-size:1rem}
+    
+</style>
+{% endblock %}
+
+

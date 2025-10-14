@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from models import db, Question, BroadTheme, SpecificTheme, User, Country
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink
 from datetime import datetime
 import os
 
@@ -7,12 +7,151 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///geocaching_quiz.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static', 'uploads')
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
 
 # Créer les tables
 with app.app_context():
     db.create_all()
+# ================== Fichiers uploadés (serveur) ==================
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+# ================== Gestion des Images ==================
+
+@app.route('/images')
+def images_page():
+    return render_template('images.html')
+
+
+@app.route('/api/images')
+def list_images_api():
+    search = request.args.get('search', '').strip()
+    query = ImageAsset.query
+    if search:
+        query = query.filter(ImageAsset.title.like(f'%{search}%'))
+    images = query.order_by(ImageAsset.created_at.desc()).all()
+    return render_template('images_list.html', images=images)
+
+
+@app.route('/image/new')
+def new_image():
+    return render_template('image_form.html', image=None)
+
+
+@app.route('/image/<int:image_id>/edit')
+def edit_image(image_id: int):
+    image = ImageAsset.query.get_or_404(image_id)
+    return render_template('image_form.html', image=image)
+
+
+def _secure_filename(original_name: str) -> str:
+    # Sécuriser le nom de fichier simplement (remplacer espaces, enlever caractères spéciaux)
+    base = os.path.basename(original_name)
+    base = base.replace(' ', '_')
+    keep = "-_.()abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    safe = ''.join(ch for ch in base if ch in keep)
+    if not safe:
+        safe = f'image_{int(datetime.utcnow().timestamp())}.bin'
+    return safe
+
+
+@app.route('/api/image', methods=['POST'])
+def create_image():
+    try:
+        title = request.form.get('title', '').strip()
+        alt_text = request.form.get('alt_text', '').strip()
+        file = request.files.get('file')
+        if not title:
+            return "Titre requis", 400
+        if not file:
+            return "Fichier requis", 400
+
+        filename = _secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        # Déduire l'unicité en cas de collision
+        if os.path.exists(filepath):
+            name, ext = os.path.splitext(filename)
+            filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        file.save(filepath)
+        size_bytes = os.path.getsize(filepath)
+        mime_type = file.mimetype
+
+        image = ImageAsset(title=title, filename=filename, mime_type=mime_type, size_bytes=size_bytes, alt_text=alt_text)
+        db.session.add(image)
+        db.session.commit()
+
+        images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
+        return render_template('images_list.html', images=images)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/image/<int:image_id>', methods=['POST', 'PUT'])
+def update_image(image_id: int):
+    try:
+        image = ImageAsset.query.get_or_404(image_id)
+        title = request.form.get('title', '').strip()
+        alt_text = request.form.get('alt_text', '').strip()
+        file = request.files.get('file')
+
+        if title:
+            image.title = title
+        image.alt_text = alt_text
+
+        if file:
+            filename = _secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                name, ext = os.path.splitext(filename)
+                filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            image.filename = filename
+            image.mime_type = file.mimetype
+            image.size_bytes = os.path.getsize(filepath)
+            image.updated_at = datetime.utcnow()
+
+        db.session.commit()
+        images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
+        return render_template('images_list.html', images=images)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/image/<int:image_id>', methods=['DELETE'])
+def delete_image(image_id: int):
+    try:
+        image = ImageAsset.query.get_or_404(image_id)
+        # Empêcher la suppression si utilisée par des réponses ou questions
+        if image.questions.count() > 0 or AnswerImageLink.query.filter_by(image_id=image.id).count() > 0:
+            return "Impossible de supprimer: image utilisée.", 400
+
+        # Supprimer le fichier physique si présent
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception:
+            pass
+
+        db.session.delete(image)
+        db.session.commit()
+
+        images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
+        return render_template('images_list.html', images=images)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
 
 
 @app.route('/')
@@ -35,7 +174,8 @@ def new_question():
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
     countries = Country.query.order_by(Country.name).all()
-    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users, countries=countries)
+    images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
+    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
 
 
 @app.route('/question/<int:question_id>')
@@ -53,7 +193,8 @@ def edit_question(question_id):
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
     countries = Country.query.order_by(Country.name).all()
-    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users, countries=countries)
+    images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
+    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
 
 
 @app.route('/api/question', methods=['POST'])
@@ -70,7 +211,15 @@ def create_question():
             answer = data.get(f'answer_{i}', '').strip()
             if answer:
                 possible_answers.append(answer)
-                answer_images.append(data.get(f'answer_image_{i}', '').strip())
+                # Lier éventuellement une image à cette réponse
+                answer_image_id = data.get(f'answer_image_id_{i}', '').strip()
+                if answer_image_id:
+                    try:
+                        answer_image_id_int = int(answer_image_id)
+                        # On stockera via AnswerImageLink juste après création de la question
+                        answer_images.append(str(answer_image_id_int))
+                    except Exception:
+                        pass
             i += 1
         
         question = Question(
@@ -93,8 +242,24 @@ def create_question():
         if country_ids:
             countries = Country.query.filter(Country.id.in_(country_ids)).all()
             question.countries = countries
+
+        # Gérer les images de la question (relation many-to-many)
+        question_image_ids = request.form.getlist('question_image_ids')
+        if question_image_ids:
+            imgs = ImageAsset.query.filter(ImageAsset.id.in_(question_image_ids)).all()
+            question.images = imgs
         
         db.session.add(question)
+        db.session.flush()
+
+        # Gérer les liens image->réponse (AnswerImageLink)
+        idx = 1
+        for token in answer_images:
+            token = token.strip()
+            if token.isdigit():
+                db.session.add(AnswerImageLink(question_id=question.id, answer_index=idx, image_id=int(token)))
+            idx += 1
+
         db.session.commit()
         
         # Retourner la liste mise à jour
@@ -120,7 +285,9 @@ def update_question(question_id):
             answer = data.get(f'answer_{i}', '').strip()
             if answer:
                 possible_answers.append(answer)
-                answer_images.append(data.get(f'answer_image_{i}', '').strip())
+                answer_image_id = data.get(f'answer_image_id_{i}', '').strip()
+                if answer_image_id:
+                    answer_images.append(answer_image_id)
             i += 1
         
         # Mettre à jour les champs
@@ -145,7 +312,25 @@ def update_question(question_id):
             question.countries = countries
         else:
             question.countries = []
+
+        # Gérer les images de la question (relation many-to-many)
+        question_image_ids = request.form.getlist('question_image_ids')
+        if question_image_ids:
+            imgs = ImageAsset.query.filter(ImageAsset.id.in_(question_image_ids)).all()
+            question.images = imgs
+        else:
+            question.images = []
         
+        # Réinitialiser les liens image->réponse
+        AnswerImageLink.query.filter_by(question_id=question.id).delete()
+        db.session.flush()
+        idx = 1
+        for token in answer_images:
+            token = token.strip()
+            if token.isdigit():
+                db.session.add(AnswerImageLink(question_id=question.id, answer_index=idx, image_id=int(token)))
+            idx += 1
+
         db.session.commit()
         
         # Retourner la liste mise à jour

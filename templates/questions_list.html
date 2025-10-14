@@ -67,10 +67,24 @@
                     {% for answer in answers %}
                     <li {% if loop.index == question.correct_answer|int %}class="correct-answer"{% endif %}>
                         {{ answer }}
+                        {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
+                        {% if link and link[0] and link[0].image %}
+                        <img src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}" style="max-width:80px; max-height:80px; object-fit:contain; margin-left:.5rem; vertical-align:middle;" />
+                        {% endif %}
                         {% if loop.index == question.correct_answer|int %}✓{% endif %}
                     </li>
                     {% endfor %}
                 </ul>
+            </div>
+            {% endif %}
+            {% if question.images %}
+            <div class="question-images">
+                <strong>Images:</strong>
+                <div class="image-row">
+                    {% for img in question.images %}
+                    <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}" style="max-width:100px; max-height:100px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem; margin-right:.5rem;" />
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
             
