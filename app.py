@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, send_from_directory
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink
 from datetime import datetime
 import os
@@ -800,6 +800,108 @@ def delete_country(country_id):
         countries = Country.query.order_by(Country.name).all()
         return render_template('countries_list.html', countries=countries)
     
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+# ============ Interface de Quiz (Jouer) ============
+
+def _apply_quiz_filters(query, params):
+    """Appliquer les filtres du quiz (thèmes, pays, difficulté) au query de base."""
+    broad_theme_id = (params.get('broad_theme_id') or '').strip()
+    if broad_theme_id.isdigit():
+        query = query.filter(Question.broad_theme_id == int(broad_theme_id))
+
+    specific_theme_id = (params.get('specific_theme_id') or '').strip()
+    if specific_theme_id.isdigit():
+        query = query.filter(Question.specific_theme_id == int(specific_theme_id))
+
+    country_id = (params.get('country_id') or '').strip()
+    if country_id.isdigit():
+        query = query.filter(Question.countries.any(Country.id == int(country_id)))
+
+    difficulty_level = (params.get('difficulty_level') or '').strip()
+    if difficulty_level.isdigit():
+        query = query.filter(Question.difficulty_level == int(difficulty_level))
+
+    return query
+
+
+@app.route('/play')
+def play_quiz():
+    """Page pour jouer au quiz avec filtres simples."""
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    countries = Country.query.order_by(Country.name).all()
+    return render_template('play.html', themes=themes, specific_themes=specific_themes, countries=countries)
+
+
+@app.route('/api/quiz/next')
+def next_quiz_question():
+    """Retourne une question aléatoire (selon filtres) pour le quiz."""
+    try:
+        params = request.args
+        history_raw = (params.get('history') or '').strip()
+        history_ids = []
+        if history_raw:
+            for token in history_raw.split(','):
+                token = token.strip()
+                if token.isdigit():
+                    history_ids.append(int(token))
+
+        query = Question.query.filter(Question.is_published.is_(True))
+        query = _apply_quiz_filters(query, params)
+        if history_ids:
+            query = query.filter(~Question.id.in_(history_ids))
+
+        # SQLite: random(), PostgreSQL: RANDOM()
+        question = query.order_by(db.func.random()).first()
+        return render_template('quiz_question.html', question=question, history=history_raw)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz/answer', methods=['POST'])
+def submit_quiz_answer():
+    """Valider la réponse de l'utilisateur, mettre à jour les stats et retourner le résultat."""
+    try:
+        question_id_raw = (request.form.get('question_id') or '').strip()
+        selected_answer = (request.form.get('selected_answer') or '').strip()
+        history_raw = (request.form.get('history') or '').strip()
+
+        if not question_id_raw.isdigit():
+            return "Identifiant de question invalide", 400
+
+        question = Question.query.get_or_404(int(question_id_raw))
+        correct_value = (question.correct_answer or '').strip()
+        is_correct = selected_answer == correct_value
+
+        # Mettre à jour les statistiques de la question
+        question.times_answered = (question.times_answered or 0) + 1
+        if is_correct:
+            question.success_count = (question.success_count or 0) + 1
+        question.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Mettre à jour l'historique côté client (ajouter la question actuelle)
+        history_ids = []
+        if history_raw:
+            for token in history_raw.split(','):
+                token = token.strip()
+                if token.isdigit():
+                    history_ids.append(int(token))
+        if question.id not in history_ids:
+            history_ids.append(question.id)
+        next_history = ','.join(str(i) for i in history_ids)
+
+        return render_template(
+            'quiz_result.html',
+            question=question,
+            is_correct=is_correct,
+            selected=selected_answer,
+            history=next_history
+        )
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 

@@ -100,7 +100,7 @@
             <small>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</small>
             <small>Modifié: {{ question.updated_at.strftime('%d/%m/%Y %H:%M') if question.updated_at }}</small>
             {% if question.times_answered > 0 %}
-            <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.times_answered }} réponses)</small>
+            <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.success_count }}/{{ question.times_answered }})</small>
             {% endif %}
         </div>
     </div>

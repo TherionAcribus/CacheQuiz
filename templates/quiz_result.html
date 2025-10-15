@@ -1,0 +1,66 @@
+<div class="quiz-result-card">
+    <div class="result-status {% if is_correct %}ok{% else %}ko{% endif %}">
+        {% if is_correct %}
+        ✅ Bonne réponse !
+        {% else %}
+        ❌ Mauvaise réponse.
+        {% endif %}
+    </div>
+
+    <div class="result-question">
+        <strong>Question:</strong> {{ question.question_text }}
+    </div>
+
+    <div class="result-answers">
+        {% set answers = question.possible_answers.split('|||') %}
+        <ul>
+            {% for answer in answers %}
+            <li class="{% if loop.index == question.correct_answer|int %}correct{% endif %}">
+                <span class="num">{{ loop.index }}.</span>
+                <span>{{ answer }}</span>
+                {% if loop.index == selected|int %}
+                <span class="you">(votre choix)</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {% if question.detailed_answer %}
+    <div class="result-explain">
+        <strong>Explication:</strong>
+        <p>{{ question.detailed_answer }}</p>
+    </div>
+    {% endif %}
+
+    <div class="result-actions">
+        <button class="btn" type="button"
+                hx-get="/api/quiz/next"
+                hx-target="#quiz-stage"
+                hx-swap="innerHTML"
+                hx-vals='{"history": "{{ history }}"}'
+                hx-include="#quiz-filters-form">
+            Question suivante
+        </button>
+        <button class="btn btn-secondary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Changer les filtres</button>
+    </div>
+
+    <div class="result-stats">
+        <small>Répondu: {{ question.times_answered }} fois · Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</small>
+    </div>
+</div>
+
+<style>
+    .quiz-result-card{border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg);padding:1rem}
+    .result-status{font-weight:700;margin-bottom:.5rem}
+    .result-status.ok{color: #065f46}
+    .result-status.ko{color: #7f1d1d}
+    .result-answers ul{list-style:none;padding:0;margin:.5rem 0}
+    .result-answers li{display:flex;gap:.5rem;align-items:center;padding:.25rem .5rem;border-radius:.25rem}
+    .result-answers li.correct{background: #ecfdf5}
+    .result-answers .num{font-weight:600}
+    .result-answers .you{color: var(--muted-color); margin-left:.5rem}
+    .result-actions{display:flex;gap:.5rem;margin-top:.75rem}
+</style>
+
+

@@ -1,0 +1,65 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Jouer au quiz</h2>
+</div>
+
+<div class="quiz-filters">
+    <form id="quiz-filters-form" class="filters-grid">
+        <select name="broad_theme_id" id="play_broad_theme_id">
+            <option value="">Thème large (tous)</option>
+            {% for theme in themes %}
+            <option value="{{ theme.id }}">{% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="specific_theme_id" id="play_specific_theme_id">
+            <option value="">Sous-thème (tous)</option>
+            {% for st in specific_themes %}
+            <option value="{{ st.id }}">{% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</option>
+            {% endfor %}
+        </select>
+
+        <select name="country_id" id="play_country_id">
+            <option value="">Pays (tous)</option>
+            {% for c in countries %}
+            <option value="{{ c.id }}">{% if c.flag %}{{ c.flag }} {% endif %}{{ c.name }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="difficulty_level" id="play_difficulty">
+            <option value="">Difficulté (toutes)</option>
+            <option value="1">1 - Très facile</option>
+            <option value="2">2 - Facile</option>
+            <option value="3">3 - Moyen</option>
+            <option value="4">4 - Difficile</option>
+            <option value="5">5 - Très difficile</option>
+        </select>
+
+        <button class="btn btn-primary" type="button"
+                hx-get="/api/quiz/next"
+                hx-target="#quiz-stage"
+                hx-include="#quiz-filters-form"
+                hx-swap="innerHTML"
+                hx-vals='{"history": ""}'>
+            Démarrer
+        </button>
+    </form>
+</div>
+
+<div id="quiz-stage" class="quiz-stage">
+    <div class="placeholder">Sélectionnez vos filtres et cliquez sur "Démarrer".</div>
+    <div class="placeholder small">Les questions sont tirées au hasard parmi celles publiées.</div>
+    <div class="placeholder small">L'historique évite les répétitions pendant la session.</div>
+    <div class="placeholder small">Nous pourrons ajouter le scoring et la progression ensuite.</div>
+    <style>
+        .placeholder { color: var(--muted-color); margin: .25rem 0; }
+        .placeholder.small { font-size: .9rem; }
+        .quiz-stage { margin-top: 1rem; }
+        .filters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; align-items: center; }
+    </style>
+</div>
+{% endblock %}
+
+

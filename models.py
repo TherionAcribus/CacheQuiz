@@ -250,7 +250,7 @@ class Question(db.Model):
     difficulty_level = db.Column(db.Integer)  # 1-5 par exemple
     
     # Statistiques
-    success_rate = db.Column(db.Float, default=0.0)  # Pourcentage de réussite
+    success_count = db.Column(db.Integer, default=0)  # Nombre de succès
     times_answered = db.Column(db.Integer, default=0)  # Nombre de fois répondue
     
     # Traduction et publication
@@ -258,10 +258,17 @@ class Question(db.Model):
     is_published = db.Column(db.Boolean, default=False)
     
     # Relation pour les traductions
-    translations = db.relationship('Question', 
+    translations = db.relationship('Question',
                                    backref=db.backref('original', remote_side=[id]),
                                    foreign_keys=[translation_id])
-    
+
+    @property
+    def success_rate(self):
+        """Calcule le taux de succès en pourcentage"""
+        if self.times_answered == 0:
+            return 0.0
+        return (self.success_count / self.times_answered) * 100.0
+
     def __repr__(self):
         return f'<Question {self.id}: {self.question_text[:50]}...>'
     
@@ -286,6 +293,7 @@ class Question(db.Model):
             'specific_theme_name': self.specific_theme_obj.name if self.specific_theme_obj else None,
             'countries': [{'id': c.id, 'name': c.name, 'code': c.code, 'flag': c.flag} for c in self.countries],
             'difficulty_level': self.difficulty_level,
+            'success_count': self.success_count,
             'success_rate': self.success_rate,
             'times_answered': self.times_answered,
             'translation_id': self.translation_id,

@@ -1,0 +1,68 @@
+{% if not question %}
+<div class="quiz-empty">
+    <p>Aucune question disponible avec ces filtres. Essayez d'élargir la recherche.</p>
+    <button class="btn" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Modifier les filtres</button>
+    <style>.quiz-empty{padding:1rem;border:2px dashed var(--border-color);border-radius:.5rem;color:var(--muted-color)}</style>
+{% else %}
+<div class="quiz-card">
+    <div class="quiz-header">
+        {% if question.theme %}
+        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+        </span>
+        {% endif %}
+        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+    </div>
+    <div class="quiz-body">
+        <h3 class="quiz-question">{{ question.question_text }}</h3>
+        {% if question.images %}
+        <div class="quiz-images">
+            {% for img in question.images %}
+            <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% set answers = question.possible_answers.split('|||') %}
+        <form class="answers-list" hx-post="/api/quiz/answer" hx-target="#quiz-stage" hx-swap="innerHTML">
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            <input type="hidden" name="history" value="{{ history or '' }}">
+            {% for answer in answers %}
+            <label class="answer-item">
+                <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
+                <span class="answer-index">{{ loop.index }}.</span>
+                <span class="answer-text">{{ answer }}</span>
+                {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
+                {% if link and link[0] and link[0].image %}
+                <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}">
+                {% endif %}
+            </label>
+            {% endfor %}
+            <div class="quiz-actions">
+                <button class="btn btn-primary" type="submit">Valider</button>
+            </div>
+        </form>
+    </div>
+    {% if question.hint %}
+    <div class="quiz-hint"><strong>Indice:</strong> {{ question.hint }}</div>
+    {% endif %}
+</div>
+
+<style>
+    .quiz-card{border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg);padding:1rem}
+    .quiz-header{display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center}
+    .quiz-question{margin:.5rem 0 1rem}
+    .answers-list{display:flex;flex-direction:column;gap:.5rem}
+    .answer-item{display:flex;align-items:center;gap:.5rem;padding:.5rem;border:1px solid var(--border-color);border-radius:.375rem;cursor:pointer}
+    .answer-item:hover{background:var(--bg-color)}
+    .answer-index{font-weight:600}
+    .answer-thumb{max-width:56px;max-height:56px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem;margin-left:auto}
+    .quiz-images{display:flex;gap:.5rem;margin-bottom:.5rem}
+    .quiz-images img{max-width:120px;max-height:120px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem}
+    .quiz-hint{margin-top:.5rem;color:var(--muted-color)}
+    .quiz-actions{margin-top:.75rem}
+    .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--border-color);font-size:.85rem}
+}</style>
+{% endif %}
+
+

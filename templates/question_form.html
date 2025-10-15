@@ -221,6 +221,7 @@
                 <div class="form-info">
                     <p><strong>Statistiques:</strong></p>
                     <p>Réponses: {{ question.times_answered }}</p>
+                    <p>Succès: {{ question.success_count }}/{{ question.times_answered }}</p>
                     <p>Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</p>
                     <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
                 </div>

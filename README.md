@@ -61,8 +61,8 @@ La table **Questions** contient les champs suivants :
 | `specific_theme` | String | Thématique précise (ex: Reviewers, GPS) |
 | `country` | String | Pays spécifique si applicable |
 | `difficulty_level` | Integer | Niveau de difficulté (1-5) |
-| `success_rate` | Float | Pourcentage de réussite |
-| `times_answered` | Integer | Nombre de fois répondue |
+| `success_count` | Integer | Nombre de réponses correctes |
+| `times_answered` | Integer | Nombre total de réponses |
 | `translation_id` | Integer | ID de la question dans une autre langue |
 | `is_published` | Boolean | Statut de publication |
 
