@@ -3,6 +3,7 @@
 {% block content %}
 <div class="page-header">
     <h2>Jouer au quiz{% if rule_set %} - {{ rule_set.name }}{% endif %}</h2>
+    <div id="auth-widget-inline" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget-inline" hx-swap="outerHTML"></div>
     {% if rule_set %}
     <div class="rule-set-info">
         <p><strong>Set de règles actif:</strong> {{ rule_set.name }}</p>

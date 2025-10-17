@@ -130,6 +130,12 @@ class User(db.Model):
     email = db.Column(db.String(120), nullable=True)  # Email optionnel
     display_name = db.Column(db.String(100), nullable=False)  # Nom d'affichage
     is_active = db.Column(db.Boolean, nullable=False, default=True)  # Utilisateur actif
+    # Authentification (optionnelle): si non défini, l'utilisateur peut jouer via pseudo sans mot de passe
+    password_hash = db.Column(db.String(255), nullable=True)
+    # Rôle basique
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    # Préférences utilisateur sérialisées (JSON)
+    preferences_json = db.Column(db.Text, nullable=True)
 
     # Relation inverse avec les questions
     questions = db.relationship('Question', back_populates='author_user', lazy='dynamic')
@@ -145,9 +151,23 @@ class User(db.Model):
             'email': self.email,
             'display_name': self.display_name,
             'is_active': self.is_active,
+            'is_admin': self.is_admin,
             'question_count': self.questions.count(),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+    # Préférences (helpers)
+    def get_preferences(self):
+        try:
+            return json.loads(self.preferences_json or '{}')
+        except Exception:
+            return {}
+
+    def set_preferences(self, prefs):
+        try:
+            self.preferences_json = json.dumps(prefs or {})
+        except Exception:
+            self.preferences_json = '{}'
 
 
 class Country(db.Model):
@@ -463,3 +483,37 @@ class QuizRuleSet(db.Model):
 
     def __repr__(self):
         return f"<QuizRuleSet {self.id}: {self.name} active={self.is_active}>"
+
+
+# ===================== Statistiques par utilisateur et question =====================
+
+class UserQuestionStat(db.Model):
+    __tablename__ = 'user_question_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Liens
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+
+    # Données de stats
+    times_answered = db.Column(db.Integer, nullable=False, default=0)
+    success_count = db.Column(db.Integer, nullable=False, default=0)
+    last_selected_answer = db.Column(db.String(10), nullable=True)
+    last_is_correct = db.Column(db.Boolean, nullable=False, default=False)
+    last_answered_at = db.Column(db.DateTime, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'question_id', name='uq_user_question'),
+    )
+
+    # Relations
+    user = db.relationship('User', backref=db.backref('question_stats', lazy='dynamic'))
+    question = db.relationship('Question')
+
+    def __repr__(self):
+        return f"<UserQuestionStat u={self.user_id} q={self.question_id} times={self.times_answered} success={self.success_count}>"

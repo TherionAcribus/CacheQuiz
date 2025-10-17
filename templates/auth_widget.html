@@ -1,0 +1,26 @@
+{% if current_user %}
+<div id="auth-widget" class="auth-widget">
+  <span>Connecté: <strong>{{ current_user.display_name }}</strong></span>
+  <a class="btn btn-link" href="/me">Mes stats</a>
+  <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline">
+    <button class="btn btn-secondary" type="submit">Se déconnecter</button>
+  </form>
+</div>
+{% else %}
+<div id="auth-widget" class="auth-widget">
+  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML">
+    <input type="text" name="pseudo" placeholder="Votre pseudo Geocaching" required>
+    <button class="btn btn-primary" type="submit">Entrer</button>
+  </form>
+  <a href="/login" class="btn btn-link">Se connecter</a>
+  <a href="/register" class="btn btn-link">Créer un compte</a>
+</div>
+{% endif %}
+
+<style>
+.auth-widget{display:flex;gap:.5rem;align-items:center}
+.auth-widget .quick-login{display:flex;gap:.5rem;align-items:center}
+.btn-link{background:transparent;border:none;color:var(--primary-color);text-decoration:underline;padding:0}
+</style>
+
+

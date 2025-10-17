@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, send_from_directory, redirect
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet
+from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat
 from datetime import datetime
 import os
+from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy import func, text
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///geocaching_quiz.db'
@@ -17,6 +20,177 @@ db.init_app(app)
 # Créer les tables
 with app.app_context():
     db.create_all()
+    # Auto-migration légère pour SQLite: ajout des nouvelles colonnes de users si manquantes
+    try:
+        if db.engine.url.drivername.startswith('sqlite'):
+            result = db.session.execute(text("PRAGMA table_info(users)"))
+            existing_cols = {row[1] for row in result.fetchall()}
+            # password_hash
+            if 'password_hash' not in existing_cols:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN password_hash TEXT"))
+            # is_admin (0/1)
+            if 'is_admin' not in existing_cols:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT 0"))
+            # preferences_json
+            if 'preferences_json' not in existing_cols:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN preferences_json TEXT"))
+            db.session.commit()
+    except Exception:
+        # Ne bloque pas l'app; pour autres SGBD, utiliser une migration Alembic
+        db.session.rollback()
+
+# ================== Gestion Session / Utilisateur ==================
+
+@app.before_request
+def load_current_user():
+    user_id = session.get('user_id')
+    g.current_user = User.query.get(user_id) if user_id else None
+
+
+@app.context_processor
+def inject_current_user():
+    return { 'current_user': getattr(g, 'current_user', None) }
+
+
+@app.route('/auth/widget')
+def auth_widget():
+    return render_template('auth_widget.html')
+
+
+@app.route('/auth/quick-login', methods=['POST'])
+def quick_login():
+    pseudo = (request.form.get('pseudo') or '').strip()
+    if not pseudo:
+        return "Pseudo requis", 400
+    # Chercher utilisateur par username exact
+    user = User.query.filter_by(username=pseudo).first()
+    if not user:
+        # Créer un user sans mot de passe
+        user = User(username=pseudo, display_name=pseudo, email=None, is_active=True)
+        db.session.add(user)
+        db.session.commit()
+    session['user_id'] = user.id
+    return render_template('auth_widget.html')
+
+
+@app.route('/auth/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    return render_template('auth_widget.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        username = (request.form.get('username') or '').strip()
+        password = (request.form.get('password') or '').strip()
+        if not username or not password:
+            return render_template('login.html', error="Identifiants requis")
+        user = User.query.filter_by(username=username).first()
+        if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
+            return render_template('login.html', error="Identifiants invalides")
+        session['user_id'] = user.id
+        next_url = request.args.get('next') or url_for('play_quiz')
+        return redirect(next_url)
+    return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register_page():
+    if request.method == 'POST':
+        username = (request.form.get('username') or '').strip()
+        email = (request.form.get('email') or '').strip() or None
+        display_name = (request.form.get('display_name') or '').strip() or username
+        password = (request.form.get('password') or '').strip()
+        password2 = (request.form.get('password2') or '').strip()
+        if not username or not password:
+            return render_template('register.html', error="Nom d'utilisateur et mot de passe requis")
+        if password != password2:
+            return render_template('register.html', error="Les mots de passe ne correspondent pas")
+        if User.query.filter_by(username=username).first():
+            return render_template('register.html', error="Ce nom d'utilisateur est déjà pris")
+        # Créer l'utilisateur avec mot de passe hashé
+        user = User(
+            username=username,
+            email=email,
+            display_name=display_name,
+            is_active=True,
+            password_hash=generate_password_hash(password)
+        )
+        db.session.add(user)
+        db.session.commit()
+        session['user_id'] = user.id
+        return redirect(url_for('play_quiz'))
+    return render_template('register.html')
+
+
+def _get_token_serializer():
+    return URLSafeTimedSerializer(app.config['SECRET_KEY'], salt='password-reset')
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+        if not email:
+            return render_template('forgot_password.html', error="Email requis")
+        user = User.query.filter_by(email=email).first()
+        # Toujours indiquer que l'email a été envoyé pour éviter la fuite d'existence
+        if user:
+            s = _get_token_serializer()
+            token = s.dumps({'uid': user.id})
+            # Ici on simule l'envoi: on rend la page avec le lien (POC). En prod, envoyer un email.
+            reset_link = url_for('reset_password', token=token, _external=True)
+            return render_template('forgot_password.html', info="Un email a été envoyé.", reset_link=reset_link)
+        return render_template('forgot_password.html', info="Un email a été envoyé.")
+    return render_template('forgot_password.html')
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    s = _get_token_serializer()
+    try:
+        data = s.loads(token, max_age=3600)  # 1h
+        user_id = data.get('uid')
+    except SignatureExpired:
+        return render_template('reset_password.html', error="Lien expiré"), 400
+    except BadSignature:
+        return render_template('reset_password.html', error="Lien invalide"), 400
+
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        password = (request.form.get('password') or '').strip()
+        password2 = (request.form.get('password2') or '').strip()
+        if not password:
+            return render_template('reset_password.html', error="Mot de passe requis", token=token)
+        if password != password2:
+            return render_template('reset_password.html', error="Les mots de passe ne correspondent pas", token=token)
+        user.password_hash = generate_password_hash(password)
+        db.session.commit()
+        return redirect(url_for('login_page'))
+    return render_template('reset_password.html', token=token)
+
+
+@app.route('/me')
+def me_page():
+    if not g.current_user:
+        return redirect(url_for('play_quiz'))
+    # Dernières 20 réponses
+    stats = (UserQuestionStat.query
+             .filter_by(user_id=g.current_user.id)
+             .order_by(UserQuestionStat.last_answered_at.desc())
+             .limit(20)
+             .all())
+    # Totaux globaux
+    totals = (db.session.query(
+                    func.coalesce(func.sum(UserQuestionStat.times_answered), 0),
+                    func.coalesce(func.sum(UserQuestionStat.success_count), 0)
+               )
+               .filter(UserQuestionStat.user_id == g.current_user.id)
+               .one())
+    total_answers = totals[0] or 0
+    total_success = totals[1] or 0
+    return render_template('me.html', stats=stats, total_answers=total_answers, total_success=total_success)
 # ================== Fichiers uploadés (serveur) ==================
 
 @app.route('/uploads/<path:filename>')
@@ -809,7 +983,6 @@ def delete_country(country_id):
 @app.route('/quiz/<slug>')
 def play_quiz_with_rules(slug: str):
     """Redirige vers la page de jeu avec un set de règles prédéfini."""
-    rule_set = QuizRuleSet.query.filter_by(slug=slug, is_active=True).first_or_404()
     return redirect(f'/play?rule_set={slug}')
 
 def _apply_quiz_filters(query, params):
@@ -889,6 +1062,12 @@ def next_quiz_question():
 
         if history_ids:
             query = query.filter(~Question.id.in_(history_ids))
+
+        # Exclure questions déjà vues par l'utilisateur connecté
+        if getattr(g, 'current_user', None):
+            seen_ids = [row.question_id for row in UserQuestionStat.query.with_entities(UserQuestionStat.question_id).filter_by(user_id=g.current_user.id).all()]
+            if seen_ids:
+                query = query.filter(~Question.id.in_(seen_ids))
 
         # Si on utilise un set de règles avec quotas par difficulté
         rule_set = None
@@ -1000,11 +1179,24 @@ def submit_quiz_answer():
             history_questions = Question.query.filter(Question.id.in_(history_ids)).all() if history_ids else []
             score = _calculate_score(rule_set, question, is_correct, history_questions)
 
-        # Mettre à jour les statistiques de la question
+        # Mettre à jour les statistiques globales de la question
         question.times_answered = (question.times_answered or 0) + 1
         if is_correct:
             question.success_count = (question.success_count or 0) + 1
         question.updated_at = datetime.utcnow()
+
+        # Mettre à jour les statistiques utilisateur-question
+        if getattr(g, 'current_user', None):
+            stat = UserQuestionStat.query.filter_by(user_id=g.current_user.id, question_id=question.id).first()
+            if not stat:
+                stat = UserQuestionStat(user_id=g.current_user.id, question_id=question.id)
+                db.session.add(stat)
+            stat.times_answered = (stat.times_answered or 0) + 1
+            if is_correct:
+                stat.success_count = (stat.success_count or 0) + 1
+            stat.last_selected_answer = selected_answer
+            stat.last_is_correct = is_correct
+            stat.last_answered_at = datetime.utcnow()
 
         db.session.commit()
 

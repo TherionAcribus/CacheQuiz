@@ -1,0 +1,28 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<h2>Créer un compte</h2>
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+<form method="post" class="register-form">
+  <label>Pseudo (nom d'utilisateur)</label>
+  <input type="text" name="username" required>
+  <label>Nom d'affichage</label>
+  <input type="text" name="display_name">
+  <label>Email</label>
+  <input type="email" name="email">
+  <label>Mot de passe</label>
+  <input type="password" name="password" required>
+  <label>Confirmer le mot de passe</label>
+  <input type="password" name="password2" required>
+  <button class="btn btn-primary" type="submit">Créer le compte</button>
+</form>
+
+<style>
+.register-form{display:flex;flex-direction:column;gap:.5rem;max-width:420px}
+.alert-error{background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca;border-radius:.25rem;padding:.5rem;margin-bottom:.75rem}
+</style>
+{% endblock %}
+
+
