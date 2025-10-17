@@ -2,9 +2,89 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>Jouer au quiz</h2>
+    <h2>Jouer au quiz{% if rule_set %} - {{ rule_set.name }}{% endif %}</h2>
+    {% if rule_set %}
+    <div class="rule-set-info">
+        <p><strong>Set de règles actif:</strong> {{ rule_set.name }}</p>
+        {% if rule_set.description %}
+        <p>{{ rule_set.description }}</p>
+        {% endif %}
+        {% if rule_set.intro_message %}
+        <div class="intro-message">{{ rule_set.intro_message }}</div>
+        {% endif %}
+        <div class="rule-summary">
+            <span class="badge">⏱ {{ rule_set.timer_seconds }}s par question</span>
+            <span class="badge">⚙️ {{ rule_set.scoring_base_points }} pt/question</span>
+            {% if rule_set.perfect_quiz_bonus %}
+            <span class="badge">🏆 Perfect: +{{ rule_set.perfect_quiz_bonus }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
+{% if rule_set %}
+<!-- Mode avec set de règles prédéfini -->
+<div class="rule-set-mode">
+    <div class="rule-details">
+        <h3>Règles appliquées</h3>
+        <ul>
+            <li><strong>Timer:</strong> {{ rule_set.timer_seconds }} secondes par question</li>
+            {% set diffs = rule_set.get_allowed_difficulties() %}
+            {% if diffs %}
+            <li><strong>Difficultés:</strong> {{ diffs|join(', ') }}</li>
+            {% else %}
+            <li><strong>Difficultés:</strong> toutes</li>
+            {% endif %}
+            {% set qmap = rule_set.get_questions_per_difficulty() %}
+            {% if qmap %}
+            <li><strong>Nombre de questions par difficulté:</strong> {{ qmap|tojson }}</li>
+            {% endif %}
+            {% if not rule_set.use_all_broad_themes %}
+            <li><strong>Thèmes larges:</strong>
+                {% for theme in rule_set.allowed_broad_themes %}
+                {{ theme.name }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+            {% endif %}
+            {% if not rule_set.use_all_specific_themes %}
+            <li><strong>Sous-thèmes:</strong>
+                {% for st in rule_set.allowed_specific_themes %}
+                {{ st.name }}{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </li>
+            {% endif %}
+            <li><strong>Scoring:</strong> {{ rule_set.scoring_base_points }} points par question
+                {% if rule_set.scoring_difficulty_bonus_type == 'add' %}
+                + bonus difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {% elif rule_set.scoring_difficulty_bonus_type == 'mult' %}
+                × coefficient difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {% endif %}
+                {% if rule_set.combo_bonus_enabled %}
+                + combo (palier {{ rule_set.combo_step }}, +{{ rule_set.combo_bonus_points }})
+                {% endif %}
+                {% if rule_set.perfect_quiz_bonus %}
+                +{{ rule_set.perfect_quiz_bonus }} si perfect
+                {% endif %}
+            </li>
+        </ul>
+    </div>
+
+    <button class="btn btn-primary btn-large"
+            hx-get="/api/quiz/next"
+            hx-target="#quiz-stage"
+            hx-swap="innerHTML"
+            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": ""}'>
+        🚀 Démarrer le quiz
+    </button>
+
+    <div class="rule-actions">
+        <a href="/play" class="btn btn-secondary">Mode manuel</a>
+        <a href="/quiz-rules" class="btn btn-outline">Gérer les sets de règles</a>
+    </div>
+</div>
+{% else %}
+<!-- Mode manuel avec filtres -->
 <div class="quiz-filters">
     <form id="quiz-filters-form" class="filters-grid">
         <select name="broad_theme_id" id="play_broad_theme_id">
@@ -47,17 +127,37 @@
         </button>
     </form>
 </div>
+{% endif %}
 
 <div id="quiz-stage" class="quiz-stage">
+    {% if rule_set %}
+    <div class="placeholder">Cliquez sur "🚀 Démarrer le quiz" pour commencer avec le set de règles "{{ rule_set.name }}".</div>
+    <div class="placeholder small">Le scoring et les quotas seront appliqués automatiquement.</div>
+    {% else %}
     <div class="placeholder">Sélectionnez vos filtres et cliquez sur "Démarrer".</div>
     <div class="placeholder small">Les questions sont tirées au hasard parmi celles publiées.</div>
     <div class="placeholder small">L'historique évite les répétitions pendant la session.</div>
-    <div class="placeholder small">Nous pourrons ajouter le scoring et la progression ensuite.</div>
+    {% endif %}
     <style>
         .placeholder { color: var(--muted-color); margin: .25rem 0; }
         .placeholder.small { font-size: .9rem; }
         .quiz-stage { margin-top: 1rem; }
         .filters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; align-items: center; }
+        .rule-set-info { background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: .5rem; padding: 1rem; margin-bottom: 1rem; }
+        .rule-set-info h2 { margin: 0 0 .5rem 0; color: #0c4a6e; }
+        .rule-set-info p { margin: .25rem 0; }
+        .intro-message { background: #fefce8; border: 1px solid #eab308; border-radius: .25rem; padding: .5rem; margin-top: .5rem; font-style: italic; }
+        .rule-summary { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+        .rule-summary .badge { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .rule-set-mode { text-align: center; margin: 2rem 0; }
+        .rule-details { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .5rem; padding: 1.5rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .rule-details h3 { margin: 0 0 1rem 0; color: var(--primary-color); }
+        .rule-details ul { margin: 0; padding-left: 1.5rem; }
+        .rule-details li { margin-bottom: .5rem; }
+        .btn-large { font-size: 1.2rem; padding: .75rem 1.5rem; }
+        .rule-actions { margin-top: 1rem; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
+        .btn-outline:hover { background: var(--primary-color); color: white; }
     </style>
 </div>
 {% endblock %}

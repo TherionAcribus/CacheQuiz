@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, send_from_directory
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink
+from flask import Flask, render_template, request, send_from_directory, redirect
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet
 from datetime import datetime
 import os
 
@@ -806,41 +806,76 @@ def delete_country(country_id):
 
 # ============ Interface de Quiz (Jouer) ============
 
+@app.route('/quiz/<slug>')
+def play_quiz_with_rules(slug: str):
+    """Redirige vers la page de jeu avec un set de règles prédéfini."""
+    rule_set = QuizRuleSet.query.filter_by(slug=slug, is_active=True).first_or_404()
+    return redirect(f'/play?rule_set={slug}')
+
 def _apply_quiz_filters(query, params):
     """Appliquer les filtres du quiz (thèmes, pays, difficulté) au query de base."""
-    broad_theme_id = (params.get('broad_theme_id') or '').strip()
-    if broad_theme_id.isdigit():
-        query = query.filter(Question.broad_theme_id == int(broad_theme_id))
+    rule_set_slug = (params.get('rule_set') or '').strip()
+    if rule_set_slug:
+        # Appliquer les règles du set
+        rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+        if rule_set:
+            # Difficultés autorisées
+            allowed_diffs = rule_set.get_allowed_difficulties()
+            if allowed_diffs:
+                query = query.filter(Question.difficulty_level.in_(allowed_diffs))
 
-    specific_theme_id = (params.get('specific_theme_id') or '').strip()
-    if specific_theme_id.isdigit():
-        query = query.filter(Question.specific_theme_id == int(specific_theme_id))
+            # Thèmes larges
+            if not rule_set.use_all_broad_themes and rule_set.allowed_broad_themes:
+                theme_ids = [t.id for t in rule_set.allowed_broad_themes]
+                query = query.filter(Question.broad_theme_id.in_(theme_ids))
 
-    country_id = (params.get('country_id') or '').strip()
-    if country_id.isdigit():
-        query = query.filter(Question.countries.any(Country.id == int(country_id)))
+            # Sous-thèmes
+            if not rule_set.use_all_specific_themes and rule_set.allowed_specific_themes:
+                sub_theme_ids = [st.id for st in rule_set.allowed_specific_themes]
+                query = query.filter(Question.specific_theme_id.in_(sub_theme_ids))
 
-    difficulty_level = (params.get('difficulty_level') or '').strip()
-    if difficulty_level.isdigit():
-        query = query.filter(Question.difficulty_level == int(difficulty_level))
+            # Note: pas de filtre pays pour l'instant dans les sets de règles
+    else:
+        # Mode manuel - appliquer les filtres classiques
+        broad_theme_id = (params.get('broad_theme_id') or '').strip()
+        if broad_theme_id.isdigit():
+            query = query.filter(Question.broad_theme_id == int(broad_theme_id))
+
+        specific_theme_id = (params.get('specific_theme_id') or '').strip()
+        if specific_theme_id.isdigit():
+            query = query.filter(Question.specific_theme_id == int(specific_theme_id))
+
+        country_id = (params.get('country_id') or '').strip()
+        if country_id.isdigit():
+            query = query.filter(Question.countries.any(Country.id == int(country_id)))
+
+        difficulty_level = (params.get('difficulty_level') or '').strip()
+        if difficulty_level.isdigit():
+            query = query.filter(Question.difficulty_level == int(difficulty_level))
 
     return query
 
 
 @app.route('/play')
 def play_quiz():
-    """Page pour jouer au quiz avec filtres simples."""
+    """Page pour jouer au quiz avec filtres simples ou set de règles."""
+    rule_set = None
+    rule_set_slug = request.args.get('rule_set', '').strip()
+    if rule_set_slug:
+        rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     countries = Country.query.order_by(Country.name).all()
-    return render_template('play.html', themes=themes, specific_themes=specific_themes, countries=countries)
+    return render_template('play.html', themes=themes, specific_themes=specific_themes, countries=countries, rule_set=rule_set)
 
 
 @app.route('/api/quiz/next')
 def next_quiz_question():
-    """Retourne une question aléatoire (selon filtres) pour le quiz."""
+    """Retourne une question aléatoire (selon filtres ou set de règles) pour le quiz."""
     try:
         params = request.args
+        rule_set_slug = (params.get('rule_set') or '').strip()
         history_raw = (params.get('history') or '').strip()
         history_ids = []
         if history_raw:
@@ -851,15 +886,85 @@ def next_quiz_question():
 
         query = Question.query.filter(Question.is_published.is_(True))
         query = _apply_quiz_filters(query, params)
+
         if history_ids:
             query = query.filter(~Question.id.in_(history_ids))
 
+        # Si on utilise un set de règles avec quotas par difficulté
+        rule_set = None
+        if rule_set_slug:
+            rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
+        if rule_set and rule_set.get_questions_per_difficulty():
+            # Logique de quotas par difficulté
+            qmap = rule_set.get_questions_per_difficulty()
+            allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
+
+            # Compter les questions déjà posées par difficulté dans cette session
+            history_questions = []
+            if history_ids:
+                history_questions = Question.query.filter(Question.id.in_(history_ids)).all()
+
+            diff_counts = {d: sum(1 for q in history_questions if q.difficulty_level == d) for d in allowed_diffs}
+
+            # Trouver les difficultés qui n'ont pas atteint leur quota
+            available_diffs = []
+            for d in allowed_diffs:
+                max_q = qmap.get(str(d), 0)
+                current_q = diff_counts.get(d, 0)
+                if current_q < max_q:
+                    available_diffs.append(d)
+
+            if available_diffs:
+                # Prioriser les difficultés avec le moins de questions restantes
+                diff_weights = {}
+                for d in available_diffs:
+                    max_q = qmap.get(str(d), 0)
+                    current_q = diff_counts.get(d, 0)
+                    remaining = max_q - current_q
+                    diff_weights[d] = remaining
+
+                # Trier par nombre restant décroissant pour équilibrer
+                selected_diff = max(diff_weights, key=diff_weights.get)
+                query = query.filter(Question.difficulty_level == selected_diff)
+
         # SQLite: random(), PostgreSQL: RANDOM()
         question = query.order_by(db.func.random()).first()
-        return render_template('quiz_question.html', question=question, history=history_raw)
+        return render_template('quiz_question.html', question=question, history=history_raw, rule_set=rule_set)
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
+
+def _calculate_score(rule_set, question, is_correct, history_questions):
+    """Calcule le score selon les règles du set."""
+    if not rule_set or not is_correct:
+        return 0
+
+    score = rule_set.scoring_base_points
+
+    # Bonus selon difficulté
+    if rule_set.scoring_difficulty_bonus_type == 'add':
+        bonus_map = rule_set.get_difficulty_bonus_map()
+        bonus = bonus_map.get(str(question.difficulty_level), 0)
+        score += bonus
+    elif rule_set.scoring_difficulty_bonus_type == 'mult':
+        coeff_map = rule_set.get_difficulty_bonus_map()
+        coeff = coeff_map.get(str(question.difficulty_level), 1.0)
+        score = int(score * coeff)
+
+    # Bonus de combo
+    if rule_set.combo_bonus_enabled and rule_set.combo_step and rule_set.combo_bonus_points:
+        # Compter les bonnes réponses consécutives à la fin
+        consecutive_correct = 0
+        for q in reversed(history_questions):
+            if q.success_count > q.times_answered - q.success_count:  # Simplifié: majorité de succès
+                consecutive_correct += 1
+            else:
+                break
+        combo_count = consecutive_correct // rule_set.combo_step
+        score += combo_count * rule_set.combo_bonus_points
+
+    return score
 
 @app.route('/api/quiz/answer', methods=['POST'])
 def submit_quiz_answer():
@@ -868,6 +973,7 @@ def submit_quiz_answer():
         question_id_raw = (request.form.get('question_id') or '').strip()
         selected_answer = (request.form.get('selected_answer') or '').strip()
         history_raw = (request.form.get('history') or '').strip()
+        rule_set_slug = (request.form.get('rule_set') or '').strip()
 
         if not question_id_raw.isdigit():
             return "Identifiant de question invalide", 400
@@ -875,6 +981,24 @@ def submit_quiz_answer():
         question = Question.query.get_or_404(int(question_id_raw))
         correct_value = (question.correct_answer or '').strip()
         is_correct = selected_answer == correct_value
+
+        # Charger le set de règles si spécifié
+        rule_set = None
+        if rule_set_slug:
+            rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
+        # Calculer le score selon les règles
+        score = 0
+        if rule_set:
+            # Récupérer l'historique complet pour le calcul du combo
+            history_ids = []
+            if history_raw:
+                for token in history_raw.split(','):
+                    token = token.strip()
+                    if token.isdigit():
+                        history_ids.append(int(token))
+            history_questions = Question.query.filter(Question.id.in_(history_ids)).all() if history_ids else []
+            score = _calculate_score(rule_set, question, is_correct, history_questions)
 
         # Mettre à jour les statistiques de la question
         question.times_answered = (question.times_answered or 0) + 1
@@ -900,11 +1024,230 @@ def submit_quiz_answer():
             question=question,
             is_correct=is_correct,
             selected=selected_answer,
-            history=next_history
+            history=next_history,
+            rule_set=rule_set,
+            score=score
         )
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
+
+# ============ Routes pour la gestion des règles du Quiz ============
+
+def _slugify(value: str) -> str:
+    value = (value or '').strip().lower()
+    safe = []
+    for ch in value:
+        if ch.isalnum():
+            safe.append(ch)
+        elif ch in [' ', '-', '_']:
+            safe.append('-')
+    slug = ''.join(safe)
+    while '--' in slug:
+        slug = slug.replace('--', '-')
+    return slug.strip('-')
+
+
+@app.route('/quiz-rules')
+def quiz_rules_page():
+    """Page d'administration des ensembles de règles du quiz"""
+    return render_template('quiz_rules.html')
+
+
+@app.route('/api/quiz-rules')
+def list_quiz_rules():
+    """Retourner la liste des sets de règles en HTML (pour HTMX)"""
+    rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+    return render_template('quiz_rules_list.html', rules=rules)
+
+
+@app.route('/quiz-rule/new')
+def new_quiz_rule():
+    """Formulaire pour créer un nouveau set de règles"""
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, users=users)
+
+
+@app.route('/quiz-rule/<int:rule_id>/edit')
+def edit_quiz_rule(rule_id: int):
+    """Formulaire pour éditer un set de règles existant"""
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, users=users)
+
+
+@app.route('/api/quiz-rule', methods=['POST'])
+def create_quiz_rule():
+    """Créer un nouveau set de règles"""
+    try:
+        data = request.form
+
+        name = (data.get('name') or '').strip()
+        if not name:
+            return "Nom requis", 400
+
+        slug = (data.get('slug') or '').strip() or _slugify(name)
+
+        rule = QuizRuleSet(
+            name=name,
+            slug=slug,
+            description=(data.get('description') or '').strip() or None,
+            comment=(data.get('comment') or '').strip() or None,
+            is_active=(data.get('is_active') == 'on'),
+            created_by_user_id=int(data.get('created_by_user_id')),
+            timer_seconds=int(data.get('timer_seconds') or 30),
+            use_all_broad_themes=(data.get('use_all_broad_themes') == 'on'),
+            use_all_specific_themes=(data.get('use_all_specific_themes') == 'on'),
+            scoring_base_points=int(data.get('scoring_base_points') or 1),
+            scoring_difficulty_bonus_type=(data.get('scoring_difficulty_bonus_type') or 'none'),
+            combo_bonus_enabled=(data.get('combo_bonus_enabled') == 'on'),
+            combo_step=(int(data.get('combo_step')) if data.get('combo_step') else None),
+            combo_bonus_points=(int(data.get('combo_bonus_points')) if data.get('combo_bonus_points') else None),
+            perfect_quiz_bonus=int(data.get('perfect_quiz_bonus') or 0),
+            intro_message=(data.get('intro_message') or '').strip() or None,
+            success_message=(data.get('success_message') or '').strip() or None,
+        )
+
+        # Difficultés autorisées
+        difficulties = [int(x) for x in data.getlist('allowed_difficulties') if (x or '').isdigit()]
+        rule.set_allowed_difficulties(difficulties)
+
+        # Quotas par difficulté
+        quotas = {}
+        for d in range(1, 6):
+            val = (data.get(f'questions_per_difficulty_{d}') or '').strip()
+            if val.isdigit():
+                quotas[str(d)] = int(val)
+        rule.set_questions_per_difficulty(quotas)
+
+        # Bonus selon difficulté
+        bonus_map = {}
+        for d in range(1, 6):
+            raw = (data.get(f'difficulty_bonus_{d}') or '').strip()
+            if raw:
+                try:
+                    bonus_map[str(d)] = float(raw)
+                except Exception:
+                    pass
+        rule.set_difficulty_bonus_map(bonus_map)
+
+        # Thèmes autorisés (si non tous)
+        if not rule.use_all_broad_themes:
+            ids = [int(x) for x in data.getlist('allowed_broad_theme_ids') if (x or '').isdigit()]
+            if ids:
+                rule.allowed_broad_themes = BroadTheme.query.filter(BroadTheme.id.in_(ids)).all()
+
+        if not rule.use_all_specific_themes:
+            ids = [int(x) for x in data.getlist('allowed_specific_theme_ids') if (x or '').isdigit()]
+            if ids:
+                rule.allowed_specific_themes = SpecificTheme.query.filter(SpecificTheme.id.in_(ids)).all()
+
+        db.session.add(rule)
+        db.session.commit()
+
+        rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+        return render_template('quiz_rules_list.html', rules=rules)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz-rule/<int:rule_id>', methods=['PUT', 'POST'])
+def update_quiz_rule(rule_id: int):
+    """Mettre à jour un set de règles existant"""
+    try:
+        rule = QuizRuleSet.query.get_or_404(rule_id)
+        data = request.form
+
+        name = (data.get('name') or '').strip()
+        if name:
+            rule.name = name
+
+        slug = (data.get('slug') or '').strip()
+        if slug:
+            rule.slug = slug
+        else:
+            # si slug vide explicitement, régénérer à partir du nom
+            rule.slug = _slugify(rule.name)
+
+        rule.description = (data.get('description') or '').strip() or None
+        rule.comment = (data.get('comment') or '').strip() or None
+        rule.is_active = (data.get('is_active') == 'on')
+
+        if data.get('created_by_user_id') and data.get('created_by_user_id').isdigit():
+            rule.created_by_user_id = int(data.get('created_by_user_id'))
+
+        rule.timer_seconds = int(data.get('timer_seconds') or rule.timer_seconds or 30)
+        rule.use_all_broad_themes = (data.get('use_all_broad_themes') == 'on')
+        rule.use_all_specific_themes = (data.get('use_all_specific_themes') == 'on')
+        rule.scoring_base_points = int(data.get('scoring_base_points') or rule.scoring_base_points or 1)
+        rule.scoring_difficulty_bonus_type = (data.get('scoring_difficulty_bonus_type') or rule.scoring_difficulty_bonus_type or 'none')
+        rule.combo_bonus_enabled = (data.get('combo_bonus_enabled') == 'on')
+        rule.combo_step = (int(data.get('combo_step')) if data.get('combo_step') else None)
+        rule.combo_bonus_points = (int(data.get('combo_bonus_points')) if data.get('combo_bonus_points') else None)
+        rule.perfect_quiz_bonus = int(data.get('perfect_quiz_bonus') or rule.perfect_quiz_bonus or 0)
+        rule.intro_message = (data.get('intro_message') or '').strip() or None
+        rule.success_message = (data.get('success_message') or '').strip() or None
+
+        # Difficultés autorisées
+        difficulties = [int(x) for x in data.getlist('allowed_difficulties') if (x or '').isdigit()]
+        rule.set_allowed_difficulties(difficulties)
+
+        # Quotas par difficulté
+        quotas = {}
+        for d in range(1, 6):
+            val = (data.get(f'questions_per_difficulty_{d}') or '').strip()
+            if val.isdigit():
+                quotas[str(d)] = int(val)
+        rule.set_questions_per_difficulty(quotas)
+
+        # Bonus selon difficulté
+        bonus_map = {}
+        for d in range(1, 6):
+            raw = (data.get(f'difficulty_bonus_{d}') or '').strip()
+            if raw:
+                try:
+                    bonus_map[str(d)] = float(raw)
+                except Exception:
+                    pass
+        rule.set_difficulty_bonus_map(bonus_map)
+
+        # Thèmes autorisés (si non tous)
+        if rule.use_all_broad_themes:
+            rule.allowed_broad_themes = []
+        else:
+            ids = [int(x) for x in data.getlist('allowed_broad_theme_ids') if (x or '').isdigit()]
+            rule.allowed_broad_themes = BroadTheme.query.filter(BroadTheme.id.in_(ids)).all() if ids else []
+
+        if rule.use_all_specific_themes:
+            rule.allowed_specific_themes = []
+        else:
+            ids = [int(x) for x in data.getlist('allowed_specific_theme_ids') if (x or '').isdigit()]
+            rule.allowed_specific_themes = SpecificTheme.query.filter(SpecificTheme.id.in_(ids)).all() if ids else []
+
+        rule.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+        return render_template('quiz_rules_list.html', rules=rules)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz-rule/<int:rule_id>', methods=['DELETE'])
+def delete_quiz_rule(rule_id: int):
+    """Supprimer un set de règles"""
+    try:
+        rule = QuizRuleSet.query.get_or_404(rule_id)
+        db.session.delete(rule)
+        db.session.commit()
+        rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+        return render_template('quiz_rules_list.html', rules=rules)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

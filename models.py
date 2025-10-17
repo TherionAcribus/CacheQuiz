@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+import json
 
 db = SQLAlchemy()
 
@@ -358,3 +359,107 @@ class AnswerImageLink(db.Model):
     def __repr__(self):
         return f"<AnswerImageLink q={self.question_id} idx={self.answer_index} img={self.image_id}>"
 
+
+# ===================== Modèle pour les ensembles de règles du quiz =====================
+
+# Tables d'association pour lier un set de règles à des thèmes
+quiz_rule_set_broad_themes = db.Table(
+    'quiz_rule_set_broad_themes',
+    db.Column('rule_set_id', db.Integer, db.ForeignKey('quiz_rule_sets.id'), primary_key=True),
+    db.Column('broad_theme_id', db.Integer, db.ForeignKey('broad_themes.id'), primary_key=True)
+)
+
+quiz_rule_set_specific_themes = db.Table(
+    'quiz_rule_set_specific_themes',
+    db.Column('rule_set_id', db.Integer, db.ForeignKey('quiz_rule_sets.id'), primary_key=True),
+    db.Column('specific_theme_id', db.Integer, db.ForeignKey('specific_themes.id'), primary_key=True)
+)
+
+
+class QuizRuleSet(db.Model):
+    __tablename__ = 'quiz_rule_sets'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Métadonnées
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Identification et description
+    name = db.Column(db.String(120), nullable=False)
+    slug = db.Column(db.String(120), unique=True)
+    description = db.Column(db.Text)
+    comment = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    # Auteur / créateur
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_user_id])
+
+    # Paramètres de quiz
+    timer_seconds = db.Column(db.Integer, nullable=False, default=30)  # durée par question
+
+    # Difficultés utilisées (liste) et quotas par difficulté (JSON string: {"1":5,"2":3,...})
+    allowed_difficulties_csv = db.Column(db.String(50), nullable=True)
+    questions_per_difficulty_json = db.Column(db.Text, nullable=True)
+
+    # Thèmes utilisés (tous ou sélection)
+    use_all_broad_themes = db.Column(db.Boolean, nullable=False, default=True)
+    use_all_specific_themes = db.Column(db.Boolean, nullable=False, default=True)
+    allowed_broad_themes = db.relationship(
+        'BroadTheme',
+        secondary=quiz_rule_set_broad_themes,
+        lazy='subquery'
+    )
+    allowed_specific_themes = db.relationship(
+        'SpecificTheme',
+        secondary=quiz_rule_set_specific_themes,
+        lazy='subquery'
+    )
+
+    # Scoring
+    scoring_base_points = db.Column(db.Integer, nullable=False, default=1)  # points par question
+    scoring_difficulty_bonus_type = db.Column(db.String(20), nullable=False, default='none')  # none|add|mult
+    # JSON string: ex {"1":0, "2":1, "3":2} pour add ou {"1":1.0,"2":1.5}
+    scoring_difficulty_bonus_map_json = db.Column(db.Text, nullable=True)
+    combo_bonus_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    combo_step = db.Column(db.Integer, nullable=True)  # taille de palier de combo (ex: 3)
+    combo_bonus_points = db.Column(db.Integer, nullable=True)  # points ajoutés par palier atteint
+    perfect_quiz_bonus = db.Column(db.Integer, nullable=False, default=0)
+
+    # Messages
+    intro_message = db.Column(db.Text)
+    success_message = db.Column(db.Text)
+
+    # Utilitaires de sérialisation/lecture
+    def get_questions_per_difficulty(self):
+        try:
+            return json.loads(self.questions_per_difficulty_json or '{}')
+        except Exception:
+            return {}
+
+    def set_questions_per_difficulty(self, mapping):
+        self.questions_per_difficulty_json = json.dumps(mapping or {})
+
+    def get_difficulty_bonus_map(self):
+        try:
+            return json.loads(self.scoring_difficulty_bonus_map_json or '{}')
+        except Exception:
+            return {}
+
+    def set_difficulty_bonus_map(self, mapping):
+        self.scoring_difficulty_bonus_map_json = json.dumps(mapping or {})
+
+    def get_allowed_difficulties(self):
+        if not self.allowed_difficulties_csv:
+            return []
+        return [int(x) for x in self.allowed_difficulties_csv.split(',') if x.strip().isdigit()]
+
+    def set_allowed_difficulties(self, difficulties_list):
+        if not difficulties_list:
+            self.allowed_difficulties_csv = None
+        else:
+            self.allowed_difficulties_csv = ','.join(str(int(d)) for d in sorted(set(difficulties_list)))
+
+    def __repr__(self):
+        return f"<QuizRuleSet {self.id}: {self.name} active={self.is_active}>"

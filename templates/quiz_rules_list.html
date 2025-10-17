@@ -1,0 +1,72 @@
+{% if rules %}
+<div class="rules-grid">
+    {% for rule in rules %}
+    <div class="rule-card">
+        <div class="rule-header">
+            <div class="rule-title">
+                <h3>{{ rule.name }}</h3>
+                {% if rule.slug %}<span class="slug">/{{ rule.slug }}</span>{% endif %}
+                {% if rule.is_active %}<span class="badge badge-active">Actif</span>{% else %}<span class="badge badge-inactive">Inactif</span>{% endif %}
+            </div>
+            <div class="rule-actions">
+                <button class="btn-icon" type="button"
+                        onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
+                        hx-get="/quiz-rule/{{ rule.id }}/edit"
+                        hx-target="#rule-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
+                <button class="btn-icon btn-danger" hx-delete="/api/quiz-rule/{{ rule.id }}"
+                        hx-target="#quiz-rules-list" hx-confirm="Supprimer ce set de règles ?" title="Supprimer">🗑️</button>
+            </div>
+        </div>
+        {% if rule.description %}
+        <p class="desc">{{ rule.description }}</p>
+        {% endif %}
+        <div class="rule-stats">
+            <span class="stat">⏱ {{ rule.timer_seconds }} s/question</span>
+            <span class="stat">⚙️ Base: {{ rule.scoring_base_points }} pt</span>
+            {% if rule.perfect_quiz_bonus and rule.perfect_quiz_bonus > 0 %}
+            <span class="stat">🏆 Perfect: +{{ rule.perfect_quiz_bonus }}</span>
+            {% endif %}
+            {% set diffs = rule.get_allowed_difficulties() %}
+            {% if diffs %}
+            <span class="stat">🎯 Diffs: {{ diffs|join(', ') }}</span>
+            {% else %}
+            <span class="stat">🎯 Diffs: non spécifiées</span>
+            {% endif %}
+        </div>
+        <div class="rule-footer">
+            <small>Créé: {{ rule.created_at.strftime('%d/%m/%Y %H:%M') if rule.created_at }} par {{ rule.created_by_user.display_name if rule.created_by_user else 'N/A' }}</small>
+            <small>Modifié: {{ rule.updated_at.strftime('%d/%m/%Y %H:%M') if rule.updated_at }}</small>
+            <small>ID: {{ rule.id }}</small>
+            {% if rule.slug %}
+            <div class="rule-url">
+                <strong>URL du quiz:</strong>
+                <input type="text" readonly value="{{ url_for('play_quiz_with_rules', slug=rule.slug, _external=True) }}" onclick="this.select()" class="url-input">
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-rules">📋 Aucun set de règles. Créez-en un !</div>
+{% endif %}
+
+<style>
+.rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:1rem}
+.rule-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.75rem;padding:1rem;box-shadow:var(--shadow)}
+.rule-header{display:flex;justify-content:space-between;align-items:flex-start}
+.rule-title{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.slug{font-size:.8rem;color:var(--text-light)}
+.rule-actions{display:flex;gap:.25rem}
+.desc{color:var(--text-light);margin:.5rem 0}
+.rule-stats{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0}
+.stat{background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;padding:.1rem .4rem;border-radius:.25rem;font-size:.8rem}
+.badge-active{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.badge-inactive{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.rule-footer{display:flex;flex-direction:column;gap:.25rem;border-top:1px solid var(--border-color);padding-top:.5rem;color:var(--text-light);font-size:.75rem}
+.rule-url{display:flex;flex-direction:column;gap:.25rem;margin-top:.5rem;border:1px solid #e2e8f0;border-radius:.25rem;padding:.5rem;background:#f8fafc}
+.url-input{width:100%;padding:.25rem;border:1px solid #d1d5db;border-radius:.25rem;background:white;font-family:monospace;font-size:.8rem}
+.no-rules{text-align:center;color:var(--text-light);padding:2rem}
+</style>
+
+
