@@ -70,12 +70,16 @@ def quick_login():
         db.session.add(user)
         db.session.commit()
     session['user_id'] = user.id
+    # Assurer que le widget reflète l'état connecté dans cette même réponse
+    g.current_user = user
     return render_template('auth_widget.html')
 
 
 @app.route('/auth/logout', methods=['POST'])
 def logout():
     session.pop('user_id', None)
+    # Assurer que le widget reflète l'état déconnecté dans cette même réponse
+    g.current_user = None
     return render_template('auth_widget.html')
 
 

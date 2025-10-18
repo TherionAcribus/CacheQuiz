@@ -20,7 +20,9 @@
             <h1>🗺️ Quiz Géocaching</h1>
             <nav>
                 <a href="/play" class="nav-link">Jouer</a>
+                {% block auth_widget %}
                 <span id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></span>
+                {% endblock %}
             </nav>
         </div>
     </header>
