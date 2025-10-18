@@ -88,17 +88,10 @@
                                    value="{{ answers[i-1] if i <= answers|length else '' }}">
                             <select name="answer_image_id_{{ i }}" class="answer-image-select">
                                 <option value="">-- Pas d'image --</option>
+                                {% set link = question.answer_image_links | selectattr('answer_index','equalto', i) | list if question else [] %}
                                 {% for img in images %}
                                 <option value="{{ img.id }}"
-                                    {% set is_selected = false %}
-                                    {% if question and question.answer_image_links %}
-                                        {% for link in question.answer_image_links %}
-                                            {% if link.answer_index == i and link.image_id == img.id %}
-                                                {% set is_selected = true %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% endif %}
-                                    {% if is_selected %}selected{% endif %}>
+                                    {% if link and link[0].image_id == img.id %}selected{% endif %}>
                                     {{ img.title }} ({{ img.filename }})
                                 </option>
                                 {% endfor %}

@@ -387,30 +387,31 @@ def create_question():
     try:
         data = request.form
         
-        # Traiter les réponses possibles
+        # Traiter les réponses possibles (en conservant l'index des réponses retenues)
         possible_answers = []
-        answer_images = []
+        answer_images_per_answer = []  # aligné sur possible_answers ('' si pas d'image)
+        links_to_add = []  # liste de tuples (answer_index, image_id)
         i = 1
+        current_index = 0
         while f'answer_{i}' in data:
-            answer = data.get(f'answer_{i}', '').strip()
-            if answer:
+            answer = (data.get(f'answer_{i}', '') or '').strip()
+            answer_image_token = (data.get(f'answer_image_id_{i}', '') or '').strip()
+            if answer or answer_image_token:
+                current_index += 1
                 possible_answers.append(answer)
-                # Lier éventuellement une image à cette réponse
-                answer_image_id = data.get(f'answer_image_id_{i}', '').strip()
-                if answer_image_id:
-                    try:
-                        answer_image_id_int = int(answer_image_id)
-                        # On stockera via AnswerImageLink juste après création de la question
-                        answer_images.append(str(answer_image_id_int))
-                    except Exception:
-                        pass
+                if answer_image_token.isdigit():
+                    image_id_int = int(answer_image_token)
+                    answer_images_per_answer.append(str(image_id_int))
+                    links_to_add.append((current_index, image_id_int))
+                else:
+                    answer_images_per_answer.append('')
             i += 1
         
         question = Question(
             author_id=int(data.get('author_id')),
             question_text=data.get('question_text'),
             possible_answers='|||'.join(possible_answers),
-            answer_images='|||'.join(answer_images),
+            answer_images='|||'.join(answer_images_per_answer),
             correct_answer=data.get('correct_answer'),
             detailed_answer=data.get('detailed_answer'),
             hint=data.get('hint'),
@@ -444,13 +445,9 @@ def create_question():
         db.session.add(question)
         db.session.flush()
 
-        # Gérer les liens image->réponse (AnswerImageLink)
-        idx = 1
-        for token in answer_images:
-            token = token.strip()
-            if token.isdigit():
-                db.session.add(AnswerImageLink(question_id=question.id, answer_index=idx, image_id=int(token)))
-            idx += 1
+        # Gérer les liens image->réponse (AnswerImageLink) avec index correct
+        for answer_index, image_id in links_to_add:
+            db.session.add(AnswerImageLink(question_id=question.id, answer_index=answer_index, image_id=image_id))
 
         db.session.commit()
         
@@ -469,24 +466,31 @@ def update_question(question_id):
         question = Question.query.get_or_404(question_id)
         data = request.form
         
-        # Traiter les réponses possibles
+        # Traiter les réponses possibles (en conservant l'index des réponses retenues)
         possible_answers = []
-        answer_images = []
+        answer_images_per_answer = []  # aligné sur possible_answers ('' si pas d'image)
+        links_to_add = []  # liste de tuples (answer_index, image_id)
         i = 1
+        current_index = 0
         while f'answer_{i}' in data:
-            answer = data.get(f'answer_{i}', '').strip()
-            if answer:
+            answer = (data.get(f'answer_{i}', '') or '').strip()
+            answer_image_token = (data.get(f'answer_image_id_{i}', '') or '').strip()
+            if answer or answer_image_token:
+                current_index += 1
                 possible_answers.append(answer)
-                answer_image_id = data.get(f'answer_image_id_{i}', '').strip()
-                if answer_image_id:
-                    answer_images.append(answer_image_id)
+                if answer_image_token.isdigit():
+                    image_id_int = int(answer_image_token)
+                    answer_images_per_answer.append(str(image_id_int))
+                    links_to_add.append((current_index, image_id_int))
+                else:
+                    answer_images_per_answer.append('')
             i += 1
         
         # Mettre à jour les champs
         question.author_id = int(data.get('author_id'))
         question.question_text = data.get('question_text')
         question.possible_answers = '|||'.join(possible_answers)
-        question.answer_images = '|||'.join(answer_images)
+        question.answer_images = '|||'.join(answer_images_per_answer)
         question.correct_answer = data.get('correct_answer')
         question.detailed_answer = data.get('detailed_answer')
         question.hint = data.get('hint')
@@ -522,12 +526,8 @@ def update_question(question_id):
         # Réinitialiser les liens image->réponse
         AnswerImageLink.query.filter_by(question_id=question.id).delete()
         db.session.flush()
-        idx = 1
-        for token in answer_images:
-            token = token.strip()
-            if token.isdigit():
-                db.session.add(AnswerImageLink(question_id=question.id, answer_index=idx, image_id=int(token)))
-            idx += 1
+        for answer_index, image_id in links_to_add:
+            db.session.add(AnswerImageLink(question_id=question.id, answer_index=answer_index, image_id=image_id))
 
         db.session.commit()
         
