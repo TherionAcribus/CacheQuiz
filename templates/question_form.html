@@ -197,17 +197,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Images complémentaires de la question</label>
-                    <div class="images-grid-select">
+                    <label for="question_image_id">Image complémentaire de la question (optionnel)</label>
+                    <select name="question_image_id" class="answer-image-select">
+                        <option value="">-- Pas d'image --</option>
                         {% for img in images %}
-                        <label class="image-checkbox">
-                            <input type="checkbox" name="question_image_ids" value="{{ img.id }}"
-                                   {% if question and img in question.images %}checked{% endif %}>
-                            <span class="thumb"><img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}"></span>
-                            <span class="title">{{ img.title }}</span>
-                        </label>
+                        <option value="{{ img.id }}"
+                            {% if question and question.images and img in question.images %}selected{% endif %}>
+                            {{ img.title }} ({{ img.filename }})
+                        </option>
                         {% endfor %}
-                    </div>
+                    </select>
+                    <small>Image illustrative complémentaire pour la question</small>
                     <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
                 

@@ -429,11 +429,17 @@ def create_question():
             countries = Country.query.filter(Country.id.in_(country_ids)).all()
             question.countries = countries
 
-        # Gérer les images de la question (relation many-to-many)
-        question_image_ids = request.form.getlist('question_image_ids')
-        if question_image_ids:
-            imgs = ImageAsset.query.filter(ImageAsset.id.in_(question_image_ids)).all()
-            question.images = imgs
+        # Gérer l'image de la question (relation many-to-many, une seule image)
+        question_image_id = request.form.get('question_image_id')
+        if question_image_id:
+            try:
+                img = ImageAsset.query.get(int(question_image_id))
+                if img:
+                    question.images = [img]
+            except ValueError:
+                pass
+        else:
+            question.images = []
         
         db.session.add(question)
         db.session.flush()
@@ -501,11 +507,15 @@ def update_question(question_id):
         else:
             question.countries = []
 
-        # Gérer les images de la question (relation many-to-many)
-        question_image_ids = request.form.getlist('question_image_ids')
-        if question_image_ids:
-            imgs = ImageAsset.query.filter(ImageAsset.id.in_(question_image_ids)).all()
-            question.images = imgs
+        # Gérer l'image de la question (relation many-to-many, une seule image)
+        question_image_id = request.form.get('question_image_id')
+        if question_image_id:
+            try:
+                img = ImageAsset.query.get(int(question_image_id))
+                if img:
+                    question.images = [img]
+            except ValueError:
+                pass
         else:
             question.images = []
         
