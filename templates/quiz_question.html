@@ -18,15 +18,14 @@
     </div>
     {% endif %}
 
-    <!-- Timer -->
     {% if rule_set and rule_set.timer_seconds %}
-    <div class="quiz-timer" id="quiz-timer" hx-get="/api/timer/update?rule_set={{ rule_set.slug }}&question_id={{ question.id }}" hx-trigger="load, every 1s" hx-target="#quiz-timer" hx-swap="outerHTML">
-        <div class="timer-display">
-            <span class="timer-icon">⏱️</span>
-            <span class="timer-text">Temps restant: <span id="timer-countdown">{{ rule_set.timer_seconds }}</span>s</span>
+    <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
+        <div class="timer-row">
+            <span class="timer-label">⏱ Temps restant:</span>
+            <span class="timer-value" id="timer-value-{{ question.id }}">{{ rule_set.timer_seconds }}s</span>
         </div>
-        <div class="timer-progress">
-            <div class="timer-bar" id="timer-bar" style="width: 100%"></div>
+        <div class="timer-bar">
+            <div class="timer-fill" id="timer-fill-{{ question.id }}" style="width: 100%"></div>
         </div>
     </div>
     {% endif %}
@@ -109,65 +108,36 @@
 
     .quiz-timer {
         background: var(--card-bg);
-        border: 2px solid #ef4444;
-        border-radius: 0.75rem;
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        box-shadow: var(--shadow);
-        text-align: center;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
     }
 
-    .timer-display {
+    .timer-row {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
         font-weight: 600;
-        color: #dc2626;
-        font-size: 1.1rem;
     }
 
-    .timer-icon {
-        font-size: 1.2rem;
-    }
-
-    .timer-text {
-        font-weight: 700;
-    }
-
-    .timer-progress {
+    .timer-bar {
         height: 6px;
-        background: #fee2e2;
+        background: #e5e7eb;
         border-radius: 3px;
         overflow: hidden;
     }
 
-    .timer-bar {
+    .timer-fill {
         height: 100%;
-        background: linear-gradient(90deg, #ef4444, #dc2626);
-        border-radius: 3px;
-        transition: width 1s linear;
+        background: linear-gradient(90deg, #f59e0b, #ef4444);
+        width: 100%;
+        transition: width 0.5s linear;
     }
 
-    .timer-warning .timer-bar {
-        background: linear-gradient(90deg, #f59e0b, #d97706);
-    }
-
-    .timer-critical .timer-bar {
-        background: linear-gradient(90deg, #ef4444, #dc2626);
-    }
-
-    .timer-expired {
-        border-color: #6b7280 !important;
-    }
-
-    .timer-expired .timer-display {
-        color: #6b7280;
-    }
-
-    .timer-expired .timer-bar {
-        background: #6b7280;
+    .timer-fill.critical {
+        background: #ef4444;
     }
 
     .progress-info {
@@ -449,18 +419,70 @@
         opacity: 0;
         pointer-events: none;
     }
-
-    /* Animation du timer critique */
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-
-    .timer-critical .quiz-timer {
-        animation: pulse 0.5s ease-in-out infinite;
-    }
 </style>
+{% if rule_set and rule_set.timer_seconds %}
+<script>
+(function(){
+    var duration = {{ rule_set.timer_seconds|int }};
+    if (!duration || duration <= 0) return;
+    var remaining = duration;
+    var valueEl = document.getElementById('timer-value-{{ question.id }}');
+    var fillEl = document.getElementById('timer-fill-{{ question.id }}');
+    var formEl = document.querySelector('.answers-grid');
+    var intervalId;
 
+    function updateUI() {
+        if (valueEl) valueEl.textContent = remaining + 's';
+        if (fillEl) fillEl.style.width = Math.max(0, (remaining / duration) * 100) + '%';
+        if (fillEl) {
+            if (remaining <= 5) fillEl.classList.add('critical'); else fillEl.classList.remove('critical');
+        }
+    }
+
+    function cleanup() { if (intervalId) { clearInterval(intervalId); intervalId = null; } }
+
+    function timeUp() {
+        cleanup();
+        if (formEl) {
+            // retirer la contrainte required pour permettre l'envoi sans réponse
+            var radios = formEl.querySelectorAll('input[type="radio"][name="selected_answer"]');
+            radios.forEach(function(r){ r.removeAttribute('required'); });
+        }
+        htmx.ajax('POST', '/api/quiz/answer', {
+            target: '#quiz-stage',
+            swap: 'innerHTML',
+            values: {
+                question_id: '{{ question.id }}',
+                history: '{{ history or '' }}',
+                {% if rule_set %}rule_set: '{{ rule_set.slug }}',{% endif %}
+                selected_answer: '',
+                timeout: '1'
+            }
+        });
+    }
+
+    // Stopper le timer si l'utilisateur soumet une réponse
+    if (formEl) {
+        formEl.addEventListener('submit', cleanup, { once: true });
+        document.addEventListener('htmx:beforeRequest', function(evt){
+            if (evt.target === formEl) cleanup();
+        });
+    }
+
+    updateUI();
+    intervalId = setInterval(function(){
+        remaining -= 1;
+        if (remaining <= 0) {
+            remaining = 0;
+            updateUI();
+            timeUp();
+        } else {
+            updateUI();
+        }
+    }, 1000);
+})();
+</script>
+{% endif %}
 {% endif %}
 
 
