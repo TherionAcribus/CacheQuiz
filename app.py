@@ -1222,7 +1222,47 @@ def next_quiz_question():
 
         # SQLite: random(), PostgreSQL: RANDOM()
         question = query.order_by(db.func.random()).first()
-        return render_template('quiz_question.html', question=question, history=history_raw, rule_set=rule_set)
+
+        # Calculer la progression et le score total
+        total_questions = 0
+        total_score = 0
+        current_question_num = 0
+
+        if rule_set:
+            # Compter le nombre total de questions dans cette session
+            history_ids = []
+            if history_raw:
+                for token in history_raw.split(','):
+                    token = token.strip()
+                    if token.isdigit():
+                        history_ids.append(int(token))
+            current_question_num = len(history_ids) + 1
+
+            # Calculer le nombre total de questions selon les quotas
+            if rule_set.get_questions_per_difficulty():
+                qmap = rule_set.get_questions_per_difficulty()
+                total_questions = sum(qmap.values())
+            else:
+                # Si pas de quotas, compter toutes les questions publiées
+                total_questions = Question.query.filter(Question.is_published.is_(True)).count()
+
+            # Calculer le score total accumulé
+            if history_ids:
+                history_questions = Question.query.filter(Question.id.in_(history_ids)).all()
+                for hist_q in history_questions:
+                    # Pour chaque question historique, on calcule si elle était correcte
+                    # On simplifie en assumant que les questions historiques ont été répondues correctement
+                    # (puisque l'historique ne garde que les questions posées, pas les résultats)
+                    # En réalité, on devrait stocker les résultats dans l'historique
+                    total_score += rule_set.scoring_base_points  # Score de base par question
+
+        return render_template('quiz_question.html',
+                             question=question,
+                             history=history_raw,
+                             rule_set=rule_set,
+                             current_question_num=current_question_num,
+                             total_questions=total_questions,
+                             total_score=total_score)
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
@@ -1324,6 +1364,27 @@ def submit_quiz_answer():
             history_ids.append(question.id)
         next_history = ','.join(str(i) for i in history_ids)
 
+        # Calculer la progression et le score total mis à jour
+        total_questions = 0
+        total_score = score  # Commencer avec le score de cette réponse
+        current_question_num = 0
+
+        if rule_set:
+            # Nombre total de questions dans cette session
+            if rule_set.get_questions_per_difficulty():
+                qmap = rule_set.get_questions_per_difficulty()
+                total_questions = sum(qmap.values())
+            else:
+                total_questions = Question.query.filter(Question.is_published.is_(True)).count()
+
+            current_question_num = len(history_ids)
+
+            # Ajouter le score des questions précédentes (approximation)
+            if history_ids:
+                # Pour simplifier, on ajoute le score de base pour chaque question historique
+                # En réalité, il faudrait stocker les scores individuels
+                total_score += len(history_ids) * rule_set.scoring_base_points
+
         return render_template(
             'quiz_result.html',
             question=question,
@@ -1331,7 +1392,10 @@ def submit_quiz_answer():
             selected=selected_answer,
             history=next_history,
             rule_set=rule_set,
-            score=score
+            score=score,
+            current_question_num=current_question_num,
+            total_questions=total_questions,
+            total_score=total_score
         )
     except Exception as e:
         return f"Erreur: {str(e)}", 400

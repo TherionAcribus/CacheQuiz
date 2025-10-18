@@ -5,15 +5,18 @@
     <style>.quiz-empty{padding:1rem;border:2px dashed var(--border-color);border-radius:.5rem;color:var(--muted-color)}</style>
 {% else %}
 <div class="quiz-game-container">
-    <!-- En-tête avec badges -->
-    <div class="quiz-header">
-        {% if question.theme %}
-        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
-            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
-        </span>
-        {% endif %}
-        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+    <!-- Barre de progression et score -->
+    {% if rule_set %}
+    <div class="quiz-progress-bar">
+        <div class="progress-info">
+            <span class="question-counter">Question {{ current_question_num }} / {{ total_questions }}</span>
+            <span class="score-display">Score: {{ total_score }} pts</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (current_question_num / total_questions * 100) if total_questions > 0 else 0 }}%"></div>
+        </div>
     </div>
+    {% endif %}
 
     <!-- Cadre principal de la question -->
     <div class="question-frame">
@@ -67,6 +70,52 @@
         max-width: 1000px;
         margin: 0 auto;
         padding: 1rem;
+    }
+
+    .quiz-progress-bar {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .question-counter {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .score-display {
+        font-size: 1.2rem;
+        color: #059669;
+        background: #ecfdf5;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #a7f3d0;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #059669, #10b981);
+        border-radius: 4px;
+        transition: width 0.3s ease;
     }
 
     .quiz-header {

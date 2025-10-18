@@ -1,27 +1,6 @@
 {% extends "base_public.html" %}
 
 {% block content %}
-<div class="page-header">
-    {% if rule_set %}<h2>{{ rule_set.name }}</h2>{% endif %}
-    {% if rule_set %}
-    <div class="rule-set-info">
-        <p><strong>Set de règles actif:</strong> {{ rule_set.name }}</p>
-        {% if rule_set.description %}
-        <p>{{ rule_set.description }}</p>
-        {% endif %}
-        {% if rule_set.intro_message %}
-        <div class="intro-message">{{ rule_set.intro_message }}</div>
-        {% endif %}
-        <div class="rule-summary">
-            <span class="badge">⏱ {{ rule_set.timer_seconds }}s par question</span>
-            <span class="badge">⚙️ {{ rule_set.scoring_base_points }} pt/question</span>
-            {% if rule_set.perfect_quiz_bonus %}
-            <span class="badge">🏆 Perfect: +{{ rule_set.perfect_quiz_bonus }}</span>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-</div>
 
 {% if rule_set %}
 <!-- Mode avec set de règles prédéfini -->
@@ -187,10 +166,6 @@
         .no-rule-sets { text-align: center; padding: 2rem; color: var(--muted-color); }
 
         /* Styles pour le mode avec set de règles sélectionné */
-        .rule-set-info { background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: .5rem; padding: 1rem; margin-bottom: 1rem; }
-        .rule-set-info h2 { margin: 0 0 .5rem 0; color: #0c4a6e; }
-        .rule-set-info p { margin: .25rem 0; }
-        .intro-message { background: #fefce8; border: 1px solid #eab308; border-radius: .25rem; padding: .5rem; margin-top: .5rem; font-style: italic; }
         .rule-set-mode { text-align: center; margin: 2rem 0; }
         .rule-details { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .5rem; padding: 1.5rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
         .rule-details h3 { margin: 0 0 1rem 0; color: var(--primary-color); }
