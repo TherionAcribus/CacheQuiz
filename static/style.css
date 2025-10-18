@@ -590,3 +590,148 @@ footer p {
     }
 }
 
+/* Questions table */
+.questions-table-container {
+    background-color: var(--card-bg);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.questions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.questions-table th {
+    background-color: var(--bg-color);
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.questions-table td {
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.questions-table tbody tr:hover {
+    background-color: var(--bg-color);
+}
+
+.question-text-cell {
+    max-width: 350px;
+}
+
+.question-text {
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.question-meta {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+
+.date-cell {
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+.author-cell {
+    min-width: 120px;
+}
+
+.actions-cell {
+    white-space: nowrap;
+    width: 100px;
+}
+
+.actions-cell .btn-icon {
+    margin-right: 0.25rem;
+}
+
+/* Responsive table */
+@media (max-width: 1200px) {
+    .question-text-cell {
+        max-width: 300px;
+    }
+
+    .author-cell {
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .questions-table-container {
+        padding: 1rem;
+    }
+
+    .questions-table th,
+    .questions-table td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .question-text-cell {
+        max-width: 250px;
+    }
+
+    .author-cell {
+        min-width: 90px;
+        font-size: 0.875rem;
+    }
+
+    .date-cell {
+        min-width: 90px;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .questions-table-container {
+        padding: 0.75rem;
+    }
+
+    .questions-table {
+        font-size: 0.75rem;
+    }
+
+    .questions-table th,
+    .questions-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .question-text-cell {
+        max-width: 200px;
+    }
+
+    .author-cell {
+        min-width: 80px;
+        font-size: 0.75rem;
+    }
+
+    .date-cell {
+        min-width: 80px;
+        font-size: 0.75rem;
+    }
+
+    .actions-cell {
+        width: 70px;
+    }
+}
+

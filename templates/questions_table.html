@@ -1,0 +1,166 @@
+{% if questions %}
+<div class="questions-table-container">
+    <table class="questions-table">
+        <thead>
+            <tr>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "question_text", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Question
+                    <span class="sort-indicator">
+                        {% if sort_by == 'question_text' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "broad_theme", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Thème large
+                    <span class="sort-indicator">
+                        {% if sort_by == 'broad_theme' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "specific_theme", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Thème spécifique
+                    <span class="sort-indicator">
+                        {% if sort_by == 'specific_theme' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "difficulty_level", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Difficulté
+                    <span class="sort-indicator">
+                        {% if sort_by == 'difficulty_level' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "is_published", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Statut
+                    <span class="sort-indicator">
+                        {% if sort_by == 'is_published' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "created_at", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Date création
+                    <span class="sort-indicator">
+                        {% if sort_by == 'created_at' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th class="sortable-header" hx-get="/api/questions/sort" hx-target="#questions-list" hx-vals='{"sort_by": "author", "current_sort_by": "{{ sort_by }}", "current_sort_order": "{{ sort_order }}", "q": "{{ request.args.get("q", "") }}", "view": "{{ view }}"}'>
+                    Auteur
+                    <span class="sort-indicator">
+                        {% if sort_by == 'author' %}
+                            {% if sort_order == 'asc' %}↑{% else %}↓{% endif %}
+                        {% endif %}
+                    </span>
+                </th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for question in questions %}
+            <tr>
+                <td class="question-text-cell">
+                    <div class="question-text">{{ question.question_text }}</div>
+                </td>
+                <td>
+                    {% if question.theme %}
+                        <span class="badge badge-theme" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+                            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-theme">Sans thème</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if question.specific_theme_obj %}
+                        <span class="badge badge-specific-theme" {% if question.specific_theme_obj.color %}style="background-color: {{ question.specific_theme_obj.color }}20; color: {{ question.specific_theme_obj.color }}; border: 1px solid {{ question.specific_theme_obj.color }}"{% endif %}>
+                            {% if question.specific_theme_obj.icon %}{{ question.specific_theme_obj.icon }} {% endif %}{{ question.specific_theme_obj.name }}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-neutral">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+                </td>
+                <td>
+                    {% if question.is_published %}
+                        <span class="badge badge-published">En ligne</span>
+                    {% else %}
+                        <span class="badge badge-draft">Brouillon</span>
+                    {% endif %}
+                </td>
+                <td class="date-cell">
+                    <small>{{ question.created_at.strftime('%d/%m/%Y') if question.created_at else 'N/A' }}</small>
+                </td>
+                <td class="author-cell">
+                    {{ question.author_user.display_name if question.author_user else 'Auteur inconnu' }}
+                </td>
+                <td class="actions-cell">
+                    <button class="btn-icon"
+                            type="button"
+                            onclick="document.getElementById('question-form-container').classList.remove('hidden')"
+                            hx-get="/question/{{ question.id }}/edit"
+                            hx-target="#question-form-container"
+                            hx-swap="innerHTML"
+                            title="Éditer">
+                        ✏️
+                    </button>
+                    <button class="btn-icon btn-danger"
+                            hx-delete="/api/question/{{ question.id }}"
+                            hx-target="#questions-list"
+                            hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
+                            title="Supprimer">
+                        🗑️
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="no-questions">
+    <p>📋 Aucune question trouvée. Commencez par en créer une !</p>
+</div>
+{% endif %}
+
+<style>
+    .badge-specific-theme {
+        background-color: #fef3c7;
+        color: #92400e;
+        font-weight: 500;
+    }
+
+    .badge-neutral {
+        background-color: #f7fafc;
+        color: #4a5568;
+    }
+
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.2s;
+        position: relative;
+    }
+
+    .sortable-header:hover {
+        background-color: rgba(47, 126, 123, 0.1);
+    }
+
+    .sort-indicator {
+        margin-left: 0.5rem;
+        font-size: 0.8em;
+        opacity: 0.7;
+    }
+
+    .sortable-header:hover .sort-indicator {
+        opacity: 1;
+    }
+</style>

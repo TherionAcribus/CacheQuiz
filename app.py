@@ -337,8 +337,14 @@ def index():
 @app.route('/questions')
 def list_questions():
     """Retourner la liste des questions en HTML (pour HTMX)"""
-    questions = Question.query.order_by(Question.updated_at.desc()).all()
-    return render_template('questions_list.html', questions=questions)
+    view = request.args.get('view', 'cards')
+    sort_by = request.args.get('sort_by', 'updated_at')
+    sort_order = request.args.get('sort_order', 'desc')
+
+    base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
+
+    questions = _apply_sorting(base_query, sort_by, sort_order).all()
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
 
 
 @app.route('/question/new')
@@ -535,25 +541,108 @@ def delete_question(question_id):
         return f"Erreur: {str(e)}", 400
 
 
+def _apply_sorting(query, sort_by, sort_order):
+    """Appliquer le tri à la requête selon les paramètres donnés"""
+    if sort_by == 'question_text':
+        if sort_order == 'asc':
+            return query.order_by(Question.question_text.asc())
+        else:
+            return query.order_by(Question.question_text.desc())
+    elif sort_by == 'broad_theme':
+        if sort_order == 'asc':
+            return query.order_by(BroadTheme.name.asc().nulls_last())
+        else:
+            return query.order_by(BroadTheme.name.desc().nulls_last())
+    elif sort_by == 'specific_theme':
+        if sort_order == 'asc':
+            return query.order_by(SpecificTheme.name.asc().nulls_last())
+        else:
+            return query.order_by(SpecificTheme.name.desc().nulls_last())
+    elif sort_by == 'difficulty_level':
+        if sort_order == 'asc':
+            return query.order_by(Question.difficulty_level.asc())
+        else:
+            return query.order_by(Question.difficulty_level.desc())
+    elif sort_by == 'is_published':
+        if sort_order == 'asc':
+            return query.order_by(Question.is_published.asc())
+        else:
+            return query.order_by(Question.is_published.desc())
+    elif sort_by == 'created_at':
+        if sort_order == 'asc':
+            return query.order_by(Question.created_at.asc())
+        else:
+            return query.order_by(Question.created_at.desc())
+    elif sort_by == 'author':
+        if sort_order == 'asc':
+            return query.order_by(User.display_name.asc().nulls_last())
+        else:
+            return query.order_by(User.display_name.desc().nulls_last())
+    else:
+        # Tri par défaut
+        return query.order_by(Question.updated_at.desc())
+
+
 @app.route('/api/questions/search')
 def search_questions():
     """Rechercher des questions"""
-    query = request.args.get('q', '').strip()
-    
-    if query:
-        questions = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True).filter(
+    query_param = request.args.get('q', '').strip()
+    view = request.args.get('view', 'cards')
+    sort_by = request.args.get('sort_by', 'updated_at')
+    sort_order = request.args.get('sort_order', 'desc')
+
+    base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
+
+    if query_param:
+        base_query = base_query.filter(
             db.or_(
-                Question.question_text.contains(query),
-                User.display_name.contains(query),
-                User.username.contains(query),
-                BroadTheme.name.contains(query),
-                SpecificTheme.name.contains(query)
+                Question.question_text.contains(query_param),
+                User.display_name.contains(query_param),
+                User.username.contains(query_param),
+                BroadTheme.name.contains(query_param),
+                SpecificTheme.name.contains(query_param)
             )
-        ).order_by(Question.updated_at.desc()).all()
+        )
+
+    questions = _apply_sorting(base_query, sort_by, sort_order).all()
+
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
+
+
+@app.route('/api/questions/sort')
+def sort_questions():
+    """Trier les questions"""
+    view = request.args.get('view', 'cards')
+    sort_by = request.args.get('sort_by', 'updated_at')
+    query_param = request.args.get('q', '').strip()
+
+    # Déterminer l'ordre de tri : si on clique sur la même colonne, on inverse l'ordre
+    current_sort_by = request.args.get('current_sort_by', '')
+    current_sort_order = request.args.get('current_sort_order', 'desc')
+
+    if sort_by == current_sort_by:
+        # Même colonne, on inverse l'ordre
+        sort_order = 'asc' if current_sort_order == 'desc' else 'desc'
     else:
-        questions = Question.query.order_by(Question.updated_at.desc()).all()
-    
-    return render_template('questions_list.html', questions=questions)
+        # Nouvelle colonne, on commence par ascendant
+        sort_order = 'asc'
+
+    base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
+
+    if query_param:
+        base_query = base_query.filter(
+            db.or_(
+                Question.question_text.contains(query_param),
+                User.display_name.contains(query_param),
+                User.username.contains(query_param),
+                BroadTheme.name.contains(query_param),
+                SpecificTheme.name.contains(query_param)
+            )
+        )
+
+    questions = _apply_sorting(base_query, sort_by, sort_order).all()
+
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
 
 
 # ===== Routes pour les thèmes =====

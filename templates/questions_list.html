@@ -1,5 +1,8 @@
 {% if questions %}
-<div class="questions-grid">
+{% if view == 'table' %}
+{% include 'questions_table.html' %}
+{% else %}
+<div class="questions-grid" data-sort-by="{{ sort_by }}" data-sort-order="{{ sort_order }}">
     {% for question in questions %}
     <div class="question-card">
         <div class="question-header">
@@ -117,6 +120,7 @@
     </div>
     {% endfor %}
 </div>
+{% endif %}
 {% else %}
 <div class="no-questions">
     <p>📋 Aucune question trouvée. Commencez par en créer une !</p>

@@ -4,16 +4,25 @@
 <div class="page-header">
     <h2>Base de données des questions</h2>
     <div class="header-actions">
-        <input type="text" 
-               id="search-input" 
+        <input type="text"
+               id="search-input"
                placeholder="Rechercher une question..."
                hx-get="/api/questions/search"
                hx-trigger="keyup changed delay:500ms"
                hx-target="#questions-list"
                hx-include="this"
                name="q">
-        
-        <button class="btn btn-primary" 
+
+        <div class="view-toggle">
+            <button class="btn btn-secondary" id="view-cards" onclick="toggleView('cards')">
+                📋 Cartes
+            </button>
+            <button class="btn btn-secondary" id="view-table" onclick="toggleView('table')">
+                📊 Tableau
+            </button>
+        </div>
+
+        <button class="btn btn-primary"
                 onclick="document.getElementById('question-form-container').classList.remove('hidden')"
                 hx-get="/question/new"
                 hx-target="#question-form-container"
@@ -59,6 +68,65 @@
     .form-modal.hidden {
         display: none;
     }
+
+    .view-toggle {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .view-toggle .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .view-toggle .btn.active {
+        background-color: var(--primary-color);
+        color: white;
+    }
 </style>
+
+<script>
+let currentView = localStorage.getItem('questionsView') || 'cards';
+
+function toggleView(viewType) {
+    currentView = viewType;
+
+    // Mettre à jour les boutons actifs
+    document.getElementById('view-cards').classList.toggle('active', viewType === 'cards');
+    document.getElementById('view-table').classList.toggle('active', viewType === 'table');
+
+    // Sauvegarder la préférence dans le localStorage
+    localStorage.setItem('questionsView', viewType);
+
+    // Recharger la liste avec la nouvelle vue
+    const searchInput = document.getElementById('search-input');
+    const searchValue = searchInput.value.trim();
+
+    let url;
+    if (searchValue) {
+        url = `/api/questions/search?q=${encodeURIComponent(searchValue)}&view=${viewType}`;
+    } else {
+        url = `/questions?view=${viewType}`;
+    }
+
+    htmx.ajax('GET', url, {target: '#questions-list'});
+}
+
+// Après chaque requête HTMX qui met à jour la liste, s'assurer que la vue reste cohérente
+document.addEventListener('htmx:afterSwap', function(event) {
+    if (event.target.id === 'questions-list') {
+        // Mettre à jour les boutons de vue pour refléter l'état actuel
+        document.getElementById('view-cards').classList.toggle('active', currentView === 'cards');
+        document.getElementById('view-table').classList.toggle('active', currentView === 'table');
+    }
+});
+
+// Initialiser la vue au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    const savedView = localStorage.getItem('questionsView') || 'cards';
+    currentView = savedView;
+    toggleView(savedView);
+});
+</script>
 {% endblock %}
 
