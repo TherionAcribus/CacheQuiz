@@ -90,11 +90,17 @@
                     <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
                 </td>
                 <td>
-                    {% if question.is_published %}
-                        <span class="badge badge-published">En ligne</span>
-                    {% else %}
-                        <span class="badge badge-draft">Brouillon</span>
-                    {% endif %}
+                    <button class="status-toggle-btn"
+                            hx-post="/api/question/{{ question.id }}/toggle-status"
+                            hx-target="this"
+                            hx-swap="innerHTML"
+                            title="Cliquer pour changer le statut">
+                        {% if question.is_published %}
+                            <span class="badge badge-published">En ligne</span>
+                        {% else %}
+                            <span class="badge badge-draft">Brouillon</span>
+                        {% endif %}
+                    </button>
                 </td>
                 <td class="date-cell">
                     <small>{{ question.created_at.strftime('%d/%m/%Y') if question.created_at else 'N/A' }}</small>
@@ -162,5 +168,32 @@
 
     .sortable-header:hover .sort-indicator {
         opacity: 1;
+    }
+
+    .status-toggle-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: inherit;
+        transition: transform 0.2s;
+        border-radius: 0.25rem;
+        width: 100%;
+        text-align: left;
+    }
+
+    .status-toggle-btn:hover {
+        transform: scale(1.05);
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .status-toggle-btn:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+    }
+
+    .status-toggle-btn .badge {
+        display: inline-block;
+        transition: all 0.2s;
     }
 </style>

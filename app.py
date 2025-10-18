@@ -532,11 +532,27 @@ def delete_question(question_id):
         question = Question.query.get_or_404(question_id)
         db.session.delete(question)
         db.session.commit()
-        
+
         # Retourner la liste mise à jour
         questions = Question.query.order_by(Question.updated_at.desc()).all()
         return render_template('questions_list.html', questions=questions)
-    
+
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/question/<int:question_id>/toggle-status', methods=['POST'])
+def toggle_question_status(question_id):
+    """Changer le statut de publication d'une question"""
+    try:
+        question = Question.query.get_or_404(question_id)
+        question.is_published = not question.is_published
+        question.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        # Retourner uniquement le contenu de la cellule statut mis à jour
+        return render_template('question_status_cell.html', question=question)
+
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
