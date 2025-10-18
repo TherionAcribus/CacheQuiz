@@ -79,53 +79,55 @@
     </button>
 
     <div class="rule-actions">
-        <a href="/play" class="btn btn-secondary">Mode manuel</a>
+        <a href="/play" class="btn btn-secondary">Choisir un autre set</a>
         <a href="/quiz-rules" class="btn btn-outline">Gérer les sets de règles</a>
     </div>
 </div>
 {% else %}
-<!-- Mode manuel avec filtres -->
-<div id="quiz-setup" class="quiz-filters">
-    <form id="quiz-filters-form" class="filters-grid">
-        <select name="broad_theme_id" id="play_broad_theme_id">
-            <option value="">Thème large (tous)</option>
-            {% for theme in themes %}
-            <option value="{{ theme.id }}">{% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</option>
-            {% endfor %}
-        </select>
+<!-- Sélection des sets de règles -->
+<div id="quiz-setup" class="rule-sets-selection">
+    <h3>Choisissez votre mode de jeu</h3>
+    <div class="rule-sets-grid">
+        {% for rule_set_item in rule_sets %}
+        <div class="rule-set-card">
+            <div class="card-header">
+                <h4>{{ rule_set_item.name }}</h4>
+                {% if rule_set_item.description %}
+                <p class="card-description">{{ rule_set_item.description }}</p>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="rule-summary">
+                    <span class="badge">⏱ {{ rule_set_item.timer_seconds }}s</span>
+                    <span class="badge">⚙️ {{ rule_set_item.scoring_base_points }} pt</span>
+                    {% if rule_set_item.perfect_quiz_bonus %}
+                    <span class="badge">🏆 +{{ rule_set_item.perfect_quiz_bonus }}</span>
+                    {% endif %}
+                </div>
+                {% set diffs = rule_set_item.get_allowed_difficulties() %}
+                {% if diffs %}
+                <p class="difficulty-info">Difficultés: {{ diffs|join(', ') }}</p>
+                {% else %}
+                <p class="difficulty-info">Toutes difficultés</p>
+                {% endif %}
+                {% set qmap = rule_set_item.get_questions_per_difficulty() %}
+                {% if qmap %}
+                <p class="questions-info">Questions par difficulté: {{ qmap|tojson }}</p>
+                {% endif %}
+            </div>
+            <div class="card-actions">
+                <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">Jouer avec ce set</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 
-        <select name="specific_theme_id" id="play_specific_theme_id">
-            <option value="">Sous-thème (tous)</option>
-            {% for st in specific_themes %}
-            <option value="{{ st.id }}">{% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</option>
-            {% endfor %}
-        </select>
-
-        <select name="country_id" id="play_country_id">
-            <option value="">Pays (tous)</option>
-            {% for c in countries %}
-            <option value="{{ c.id }}">{% if c.flag %}{{ c.flag }} {% endif %}{{ c.name }}</option>
-            {% endfor %}
-        </select>
-
-        <select name="difficulty_level" id="play_difficulty">
-            <option value="">Difficulté (toutes)</option>
-            <option value="1">1 - Très facile</option>
-            <option value="2">2 - Facile</option>
-            <option value="3">3 - Moyen</option>
-            <option value="4">4 - Difficile</option>
-            <option value="5">5 - Très difficile</option>
-        </select>
-
-        <button class="btn btn-primary" type="button"
-                hx-get="/api/quiz/next"
-                hx-target="#quiz-stage"
-                hx-include="#quiz-filters-form"
-                hx-swap="innerHTML"
-                hx-vals='{"history": ""}'>
-            Démarrer
-        </button>
-    </form>
+    {% if not rule_sets %}
+    <div class="no-rule-sets">
+        <p>Aucun set de règles n'est disponible pour le moment.</p>
+        <a href="/quiz-rules" class="btn btn-primary">Créer un set de règles</a>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -142,13 +144,53 @@
         .placeholder { color: var(--muted-color); margin: .25rem 0; }
         .placeholder.small { font-size: .9rem; }
         .quiz-stage { margin-top: 1rem; }
-        .filters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; align-items: center; }
+
+        /* Styles pour la sélection des sets de règles */
+        .rule-sets-selection { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .rule-sets-selection h3 { text-align: center; margin-bottom: 2rem; color: var(--primary-color); }
+        .rule-sets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+
+        .rule-set-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: .75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .rule-set-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header { margin-bottom: 1rem; }
+        .card-header h4 { margin: 0 0 0.5rem 0; color: var(--primary-color); font-size: 1.25rem; }
+        .card-description { margin: 0; color: var(--text-color); font-size: 0.9rem; line-height: 1.4; }
+
+        .card-body { flex-grow: 1; margin-bottom: 1rem; }
+        .rule-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .rule-summary .badge {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .difficulty-info, .questions-info { margin: 0.5rem 0; font-size: 0.85rem; color: var(--muted-color); }
+
+        .card-actions { text-align: center; }
+
+        .no-rule-sets { text-align: center; padding: 2rem; color: var(--muted-color); }
+
+        /* Styles pour le mode avec set de règles sélectionné */
         .rule-set-info { background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: .5rem; padding: 1rem; margin-bottom: 1rem; }
         .rule-set-info h2 { margin: 0 0 .5rem 0; color: #0c4a6e; }
         .rule-set-info p { margin: .25rem 0; }
         .intro-message { background: #fefce8; border: 1px solid #eab308; border-radius: .25rem; padding: .5rem; margin-top: .5rem; font-style: italic; }
-        .rule-summary { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
-        .rule-summary .badge { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
         .rule-set-mode { text-align: center; margin: 2rem 0; }
         .rule-details { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .5rem; padding: 1.5rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
         .rule-details h3 { margin: 0 0 1rem 0; color: var(--primary-color); }

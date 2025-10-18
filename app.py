@@ -1144,16 +1144,16 @@ def _apply_quiz_filters(query, params):
 
 @app.route('/play')
 def play_quiz():
-    """Page pour jouer au quiz avec filtres simples ou set de règles."""
+    """Page pour choisir un set de règles et jouer au quiz."""
     rule_set = None
     rule_set_slug = request.args.get('rule_set', '').strip()
     if rule_set_slug:
         rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
 
-    themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    countries = Country.query.order_by(Country.name).all()
-    return render_template('play.html', themes=themes, specific_themes=specific_themes, countries=countries, rule_set=rule_set)
+    # Récupérer tous les sets de règles actifs
+    rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
+
+    return render_template('play.html', rule_sets=rule_sets, rule_set=rule_set)
 
 
 @app.route('/api/quiz/next')
