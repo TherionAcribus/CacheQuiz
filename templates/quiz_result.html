@@ -1,4 +1,5 @@
-<div class="quiz-result-card">
+<div class="quiz-game-container">
+    <!-- Status de la réponse -->
     <div class="result-status {% if is_correct %}ok{% else %}ko{% endif %}">
         {% if is_correct %}
         ✅ Bonne réponse !
@@ -10,34 +11,53 @@
         {% endif %}
     </div>
 
-    <div class="result-question">
-        <strong>Question:</strong> {{ question.question_text }}
+    <!-- Cadre de la question -->
+    <div class="question-frame">
+        <div class="question-content">
+            <h3 class="quiz-question">{{ question.question_text }}</h3>
+            {% if question.images %}
+            <div class="quiz-images">
+                {% for img in question.images %}
+                <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="result-answers">
-        {% set answers = question.possible_answers.split('|||') %}
-        <ul>
-            {% for answer in answers %}
-            <li class="{% if loop.index == question.correct_answer|int %}correct{% endif %}">
-                <span class="num">{{ loop.index }}.</span>
-                <span>{{ answer }}</span>
-                {% if loop.index == selected|int %}
-                <span class="you">(votre choix)</span>
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
+    <!-- Cadre unique de la réponse -->
+    <div class="answer-result-frame">
+        <div class="answer-result-content">
+            <h4 class="answer-result-title">Réponse</h4>
+
+            {% set answers = question.possible_answers.split('|||') %}
+            <div class="answers-summary">
+                {% for answer in answers %}
+                <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %}">
+                    <span class="answer-num">{{ loop.index }}</span>
+                    <span class="answer-text">{{ answer }}</span>
+                    {% if loop.index == selected|int %}
+                    <span class="your-choice">(votre choix)</span>
+                    {% endif %}
+                    {% if loop.index == question.correct_answer|int %}
+                    <span class="correct-indicator">✓</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if question.detailed_answer %}
+            <div class="result-explanation">
+                <strong>📚 Explication:</strong>
+                <p>{{ question.detailed_answer }}</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
-    {% if question.detailed_answer %}
-    <div class="result-explain">
-        <strong>Explication:</strong>
-        <p>{{ question.detailed_answer }}</p>
-    </div>
-    {% endif %}
-
+    <!-- Actions -->
     <div class="result-actions">
-        <button class="btn" type="button"
+        <button class="btn btn-primary btn-large" type="button"
                 hx-get="/api/quiz/next"
                 hx-target="#quiz-stage"
                 hx-swap="innerHTML"
@@ -46,28 +66,296 @@
         </button>
         {% if rule_set %}
         <button class="btn btn-secondary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Retour au set</button>
-        {% else %}
-        <button class="btn btn-secondary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Changer les filtres</button>
         {% endif %}
     </div>
 
+    <!-- Statistiques -->
     <div class="result-stats">
         <small>Répondu: {{ question.times_answered }} fois · Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</small>
     </div>
 </div>
 
 <style>
-    .quiz-result-card{border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg);padding:1rem}
-    .result-status{font-weight:700;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center}
-    .result-status.ok{color: #065f46}
-    .result-status.ko{color: #7f1d1d}
-    .score{background:#dcfce7;color:#166534;padding:.2rem .5rem;border-radius:.25rem;font-weight:600;margin-left:auto}
-    .result-answers ul{list-style:none;padding:0;margin:.5rem 0}
-    .result-answers li{display:flex;gap:.5rem;align-items:center;padding:.25rem .5rem;border-radius:.25rem}
-    .result-answers li.correct{background: #ecfdf5}
-    .result-answers .num{font-weight:600}
-    .result-answers .you{color: var(--muted-color); margin-left:.5rem}
-    .result-actions{display:flex;gap:.5rem;margin-top:.75rem}
+    .quiz-game-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .result-status {
+        font-weight: 700;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.25rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+    }
+
+    .result-status.ok {
+        color: #065f46;
+        background: #ecfdf5;
+        border: 2px solid #10b981;
+    }
+
+    .result-status.ko {
+        color: #7f1d1d;
+        background: #fef2f2;
+        border: 2px solid #ef4444;
+    }
+
+    .score {
+        background: #dcfce7;
+        color: #166534;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        margin-left: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .question-frame {
+        background: var(--card-bg);
+        border: 2px solid var(--primary-color);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-lg);
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+    }
+
+    .question-content {
+        width: 100%;
+        text-align: center;
+    }
+
+    .quiz-question {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 1rem 0;
+        line-height: 1.4;
+        color: var(--text-color);
+    }
+
+    .quiz-images {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .quiz-images img {
+        max-width: 120px;
+        max-height: 120px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+    }
+
+    .answer-result-frame {
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .answer-result-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0 0 1.5rem 0;
+        text-align: center;
+    }
+
+    .answers-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .answer-summary-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        background: var(--bg-color);
+    }
+
+    .answer-summary-item.correct {
+        background: #ecfdf5;
+        border-color: #10b981;
+        position: relative;
+    }
+
+    .answer-summary-item.incorrect {
+        opacity: 0.7;
+    }
+
+    .answer-num {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        min-width: 24px;
+    }
+
+    .answer-text {
+        flex: 1;
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+
+    .your-choice {
+        color: #ef4444;
+        font-weight: 500;
+        font-style: italic;
+    }
+
+    .correct-indicator {
+        color: #10b981;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-left: auto;
+    }
+
+    .result-explanation {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+    }
+
+    .result-explanation strong {
+        color: var(--primary-color);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .result-explanation p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .result-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-large {
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+    }
+
+    .result-stats {
+        text-align: center;
+        color: var(--text-light);
+        font-size: 0.9rem;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .quiz-game-container {
+            padding: 0.5rem;
+        }
+
+        .result-status {
+            font-size: 1.1rem;
+            padding: 0.875rem;
+        }
+
+        .question-frame {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 120px;
+        }
+
+        .quiz-question {
+            font-size: 1.25rem;
+        }
+
+        .answer-result-frame {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .answer-result-title {
+            font-size: 1.1rem;
+        }
+
+        .answer-summary-item {
+            padding: 0.875rem;
+        }
+
+        .answer-text {
+            font-size: 0.95rem;
+        }
+
+        .result-explanation {
+            padding: 1rem;
+        }
+
+        .btn-large {
+            font-size: 1.1rem;
+            padding: 0.875rem 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .result-status {
+            font-size: 1rem;
+            padding: 0.75rem;
+        }
+
+        .question-frame {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            min-height: 100px;
+        }
+
+        .quiz-question {
+            font-size: 1.1rem;
+        }
+
+        .answer-result-frame {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .answer-summary-item {
+            padding: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        .answer-num {
+            font-size: 1rem;
+            min-width: 20px;
+        }
+
+        .answer-text {
+            font-size: 0.9rem;
+        }
+
+        .btn-large {
+            font-size: 1rem;
+            padding: 0.75rem 1.25rem;
+        }
+
+        .result-actions {
+            gap: 0.5rem;
+        }
+    }
 </style>
 
 

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>Jouer au quiz{% if rule_set %} - {{ rule_set.name }}{% endif %}</h2>
+    {% if rule_set %}<h2>{{ rule_set.name }}</h2>{% endif %}
     {% if rule_set %}
     <div class="rule-set-info">
         <p><strong>Set de règles actif:</strong> {{ rule_set.name }}</p>
@@ -25,7 +25,7 @@
 
 {% if rule_set %}
 <!-- Mode avec set de règles prédéfini -->
-<div class="rule-set-mode">
+<div id="quiz-setup" class="rule-set-mode">
     <div class="rule-details">
         <h3>Règles appliquées</h3>
         <ul>
@@ -85,7 +85,7 @@
 </div>
 {% else %}
 <!-- Mode manuel avec filtres -->
-<div class="quiz-filters">
+<div id="quiz-setup" class="quiz-filters">
     <form id="quiz-filters-form" class="filters-grid">
         <select name="broad_theme_id" id="play_broad_theme_id">
             <option value="">Thème large (tous)</option>
@@ -158,7 +158,29 @@
         .rule-actions { margin-top: 1rem; }
         .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
         .btn-outline:hover { background: var(--primary-color); color: white; }
+
     </style>
+
+    <script>
+        // Fonction pour supprimer complètement la configuration quand le quiz démarre
+        function removeQuizSetup() {
+            const setupElement = document.getElementById('quiz-setup');
+            if (setupElement) {
+                setupElement.remove();
+            }
+        }
+
+        // Écouter les événements HTMX pour supprimer la configuration
+        document.addEventListener('DOMContentLoaded', function() {
+            // Quand HTMX charge du contenu dans #quiz-stage, supprimer la configuration
+            document.getElementById('quiz-stage').addEventListener('htmx:afterSwap', function(evt) {
+                // Vérifier si le contenu chargé contient une question (pas un placeholder)
+                if (!evt.detail.xhr.responseText.includes('placeholder')) {
+                    removeQuizSetup();
+                }
+            });
+        });
+    </script>
 </div>
 {% endblock %}
 

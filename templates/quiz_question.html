@@ -4,7 +4,8 @@
     <button class="btn" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Modifier les filtres</button>
     <style>.quiz-empty{padding:1rem;border:2px dashed var(--border-color);border-radius:.5rem;color:var(--muted-color)}</style>
 {% else %}
-<div class="quiz-card">
+<div class="quiz-game-container">
+    <!-- En-tête avec badges -->
     <div class="quiz-header">
         {% if question.theme %}
         <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
@@ -13,59 +14,285 @@
         {% endif %}
         <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
     </div>
-    <div class="quiz-body">
-        <h3 class="quiz-question">{{ question.question_text }}</h3>
-        {% if question.images %}
-        <div class="quiz-images">
-            {% for img in question.images %}
-            <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
-            {% endfor %}
-        </div>
-        {% endif %}
 
-        {% set answers = question.possible_answers.split('|||') %}
-        <form class="answers-list" hx-post="/api/quiz/answer" hx-target="#quiz-stage" hx-swap="innerHTML">
-            <input type="hidden" name="question_id" value="{{ question.id }}">
-            <input type="hidden" name="history" value="{{ history or '' }}">
-            {% if rule_set %}
-            <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
+    <!-- Cadre principal de la question -->
+    <div class="question-frame">
+        <div class="question-content">
+            <h3 class="quiz-question">{{ question.question_text }}</h3>
+            {% if question.images %}
+            <div class="quiz-images">
+                {% for img in question.images %}
+                <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
+                {% endfor %}
+            </div>
             {% endif %}
-            {% for answer in answers %}
-            <label class="answer-item">
-                <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
-                <span class="answer-index">{{ loop.index }}.</span>
+        </div>
+    </div>
+
+    <!-- Grille des réponses -->
+    {% set answers = question.possible_answers.split('|||') %}
+    <form class="answers-grid" hx-post="/api/quiz/answer" hx-target="#quiz-stage" hx-swap="innerHTML">
+        <input type="hidden" name="question_id" value="{{ question.id }}">
+        <input type="hidden" name="history" value="{{ history or '' }}">
+        {% if rule_set %}
+        <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
+        {% endif %}
+        {% for answer in answers %}
+        <label class="answer-frame">
+            <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
+            <div class="answer-content">
+                <span class="answer-index">{{ loop.index }}</span>
                 <span class="answer-text">{{ answer }}</span>
                 {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
                 {% if link and link[0] and link[0].image %}
                 <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}">
                 {% endif %}
-            </label>
-            {% endfor %}
-            <div class="quiz-actions">
-                <button class="btn btn-primary" type="submit">Valider</button>
             </div>
-        </form>
-    </div>
+        </label>
+        {% endfor %}
+
+        <!-- Bouton de validation -->
+        <div class="validation-frame">
+            <button class="btn btn-primary btn-large" type="submit">Valider ma réponse</button>
+        </div>
+    </form>
+
     {% if question.hint %}
-    <div class="quiz-hint"><strong>Indice:</strong> {{ question.hint }}</div>
+    <div class="quiz-hint"><strong>💡 Indice:</strong> {{ question.hint }}</div>
     {% endif %}
 </div>
 
 <style>
-    .quiz-card{border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg);padding:1rem}
-    .quiz-header{display:flex;gap:.5rem;margin-bottom:.5rem;align-items:center}
-    .quiz-question{margin:.5rem 0 1rem}
-    .answers-list{display:flex;flex-direction:column;gap:.5rem}
-    .answer-item{display:flex;align-items:center;gap:.5rem;padding:.5rem;border:1px solid var(--border-color);border-radius:.375rem;cursor:pointer}
-    .answer-item:hover{background:var(--bg-color)}
-    .answer-index{font-weight:600}
-    .answer-thumb{max-width:56px;max-height:56px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem;margin-left:auto}
-    .quiz-images{display:flex;gap:.5rem;margin-bottom:.5rem}
-    .quiz-images img{max-width:120px;max-height:120px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem}
-    .quiz-hint{margin-top:.5rem;color:var(--muted-color)}
-    .quiz-actions{margin-top:.75rem}
-    .badge{display:inline-block;padding:.15rem .5rem;border-radius:999px;border:1px solid var(--border-color);font-size:.85rem}
-}</style>
+    .quiz-game-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .quiz-header {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .question-frame {
+        background: var(--card-bg);
+        border: 2px solid var(--primary-color);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-lg);
+        min-height: 150px;
+        display: flex;
+        align-items: center;
+    }
+
+    .question-content {
+        width: 100%;
+        text-align: center;
+    }
+
+    .quiz-question {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 1rem 0;
+        line-height: 1.4;
+        color: var(--text-color);
+    }
+
+    .quiz-images {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .quiz-images img {
+        max-width: 120px;
+        max-height: 120px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+    }
+
+    .answers-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .answer-frame {
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        min-height: 120px;
+        position: relative;
+    }
+
+    .answer-frame:hover {
+        border-color: var(--primary-color);
+        background: var(--bg-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    .answer-frame:has(input:checked) {
+        border-color: var(--primary-color);
+        background: #e6fffa;
+        box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+    }
+
+    .answer-content {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .answer-index {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        min-width: 24px;
+    }
+
+    .answer-text {
+        flex: 1;
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+
+    .answer-thumb {
+        max-width: 60px;
+        max-height: 60px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        margin-left: auto;
+    }
+
+    .validation-frame {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .btn-large {
+        font-size: 1.2rem;
+        padding: 1rem 2rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+    }
+
+    .quiz-hint {
+        background: #fefce8;
+        border: 1px solid #eab308;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        color: #92400e;
+        text-align: center;
+        font-style: italic;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .quiz-game-container {
+            padding: 0.5rem;
+        }
+
+        .question-frame {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 120px;
+        }
+
+        .quiz-question {
+            font-size: 1.25rem;
+        }
+
+        .answers-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .answer-frame {
+            padding: 1rem;
+            min-height: 100px;
+        }
+
+        .answer-content {
+            gap: 0.5rem;
+        }
+
+        .answer-text {
+            font-size: 0.95rem;
+        }
+
+        .answer-thumb {
+            max-width: 50px;
+            max-height: 50px;
+        }
+
+        .btn-large {
+            font-size: 1.1rem;
+            padding: 0.875rem 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .question-frame {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .quiz-question {
+            font-size: 1.1rem;
+        }
+
+        .answer-frame {
+            padding: 0.875rem;
+            min-height: 80px;
+        }
+
+        .answer-index {
+            font-size: 1.1rem;
+            min-width: 20px;
+        }
+
+        .answer-text {
+            font-size: 0.9rem;
+        }
+
+        .btn-large {
+            font-size: 1rem;
+            padding: 0.75rem 1.25rem;
+        }
+    }
+
+    /* Masquer les inputs radio */
+    input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+</style>
 {% endif %}
 
 
