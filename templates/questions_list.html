@@ -50,6 +50,9 @@
                 {% if question.hint %}
                 <p><strong>Indice:</strong> {{ question.hint }}</p>
                 {% endif %}
+                {% if question.source %}
+                <p><strong>Source:</strong> <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{ question.source }}</a></p>
+                {% endif %}
                 {% if question.countries %}
                 <p><strong>Pays:</strong> 
                     {% for country in question.countries %}
@@ -92,6 +95,14 @@
             <div class="detailed-answer">
                 <strong>Explication:</strong>
                 <p>{{ question.detailed_answer }}</p>
+                {% if question.detailed_answer_image %}
+                <div class="answer-image">
+                    <img src="/uploads/{{ question.detailed_answer_image.filename }}"
+                         alt="{{ question.detailed_answer_image.alt_text or question.detailed_answer_image.title }}"
+                         title="{{ question.detailed_answer_image.title }}"
+                         style="max-width:200px; max-height:150px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem;" />
+                </div>
+                {% endif %}
             </div>
             {% endif %}
         </div>

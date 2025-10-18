@@ -65,6 +65,8 @@ La table **Questions** contient les champs suivants :
 | `times_answered` | Integer | Nombre total de réponses |
 | `translation_id` | Integer | ID de la question dans une autre langue |
 | `is_published` | Boolean | Statut de publication |
+| `source` | Text | Source/URL pour vérifier la réponse (optionnel) |
+| `detailed_answer_image_id` | Integer | ID de l'image illustrant la réponse détaillée (optionnel) |
 
 ## 🛠️ Technologies utilisées
 

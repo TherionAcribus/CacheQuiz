@@ -266,6 +266,9 @@ class Question(db.Model):
                                          back_populates='question',
                                          cascade='all, delete-orphan',
                                          lazy='subquery')
+
+    # Image pour la réponse détaillée
+    detailed_answer_image = db.relationship('ImageAsset', lazy='subquery')
     
     # Difficulté
     difficulty_level = db.Column(db.Integer)  # 1-5 par exemple
@@ -277,6 +280,12 @@ class Question(db.Model):
     # Traduction et publication
     translation_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=True)
     is_published = db.Column(db.Boolean, default=False)
+
+    # Source (optionnelle) - URL ou référence pour vérifier la réponse
+    source = db.Column(db.Text)
+
+    # Image pour la réponse détaillée (optionnelle)
+    detailed_answer_image_id = db.Column(db.Integer, db.ForeignKey('images.id'), nullable=True)
     
     # Relation pour les traductions
     translations = db.relationship('Question',
@@ -318,7 +327,9 @@ class Question(db.Model):
             'success_rate': self.success_rate,
             'times_answered': self.times_answered,
             'translation_id': self.translation_id,
-            'is_published': self.is_published
+            'is_published': self.is_published,
+            'source': self.source,
+            'detailed_answer_image': self.detailed_answer_image.to_dict() if self.detailed_answer_image else None
         }
 
 

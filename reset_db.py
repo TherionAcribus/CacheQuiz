@@ -2,7 +2,7 @@
 Script pour réinitialiser complètement la base de données
 """
 from app import app
-from models import db, Question, BroadTheme, SpecificTheme, User, Country
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset
 import os
 
 def reset_database():
@@ -300,6 +300,43 @@ def reset_database():
         db.session.commit()
         print(f"[OK] {len(sample_countries)} pays crees")
 
+        # Créer des images d'exemple pour les réponses détaillées
+        print("\n[IMAGES] Creation d'images d'exemple...")
+        sample_images = [
+            {
+                'title': 'Exemple cache Micro',
+                'filename': 'micro-cache-example.jpg',
+                'mime_type': 'image/jpeg',
+                'size_bytes': 125000,
+                'alt_text': 'Photo d\'un cache Micro montrant sa taille'
+            },
+            {
+                'title': 'Schéma tailles de caches',
+                'filename': 'cache-sizes-diagram.png',
+                'mime_type': 'image/png',
+                'size_bytes': 98000,
+                'alt_text': 'Diagramme montrant les différentes tailles de geocaches'
+            },
+            {
+                'title': 'FTF Celebration',
+                'filename': 'ftf-celebration.jpg',
+                'mime_type': 'image/jpeg',
+                'size_bytes': 245000,
+                'alt_text': 'Photo d\'un géocacheur célébrant son premier FTF'
+            }
+        ]
+
+        images_created = {}
+        for i, img_data in enumerate(sample_images):
+            image = ImageAsset(**img_data)
+            db.session.add(image)
+            db.session.flush()
+            images_created[f'image_{i+1}'] = image.id
+            print(f"   [CREE] {img_data['title']} ({img_data['filename']})")
+
+        db.session.commit()
+        print(f"[OK] {len(sample_images)} images crees")
+
         # Créer des questions d'exemple
         print("\n[QUESTIONS] Creation des questions d'exemple...")
         sample_questions = [
@@ -311,6 +348,8 @@ def reset_database():
                 'correct_answer': '2',
                 'detailed_answer': "Un cache Micro est de la taille approximative d'un film 35mm. C'est l'une des plus petites tailles de geocaches.",
                 'hint': "Pensez à un objet photo ancien",
+                'source': "https://www.geocaching.com/guide/#toc-0-2",
+                'detailed_answer_image_id': images_created.get('image_1'),
                 'broad_theme_id': themes['Règles'],
                 'specific_theme_id': specific_themes_created.get('Tailles de caches'),
                 'difficulty_level': 1,
@@ -325,6 +364,8 @@ def reset_database():
                 'correct_answer': '1',
                 'detailed_answer': "FTF signifie 'First To Find', c'est-à-dire être la première personne à trouver une cache après sa publication. C'est un honneur recherché par de nombreux géocacheurs!",
                 'hint': "C'est un honneur pour les géocacheurs compétitifs",
+                'source': "https://www.geocaching.com/blog/2019/09/20/celebrating-20-years-of-geocaching/",
+                'detailed_answer_image_id': images_created.get('image_3'),
                 'broad_theme_id': themes['Terminologie'],
                 'specific_theme_id': specific_themes_created.get('Acronymes courants'),
                 'difficulty_level': 1,

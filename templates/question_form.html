@@ -101,17 +101,41 @@
                 
                 <div class="form-group">
                     <label for="detailed_answer">Explication détaillée</label>
-                    <textarea id="detailed_answer" 
-                              name="detailed_answer" 
+                    <textarea id="detailed_answer"
+                              name="detailed_answer"
                               rows="4">{{ question.detailed_answer if question else '' }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
+                    <select name="detailed_answer_image_id" class="answer-image-select">
+                        <option value="">-- Pas d'image --</option>
+                        {% for img in images %}
+                        <option value="{{ img.id }}"
+                            {% if question and question.detailed_answer_image_id == img.id %}selected{% endif %}>
+                            {{ img.title }} ({{ img.filename }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>Image illustrative pour accompagner l'explication détaillée</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="hint">Indice</label>
-                    <input type="text" 
-                           id="hint" 
-                           name="hint" 
+                    <input type="text"
+                           id="hint"
+                           name="hint"
                            value="{{ question.hint if question else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="source">Source (optionnel)</label>
+                    <input type="url"
+                           id="source"
+                           name="source"
+                           placeholder="https://exemple.com/source-officielle"
+                           value="{{ question.source if question else '' }}">
+                    <small>URL ou référence où vérifier la réponse (site officiel, documentation, etc.)</small>
                 </div>
             </div>
             
@@ -223,6 +247,9 @@
                     <p>Réponses: {{ question.times_answered }}</p>
                     <p>Succès: {{ question.success_count }}/{{ question.times_answered }}</p>
                     <p>Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</p>
+                    {% if question.source %}
+                    <p>Source: <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{ question.source }}</a></p>
+                    {% endif %}
                     <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
                 </div>
                 {% endif %}

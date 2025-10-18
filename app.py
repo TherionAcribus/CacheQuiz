@@ -404,6 +404,8 @@ def create_question():
             correct_answer=data.get('correct_answer'),
             detailed_answer=data.get('detailed_answer'),
             hint=data.get('hint'),
+            source=data.get('source').strip() if data.get('source') else None,
+            detailed_answer_image_id=int(data.get('detailed_answer_image_id')) if data.get('detailed_answer_image_id') else None,
             broad_theme_id=int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None,
             specific_theme_id=int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None,
             difficulty_level=int(data.get('difficulty_level', 1)),
@@ -472,6 +474,8 @@ def update_question(question_id):
         question.correct_answer = data.get('correct_answer')
         question.detailed_answer = data.get('detailed_answer')
         question.hint = data.get('hint')
+        question.source = data.get('source').strip() if data.get('source') else None
+        question.detailed_answer_image_id = int(data.get('detailed_answer_image_id')) if data.get('detailed_answer_image_id') else None
         question.broad_theme_id = int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None
         question.specific_theme_id = int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None
         question.difficulty_level = int(data.get('difficulty_level', 1))
