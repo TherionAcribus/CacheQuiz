@@ -12,6 +12,16 @@
     </div>
     {% endif %}
 
+    <!-- En-tête avec badges -->
+    <div class="quiz-header">
+        {% if question.theme %}
+        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+        </span>
+        {% endif %}
+        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+    </div>
+
     <!-- Status de la réponse -->
     <div class="result-status {% if is_correct %}ok{% else %}ko{% endif %}">
         {% if is_correct %}
@@ -102,6 +112,23 @@
         padding: 1rem;
         margin-bottom: 1.5rem;
         box-shadow: var(--shadow);
+    }
+
+    .quiz-header {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        font-weight: 500;
     }
 
     .progress-info {

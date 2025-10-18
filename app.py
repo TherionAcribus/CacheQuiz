@@ -1208,16 +1208,11 @@ def next_quiz_question():
                     available_diffs.append(d)
 
             if available_diffs:
-                # Prioriser les difficultés avec le moins de questions restantes
-                diff_weights = {}
-                for d in available_diffs:
-                    max_q = qmap.get(str(d), 0)
-                    current_q = diff_counts.get(d, 0)
-                    remaining = max_q - current_q
-                    diff_weights[d] = remaining
+                # Trier les difficultés par ordre croissant (1, 2, 3, 4, 5)
+                available_diffs_sorted = sorted(available_diffs)
 
-                # Trier par nombre restant décroissant pour équilibrer
-                selected_diff = max(diff_weights, key=diff_weights.get)
+                # Sélectionner la difficulté la plus basse disponible
+                selected_diff = available_diffs_sorted[0]
                 query = query.filter(Question.difficulty_level == selected_diff)
 
         # SQLite: random(), PostgreSQL: RANDOM()
