@@ -18,6 +18,19 @@
     </div>
     {% endif %}
 
+    <!-- Timer -->
+    {% if rule_set and rule_set.timer_seconds %}
+    <div class="quiz-timer" id="quiz-timer" hx-get="/api/timer/update?rule_set={{ rule_set.slug }}&question_id={{ question.id }}" hx-trigger="load, every 1s" hx-target="#quiz-timer" hx-swap="outerHTML">
+        <div class="timer-display">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-text">Temps restant: <span id="timer-countdown">{{ rule_set.timer_seconds }}</span>s</span>
+        </div>
+        <div class="timer-progress">
+            <div class="timer-bar" id="timer-bar" style="width: 100%"></div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- En-tête avec badges -->
     <div class="quiz-header">
         {% if question.theme %}
@@ -51,11 +64,14 @@
         <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
         {% endif %}
         {% for answer in answers %}
-        <label class="answer-frame">
+        <label class="answer-frame {% if loop.index == question.correct_answer|int %}correct-answer{% endif %}">
             <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
             <div class="answer-content">
                 <span class="answer-index">{{ loop.index }}</span>
                 <span class="answer-text">{{ answer }}</span>
+                {% if loop.index == question.correct_answer|int %}
+                <span class="correct-hint" title="Bonne réponse (visible pour les tests)">✓</span>
+                {% endif %}
                 {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
                 {% if link and link[0] and link[0].image %}
                 <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}">
@@ -89,6 +105,69 @@
         padding: 1rem;
         margin-bottom: 1.5rem;
         box-shadow: var(--shadow);
+    }
+
+    .quiz-timer {
+        background: var(--card-bg);
+        border: 2px solid #ef4444;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+        text-align: center;
+    }
+
+    .timer-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        color: #dc2626;
+        font-size: 1.1rem;
+    }
+
+    .timer-icon {
+        font-size: 1.2rem;
+    }
+
+    .timer-text {
+        font-weight: 700;
+    }
+
+    .timer-progress {
+        height: 6px;
+        background: #fee2e2;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .timer-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+        border-radius: 3px;
+        transition: width 1s linear;
+    }
+
+    .timer-warning .timer-bar {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    .timer-critical .timer-bar {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .timer-expired {
+        border-color: #6b7280 !important;
+    }
+
+    .timer-expired .timer-display {
+        color: #6b7280;
+    }
+
+    .timer-expired .timer-bar {
+        background: #6b7280;
     }
 
     .progress-info {
@@ -216,6 +295,25 @@
         border-color: var(--primary-color);
         background: #e6fffa;
         box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+    }
+
+    .answer-frame.correct-answer {
+        position: relative;
+    }
+
+    .correct-hint {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: #10b981;
+        font-size: 0.8rem;
+        font-weight: bold;
+        opacity: 0.3;
+        transition: opacity 0.2s ease;
+    }
+
+    .answer-frame.correct-answer:hover .correct-hint {
+        opacity: 0.8;
     }
 
     .answer-content {
@@ -351,7 +449,18 @@
         opacity: 0;
         pointer-events: none;
     }
+
+    /* Animation du timer critique */
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .timer-critical .quiz-timer {
+        animation: pulse 0.5s ease-in-out infinite;
+    }
 </style>
+
 {% endif %}
 
 

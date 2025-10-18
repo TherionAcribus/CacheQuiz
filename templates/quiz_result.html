@@ -1,16 +1,4 @@
 <div class="quiz-game-container">
-    <!-- Barre de progression et score -->
-    {% if rule_set %}
-    <div class="quiz-progress-bar">
-        <div class="progress-info">
-            <span class="question-counter">Question {{ current_question_num }} / {{ total_questions }}</span>
-            <span class="score-display">Score: {{ total_score }} pts</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: {{ (current_question_num / total_questions * 100) if total_questions > 0 else 0 }}%"></div>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- En-tête avec badges -->
     <div class="quiz-header">
@@ -29,6 +17,8 @@
         {% if rule_set and score > 0 %}
         <span class="score">+{{ score }} point(s)</span>
         {% endif %}
+        {% elif selected == 'no_answer' %}
+        ⏰ Temps écoulé ou pas de réponse
         {% else %}
         ❌ Mauvaise réponse.
         {% endif %}

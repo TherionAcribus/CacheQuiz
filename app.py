@@ -1211,9 +1211,25 @@ def next_quiz_question():
                 # Trier les difficultés par ordre croissant (1, 2, 3, 4, 5)
                 available_diffs_sorted = sorted(available_diffs)
 
-                # Sélectionner la difficulté la plus basse disponible
-                selected_diff = available_diffs_sorted[0]
-                query = query.filter(Question.difficulty_level == selected_diff)
+                # Pour chaque difficulté disponible, vérifier si on peut sélectionner une question
+                selected_diff = None
+                for diff in available_diffs_sorted:
+                    # Compter les questions disponibles pour cette difficulté (non dans l'historique)
+                    available_questions = Question.query.filter(
+                        Question.difficulty_level == diff,
+                        Question.is_published.is_(True),
+                        ~Question.id.in_(history_ids) if history_ids else True
+                    ).count()
+
+                    if available_questions > 0:
+                        selected_diff = diff
+                        break
+
+                if selected_diff:
+                    query = query.filter(Question.difficulty_level == selected_diff)
+                else:
+                    # Si aucune question disponible dans les difficultés autorisées, prendre n'importe quelle question
+                    pass
 
         # SQLite: random(), PostgreSQL: RANDOM()
         question = query.order_by(db.func.random()).first()
@@ -1307,7 +1323,13 @@ def submit_quiz_answer():
 
         question = Question.query.get_or_404(int(question_id_raw))
         correct_value = (question.correct_answer or '').strip()
-        is_correct = selected_answer == correct_value
+
+        # Si pas de réponse sélectionnée, considérer comme incorrect (timeout ou oubli)
+        if not selected_answer:
+            is_correct = False
+            selected_answer = 'no_answer'  # Marquer comme pas de réponse
+        else:
+            is_correct = selected_answer == correct_value
 
         # Charger le set de règles si spécifié
         rule_set = None
@@ -1395,6 +1417,156 @@ def submit_quiz_answer():
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
+
+# ============ Routes pour le timer ============
+
+@app.route('/api/timer/update')
+def update_timer():
+    """Met à jour l'affichage du timer via HTMX."""
+    rule_set_slug = request.args.get('rule_set', '').strip()
+    question_id = request.args.get('question_id', '').strip()
+
+    if not rule_set_slug or not question_id:
+        return "Paramètres manquants", 400
+
+    rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+    if not rule_set or not rule_set.timer_seconds:
+        return "Timer non disponible", 400
+
+    # Utiliser la session pour stocker l'état du timer
+    session_key = f"timer_{rule_set_slug}_{question_id}"
+    start_time = session.get(session_key)
+
+    if start_time is None:
+        # Première fois - initialiser le timer
+        start_time = datetime.utcnow().timestamp()
+        session[session_key] = start_time
+
+    current_time = datetime.utcnow().timestamp()
+    elapsed = current_time - start_time
+    remaining = max(0, rule_set.timer_seconds - int(elapsed))
+
+    # Si le timer est écoulé, traiter directement comme une mauvaise réponse
+    if remaining <= 0:
+        # Nettoyer la session du timer
+        session.pop(session_key, None)
+
+        # Simuler une soumission de mauvaise réponse (pas de réponse sélectionnée)
+        # On va récupérer la question et créer directement le résultat
+        question = Question.query.get_or_404(int(question_id))
+
+        # Traiter comme une mauvaise réponse (pas de réponse sélectionnée)
+        is_correct = False
+        selected_answer = 'no_answer'
+
+        # Récupérer l'historique pour les stats
+        history_raw = request.args.get('history', '').strip()
+        history_ids = []
+        if history_raw:
+            for token in history_raw.split(','):
+                token = token.strip()
+                if token.isdigit():
+                    history_ids.append(int(token))
+
+        # Calculer le score (0 pour mauvaise réponse)
+        score = 0
+
+        # Mettre à jour les statistiques
+        question.times_answered = (question.times_answered or 0) + 1
+        # Pas de success_count car c'est incorrect
+
+        # Statistiques utilisateur si connecté
+        if getattr(g, 'current_user', None):
+            stat = UserQuestionStat.query.filter_by(user_id=g.current_user.id, question_id=question.id).first()
+            if not stat:
+                stat = UserQuestionStat(user_id=g.current_user.id, question_id=question.id)
+                db.session.add(stat)
+            stat.times_answered = (stat.times_answered or 0) + 1
+            stat.last_selected_answer = selected_answer
+            stat.last_is_correct = is_correct
+            stat.last_answered_at = datetime.utcnow()
+
+        # Mettre à jour l'historique
+        if question.id not in history_ids:
+            history_ids.append(question.id)
+        next_history = ','.join(str(i) for i in history_ids)
+
+        # Calculer la progression
+        total_questions = rule_set.get_questions_per_difficulty()
+        total_questions = sum(total_questions.values()) if total_questions else Question.query.filter(Question.is_published.is_(True)).count()
+        current_question_num = len(history_ids)
+
+        db.session.commit()
+
+        # Retourner directement le template de résultat qui sera mis dans le timer,
+        # mais on va utiliser un script pour remplacer tout le contenu
+        result_html = render_template(
+            'quiz_result.html',
+            question=question,
+            is_correct=is_correct,
+            selected=selected_answer,
+            history=next_history,
+            rule_set=rule_set,
+            score=score,
+            current_question_num=current_question_num,
+            total_questions=total_questions,
+            total_score=sum(range(1, current_question_num))  # Approximation simple
+        )
+
+        # Encoder le HTML pour UTF-8 avec base64
+        import base64
+        encoded_result = base64.b64encode(result_html.encode('utf-8')).decode('ascii')
+
+        return f"""
+        <div id="timer-expired-placeholder" style="display: none;">{encoded_result}</div>
+        <script>
+            // Décoder et remplacer immédiatement le contenu du quiz-stage
+            (function() {{
+                const placeholder = document.getElementById('timer-expired-placeholder');
+                if (placeholder) {{
+                    try {{
+                        const encoded = placeholder.textContent;
+                        // Décoder base64 puis UTF-8
+                        const binaryString = atob(encoded);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {{
+                            bytes[i] = binaryString.charCodeAt(i);
+                        }}
+                        const decoded = new TextDecoder('utf-8').decode(bytes);
+                        const quizStage = document.getElementById('quiz-stage');
+                        if (quizStage) {{
+                            quizStage.innerHTML = decoded;
+                            // Réinitialiser HTMX sur le nouveau contenu
+                            htmx.process(quizStage);
+                        }}
+                    }} catch (e) {{
+                        console.error('Erreur de décodage:', e);
+                    }}
+                }}
+            }})();
+        </script>
+        """
+
+    # Calculer la classe CSS selon le temps restant
+    timer_class = ""
+    if remaining <= 5:
+        timer_class = "timer-critical"
+    elif remaining <= 10:
+        timer_class = "timer-warning"
+
+    progress_percent = (remaining / rule_set.timer_seconds) * 100
+
+    return f"""
+    <div class="quiz-timer {timer_class}" id="quiz-timer" hx-get="/api/timer/update?rule_set={rule_set_slug}&question_id={question_id}" hx-trigger="every 1s" hx-target="#quiz-timer" hx-swap="outerHTML">
+        <div class="timer-display">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-text">Temps restant: <span id="timer-countdown">{remaining}</span>s</span>
+        </div>
+        <div class="timer-progress">
+            <div class="timer-bar" id="timer-bar" style="width: {progress_percent}%"></div>
+        </div>
+    </div>
+    """
 
 # ============ Routes pour la gestion des règles du Quiz ============
 
