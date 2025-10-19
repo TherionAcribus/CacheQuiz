@@ -1226,7 +1226,10 @@ def next_quiz_question():
                 query = query.filter(Question.difficulty_level == selected_diff)
 
         # SQLite: random(), PostgreSQL: RANDOM()
-        question = query.options(db.joinedload(Question.images)).order_by(db.func.random()).first()
+        question = query.options(
+            db.joinedload(Question.images),
+            db.joinedload(Question.detailed_answer_image)
+        ).order_by(db.func.random()).first()
 
         # Calculer la progression et le score total (stocké en session)
         total_questions = 0
@@ -1312,7 +1315,10 @@ def submit_quiz_answer():
         if not question_id_raw.isdigit():
             return "Identifiant de question invalide", 400
 
-        question = Question.query.options(db.joinedload(Question.images)).get_or_404(int(question_id_raw))
+        question = Question.query.options(
+            db.joinedload(Question.images),
+            db.joinedload(Question.detailed_answer_image)
+        ).get_or_404(int(question_id_raw))
         correct_value = (question.correct_answer or '').strip()
         # Si pas de réponse (timer expiré ou non sélection), considérer comme faux
         is_correct = bool(selected_answer) and (selected_answer == correct_value)
