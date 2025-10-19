@@ -84,6 +84,13 @@
                          title="{{ question.detailed_answer_image.title }}">
                 </div>
                 {% endif %}
+                {% if question.source %}
+                <div class="explanation-source">
+                    <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">
+                        🔗 Source <span class="external-link-icon">↗</span>
+                    </a>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -352,6 +359,35 @@
         border: 1px solid var(--border-color);
         border-radius: 0.5rem;
         box-shadow: var(--shadow);
+    }
+
+    .explanation-source {
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    .explanation-source a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--primary-color);
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .explanation-source a:hover {
+        background: var(--primary-color);
+        color: white;
+        text-decoration: none;
+    }
+
+    .external-link-icon {
+        font-size: 0.9em;
+        opacity: 0.7;
     }
 
     .result-actions {
