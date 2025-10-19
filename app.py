@@ -1228,7 +1228,8 @@ def next_quiz_question():
         # SQLite: random(), PostgreSQL: RANDOM()
         question = query.options(
             db.joinedload(Question.images),
-            db.joinedload(Question.detailed_answer_image)
+            db.joinedload(Question.detailed_answer_image),
+            db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
         ).order_by(db.func.random()).first()
 
         # Calculer la progression et le score total (stocké en session)
@@ -1317,7 +1318,8 @@ def submit_quiz_answer():
 
         question = Question.query.options(
             db.joinedload(Question.images),
-            db.joinedload(Question.detailed_answer_image)
+            db.joinedload(Question.detailed_answer_image),
+            db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
         ).get_or_404(int(question_id_raw))
         correct_value = (question.correct_answer or '').strip()
         # Si pas de réponse (timer expiré ou non sélection), considérer comme faux
