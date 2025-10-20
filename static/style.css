@@ -42,13 +42,17 @@ header {
     box-shadow: var(--shadow);
 }
 
-header h1 {
-    font-size: 1.75rem;
-    margin-bottom: 0.5rem;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-nav {
-    margin-top: 0.5rem;
+header h1 {
+    font-size: 1.75rem;
+    margin: 0;
 }
 
 .nav-link {
@@ -136,6 +140,25 @@ main {
 
 .btn-secondary:hover {
     background-color: #2d3748;
+}
+
+/* Auth widget buttons in header */
+.auth-widget .btn {
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-widget .btn:hover {
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.auth-widget .btn-primary {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-widget .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .btn-danger {
@@ -539,6 +562,16 @@ footer p {
 @media (max-width: 768px) {
     .container {
         padding: 0 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
     }
     
     .page-header {

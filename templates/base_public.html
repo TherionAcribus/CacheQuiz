@@ -17,13 +17,12 @@
 <body>
     <header>
         <div class="container">
-            <h1>🗺️ Quiz Géocaching</h1>
-            <nav>
-                <a href="/play" class="nav-link">Jouer</a>
+            <div class="header-content">
+                <h1>🗺️ Quiz Géocaching</h1>
                 {% block auth_widget %}
-                <span id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></span>
+                <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
                 {% endblock %}
-            </nav>
+            </div>
         </div>
     </header>
     

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, Profile
 from datetime import datetime
 import os
+import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -193,14 +194,19 @@ def quick_login():
         user = User(username=pseudo, display_name=pseudo, email=None, is_active=True)
         db.session.add(user)
         db.session.commit()
+        session['user_id'] = user.id
+        # Assurer que le widget reflète l'état connecté dans cette même réponse
+        g.current_user = user
+        return render_template('auth_widget.html')
     elif user.password_hash:
-        # Si l'utilisateur a un mot de passe (utilisateur admin), il doit utiliser le login normal
-        return "Cet utilisateur doit se connecter avec un mot de passe", 400
-
-    session['user_id'] = user.id
-    # Assurer que le widget reflète l'état connecté dans cette même réponse
-    g.current_user = user
-    return render_template('auth_widget.html')
+        # Si l'utilisateur a un mot de passe, afficher le formulaire de connexion avec pseudo pré-rempli
+        return render_template('auth_widget.html', login_username=pseudo, show_password_form=True)
+    else:
+        # Utilisateur existant sans mot de passe, connexion directe
+        session['user_id'] = user.id
+        # Assurer que le widget reflète l'état connecté dans cette même réponse
+        g.current_user = user
+        return render_template('auth_widget.html')
 
 
 @app.route('/auth/logout', methods=['POST'])
@@ -209,6 +215,80 @@ def logout():
     # Assurer que le widget reflète l'état déconnecté dans cette même réponse
     g.current_user = None
     return render_template('auth_widget.html')
+
+
+@app.route('/auth/widget-login', methods=['POST'])
+def widget_login():
+    """Connexion depuis le widget avec pseudo + mot de passe."""
+    username = (request.form.get('username') or '').strip()
+    password = (request.form.get('password') or '').strip()
+
+    if not username or not password:
+        return "<div class='alert alert-danger'>Pseudo et mot de passe requis</div>"
+
+    user = User.query.filter_by(username=username).first()
+    if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
+        return "<div class='alert alert-danger'>Identifiants invalides</div>"
+
+    session['user_id'] = user.id
+    # Assurer que le widget reflète l'état connecté dans cette même réponse
+    g.current_user = user
+    return render_template('auth_widget.html')
+
+
+@app.route('/auth/upgrade-account', methods=['POST'])
+def upgrade_account():
+    """Permet à un utilisateur connecté sans mot de passe d'ajouter email/mot de passe."""
+    if not getattr(g, 'current_user', None):
+        return "<div class='alert alert-danger'>Vous devez être connecté pour effectuer cette action.</div>", 403
+
+    user = g.current_user
+    if user.password_hash:
+        return "<div class='alert alert-warning'>Votre compte est déjà sécurisé avec un mot de passe.</div>"
+
+    email = (request.form.get('email') or '').strip()
+    password = request.form.get('password', '').strip()
+    password_confirm = request.form.get('password_confirm', '').strip()
+
+    errors = []
+
+    # Validation email (optionnel)
+    if email and not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        errors.append("Format d'email invalide")
+
+    # Validation mot de passe
+    if not password:
+        errors.append("Le mot de passe est requis")
+    elif len(password) < 6:
+        errors.append("Le mot de passe doit contenir au moins 6 caractères")
+    elif password != password_confirm:
+        errors.append("Les mots de passe ne correspondent pas")
+
+    if errors:
+        error_html = "<div class='alert alert-danger'><ul>"
+        for error in errors:
+            error_html += f"<li>{error}</li>"
+        error_html += "</ul></div>"
+        return error_html
+
+    # Mettre à jour l'utilisateur
+    user.email = email if email else None
+    user.password_hash = generate_password_hash(password)
+    db.session.commit()
+
+    # Fermer la modal et afficher un message de succès
+    return """
+    <div class='success-message'>
+        <div style='text-align: center; padding: 2rem;'>
+            <h3 style='color: var(--success-color); margin-bottom: 1rem;'>✅ Compte sécurisé !</h3>
+            <p>Votre compte est maintenant protégé par un mot de passe.</p>
+            <p>Vous pouvez accéder à vos statistiques détaillées et votre progression est sauvegardée.</p>
+            <button type='button' class='btn btn-primary' onclick='hideUpgradeModal(); location.reload();' style='margin-top: 1rem;'>
+                Continuer à jouer
+            </button>
+        </div>
+    </div>
+    """
 
 
 @app.route('/login', methods=['GET', 'POST'])
