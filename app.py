@@ -13,6 +13,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+app.config['SOUNDS_FOLDER'] = os.path.join(os.getcwd(), 'ressources', 'sounds')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -407,6 +408,13 @@ def me_page():
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+# ================== Fichiers sons ==================
+@app.route('/sounds/<path:filename>')
+def sounds_file(filename):
+    # Sert les fichiers audio depuis ressources/sounds
+    return send_from_directory(app.config['SOUNDS_FOLDER'], filename)
 
 
 # ================== Gestion des Images ==================

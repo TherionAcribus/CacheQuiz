@@ -416,6 +416,63 @@
             });
         });
     </script>
+    <!-- Sons du jeu (hors zone swap HTMX) -->
+    <audio id="sfx-click" src="/sounds/click.mp3" preload="auto"></audio>
+    <audio id="sfx-validate" src="/sounds/validation.mp3" preload="auto"></audio>
+    <audio id="sfx-correct" src="/sounds/correct.mp3" preload="auto"></audio>
+    <audio id="sfx-error" src="/sounds/error.mp3" preload="auto"></audio>
+
+    <script>
+        // Gestion des effets sonores du quiz
+        document.addEventListener('DOMContentLoaded', function() {
+            const stage = document.getElementById('quiz-stage');
+            const sfxClick = document.getElementById('sfx-click');
+            const sfxValidate = document.getElementById('sfx-validate');
+            const sfxCorrect = document.getElementById('sfx-correct');
+            const sfxError = document.getElementById('sfx-error');
+
+            function playSafe(audioEl) {
+                if (!audioEl) return;
+                try {
+                    audioEl.currentTime = 0;
+                    const p = audioEl.play();
+                    if (p && typeof p.catch === 'function') p.catch(function(){});
+                } catch (e) {}
+            }
+
+            if (stage) {
+                // Clic sur une réponse (label.answer-frame)
+                stage.addEventListener('click', function(e) {
+                    const frame = e.target.closest && e.target.closest('label.answer-frame');
+                    if (frame && stage.contains(frame)) {
+                        playSafe(sfxClick);
+                    }
+                });
+
+                // Validation du formulaire de réponse
+                stage.addEventListener('submit', function(e) {
+                    const form = e.target;
+                    if (form && form.classList && form.classList.contains('answers-grid')) {
+                        // Optionnel: ne jouer que si le formulaire est valide
+                        if (!form.checkValidity || form.checkValidity()) {
+                            playSafe(sfxValidate);
+                        }
+                    }
+                }, true);
+
+                // Après swap HTMX: jouer correct/error selon le résultat
+                stage.addEventListener('htmx:afterSwap', function() {
+                    const ok = stage.querySelector('.result-status.ok');
+                    const ko = stage.querySelector('.result-status.ko');
+                    if (ok) {
+                        playSafe(sfxCorrect);
+                    } else if (ko) {
+                        playSafe(sfxError);
+                    }
+                });
+            }
+        });
+    </script>
 </div>
 {% endblock %}
 
