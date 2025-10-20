@@ -24,7 +24,7 @@
                         {% for user in users %}
                         <option value="{{ user.id }}"
                                 {% if question and question.author_id == user.id %}selected{% endif %}>
-                            {{ user.display_name }} (@{{ user.username }})
+                            {{ user.username }}
                         </option>
                         {% endfor %}
                     </select>

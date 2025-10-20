@@ -34,7 +34,7 @@
             {% endif %}
         </div>
         <div class="rule-footer">
-            <small>Créé: {{ rule.created_at.strftime('%d/%m/%Y %H:%M') if rule.created_at }} par {{ rule.created_by_user.display_name if rule.created_by_user else 'N/A' }}</small>
+            <small>Créé: {{ rule.created_at.strftime('%d/%m/%Y %H:%M') if rule.created_at }} par {{ rule.created_by_user.username if rule.created_by_user else 'N/A' }}</small>
             <small>Modifié: {{ rule.updated_at.strftime('%d/%m/%Y %H:%M') if rule.updated_at }}</small>
             <small>ID: {{ rule.id }}</small>
             {% if rule.slug %}

@@ -191,7 +191,7 @@ def quick_login():
 
     if not user:
         # Créer un user sans mot de passe (joueur standard)
-        user = User(username=pseudo, display_name=pseudo, email=None, is_active=True)
+        user = User(username=pseudo, email=None, is_active=True)
         db.session.add(user)
         db.session.commit()
         session['user_id'] = user.id
@@ -312,7 +312,7 @@ def register_page():
     if request.method == 'POST':
         username = (request.form.get('username') or '').strip()
         email = (request.form.get('email') or '').strip() or None
-        display_name = (request.form.get('display_name') or '').strip() or username
+        # display_name supprimé, on utilise directement le username
         password = (request.form.get('password') or '').strip()
         password2 = (request.form.get('password2') or '').strip()
         if not username or not password:
@@ -325,7 +325,6 @@ def register_page():
         user = User(
             username=username,
             email=email,
-            display_name=display_name,
             is_active=True,
             password_hash=generate_password_hash(password)
         )
@@ -596,7 +595,7 @@ def new_question():
         return _deny_access("Permission 'can_create_question' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
     return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
@@ -623,7 +622,7 @@ def edit_question(question_id):
         return render_template('access_denied.html', reason="Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise", current_user=user), 200
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
     return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
@@ -885,9 +884,9 @@ def _apply_sorting(query, sort_by, sort_order):
             return query.order_by(Question.created_at.desc())
     elif sort_by == 'author':
         if sort_order == 'asc':
-            return query.order_by(User.display_name.asc().nulls_last())
+            return query.order_by(User.username.asc().nulls_last())
         else:
-            return query.order_by(User.display_name.desc().nulls_last())
+            return query.order_by(User.username.desc().nulls_last())
     else:
         # Tri par défaut
         return query.order_by(Question.updated_at.desc())
@@ -910,7 +909,7 @@ def search_questions():
         base_query = base_query.filter(
             db.or_(
                 Question.question_text.contains(query_param),
-                User.display_name.contains(query_param),
+                User.username.contains(query_param),
                 User.username.contains(query_param),
                 BroadTheme.name.contains(query_param),
                 SpecificTheme.name.contains(query_param)
@@ -949,7 +948,7 @@ def sort_questions():
         base_query = base_query.filter(
             db.or_(
                 Question.question_text.contains(query_param),
-                User.display_name.contains(query_param),
+                User.username.contains(query_param),
                 User.username.contains(query_param),
                 BroadTheme.name.contains(query_param),
                 SpecificTheme.name.contains(query_param)
@@ -1244,7 +1243,7 @@ def list_users():
     denied = _ensure_perm_api('can_manage_users')
     if denied:
         return denied
-    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     return render_template('users_list.html', users=users)
 
 
@@ -1294,7 +1293,6 @@ def create_user():
         user = User(
             username=data.get('username'),
             email=data.get('email') or None,
-            display_name=data.get('display_name'),
             is_active=data.get('is_active') == 'on',
             profile_id=(int(profile_id) if profile_id and profile_id.isdigit() else None)
         )
@@ -1307,7 +1305,7 @@ def create_user():
         db.session.commit()
 
         # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
         return render_template('users_list.html', users=users)
 
     except Exception as e:
@@ -1343,7 +1341,6 @@ def update_user(user_id):
         # Mettre à jour les champs
         user.username = data.get('username')
         user.email = data.get('email') or None
-        user.display_name = data.get('display_name')
         user.is_active = data.get('is_active') == 'on'
         user.profile_id = new_profile_id
 
@@ -1354,7 +1351,7 @@ def update_user(user_id):
         db.session.commit()
 
         # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
         return render_template('users_list.html', users=users)
 
     except Exception as e:
@@ -1380,7 +1377,7 @@ def delete_user(user_id):
         db.session.commit()
 
         # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+        users = User.query.filter_by(is_active=True).order_by(User.username).all()
         return render_template('users_list.html', users=users)
 
     except Exception as e:
@@ -2019,7 +2016,7 @@ def new_quiz_rule():
         return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, users=users)
 
 
@@ -2036,7 +2033,7 @@ def edit_quiz_rule(rule_id: int):
         return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, users=users)
 
 

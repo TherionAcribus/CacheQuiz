@@ -128,7 +128,6 @@ class User(db.Model):
     # Informations de base
     username = db.Column(db.String(50), nullable=False, unique=True)  # Nom d'utilisateur unique
     email = db.Column(db.String(120), nullable=True)  # Email optionnel
-    display_name = db.Column(db.String(100), nullable=False)  # Nom d'affichage
     is_active = db.Column(db.Boolean, nullable=False, default=True)  # Utilisateur actif
     # Authentification (optionnelle): si non défini, l'utilisateur peut jouer via pseudo sans mot de passe
     password_hash = db.Column(db.String(255), nullable=True)
@@ -145,7 +144,7 @@ class User(db.Model):
     questions = db.relationship('Question', back_populates='author_user', lazy='dynamic')
 
     def __repr__(self):
-        return f'<User {self.id}: {self.username} ({self.display_name})>'
+        return f'<User {self.id}: {self.username}>'
 
     def to_dict(self):
         """Convertir l'utilisateur en dictionnaire pour JSON"""
@@ -153,7 +152,6 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
-            'display_name': self.display_name,
             'is_active': self.is_active,
             'is_admin': self.is_admin,
             'profile_id': self.profile_id,

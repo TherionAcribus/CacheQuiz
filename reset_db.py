@@ -245,25 +245,21 @@ def reset_database():
         sample_users = [
             {
                 'username': 'admin',
-                'display_name': 'Administrateur',
                 'email': 'admin@geocaching-quiz.com',
                 'is_active': True
             },
             {
                 'username': 'geocacheur_pro',
-                'display_name': 'Jean Dupont',
                 'email': 'jean.dupont@email.com',
                 'is_active': True
             },
             {
                 'username': 'cacher_lover',
-                'display_name': 'Marie Martin',
                 'email': 'marie.martin@email.com',
                 'is_active': True
             },
             {
                 'username': 'cache_expert',
-                'display_name': 'Pierre Durand',
                 'email': 'pierre.durand@email.com',
                 'is_active': True
             }
@@ -275,7 +271,7 @@ def reset_database():
             db.session.add(user)
             db.session.flush()
             users_created[user_data['username']] = user.id
-            print(f"   [CREE] {user_data['display_name']} (@{user_data['username']})")
+            print(f"   [CREE] @{user_data['username']}")
 
         db.session.commit()
         print(f"[OK] {len(sample_users)} utilisateurs crees")

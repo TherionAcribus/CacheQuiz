@@ -24,7 +24,7 @@
                     <label for="created_by_user_id">Créateur *</label>
                     <select id="created_by_user_id" name="created_by_user_id" required>
                         {% for user in users %}
-                        <option value="{{ user.id }}" {% if rule and rule.created_by_user_id == user.id %}selected{% endif %}>{{ user.display_name }} (@{{ user.username }})</option>
+                        <option value="{{ user.id }}" {% if rule and rule.created_by_user_id == user.id %}selected{% endif %}>{{ user.username }}</option>
                         {% endfor %}
                     </select>
                     <small><a href="/users" target="_blank" style="color: var(--primary-color)">→ Gérer les utilisateurs</a></small>

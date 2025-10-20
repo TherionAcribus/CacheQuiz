@@ -30,7 +30,7 @@ def main():
         for user in admin_users:
             if not user.password_hash:
                 problematic_users.append(user)
-                print(f"PROBLEME: {user.username} ({user.display_name}) - Profil: {user.profile.name} - PAS DE MOT DE PASSE")
+                print(f"PROBLEME: {user.username} - Profil: {user.profile.name} - PAS DE MOT DE PASSE")
 
         if problematic_users:
             print(f"\n{len(problematic_users)} utilisateur(s) ont un profil admin mais pas de mot de passe!")

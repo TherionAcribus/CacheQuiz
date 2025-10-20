@@ -106,7 +106,7 @@
                     <small>{{ question.created_at.strftime('%d/%m/%Y') if question.created_at else 'N/A' }}</small>
                 </td>
                 <td class="author-cell">
-                    {{ question.author_user.display_name if question.author_user else 'Auteur inconnu' }}
+                    {{ question.author_user.username if question.author_user else 'Auteur inconnu' }}
                 </td>
                 <td class="actions-cell">
                     <button class="btn-icon"

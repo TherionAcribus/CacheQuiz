@@ -1,6 +1,6 @@
 {% if current_user %}
 <div id="auth-widget" class="auth-widget">
-  <span>Connecté: <strong>{{ current_user.display_name }}</strong></span>
+  <span>Connecté: <strong>{{ current_user.username }}</strong></span>
   <a class="btn btn-link" href="/me">Mes stats</a>
   <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline">
     <button class="btn btn-secondary" type="submit">Se déconnecter</button>
