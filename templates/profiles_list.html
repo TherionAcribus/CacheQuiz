@@ -1,0 +1,58 @@
+{% if profiles %}
+<div class="profiles-grid">
+    {% for p in profiles %}
+    <div class="profile-card">
+        <div class="profile-header">
+            <h3>{{ p.name }}</h3>
+            <div class="profile-actions">
+                <button class="btn-icon"
+                        type="button"
+                        onclick="document.getElementById('profile-form-container').classList.remove('hidden')"
+                        hx-get="/profile/{{ p.id }}/edit"
+                        hx-target="#profile-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer">✏️</button>
+                <button class="btn-icon btn-danger"
+                        hx-delete="/api/profile/{{ p.id }}"
+                        hx-target="#profiles-list"
+                        hx-confirm="Supprimer ce profil ?"
+                        title="Supprimer">🗑️</button>
+            </div>
+        </div>
+
+        {% if p.description %}
+        <p class="text-muted">{{ p.description }}</p>
+        {% endif %}
+
+        <div class="perm-grid">
+            <span class="badge {% if p.can_access_admin %}badge-active{% else %}badge-inactive{% endif %}">Accès admin</span>
+            <span class="badge {% if p.can_manage_users %}badge-active{% else %}badge-inactive{% endif %}">Gérer utilisateurs</span>
+            <span class="badge {% if p.can_manage_profiles %}badge-active{% else %}badge-inactive{% endif %}">Gérer profils</span>
+            <span class="badge {% if p.can_create_question %}badge-active{% else %}badge-inactive{% endif %}">Créer question</span>
+            <span class="badge {% if p.can_update_delete_own_question %}badge-active{% else %}badge-inactive{% endif %}">Modif/suppr ses questions</span>
+            <span class="badge {% if p.can_update_delete_any_question %}badge-active{% else %}badge-inactive{% endif %}">Modif/suppr toutes questions</span>
+            <span class="badge {% if p.can_create_rule %}badge-active{% else %}badge-inactive{% endif %}">Créer règle</span>
+            <span class="badge {% if p.can_update_delete_own_rule %}badge-active{% else %}badge-inactive{% endif %}">Modif/suppr ses règles</span>
+            <span class="badge {% if p.can_update_delete_any_rule %}badge-active{% else %}badge-inactive{% endif %}">Modif/suppr toutes règles</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-profiles"><p>Aucun profil pour le moment.</p></div>
+{% endif %}
+
+<style>
+    .profiles-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
+    .profile-card { background: var(--card-bg); border-radius: 0.75rem; padding: 1.5rem; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+    .profile-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .profile-actions { display:flex; gap: 0.25rem; }
+    .perm-grid { display:flex; flex-wrap: wrap; gap:0.5rem; margin-top: 0.75rem; }
+    .badge-active { background-color: #c6f6d5; color: #22543d; }
+    .badge-inactive { background-color: #fed7d7; color: #742a2a; }
+    .no-profiles { text-align:center; color: var(--text-light); padding: 2rem; }
+    .text-muted { color: var(--text-light); }
+    .btn-danger { color: #fff; background: #e53e3e; border-color:#e53e3e; }
+</style>
+
+

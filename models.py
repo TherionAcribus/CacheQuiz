@@ -137,6 +137,10 @@ class User(db.Model):
     # Préférences utilisateur sérialisées (JSON)
     preferences_json = db.Column(db.Text, nullable=True)
 
+    # Profil et permissions
+    profile_id = db.Column(db.Integer, db.ForeignKey('profiles.id'), nullable=True)
+    profile = db.relationship('Profile', backref=db.backref('users', lazy='dynamic'))
+
     # Relation inverse avec les questions
     questions = db.relationship('Question', back_populates='author_user', lazy='dynamic')
 
@@ -152,6 +156,8 @@ class User(db.Model):
             'display_name': self.display_name,
             'is_active': self.is_active,
             'is_admin': self.is_admin,
+            'profile_id': self.profile_id,
+            'profile_name': self.profile.name if self.profile else None,
             'question_count': self.questions.count(),
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
@@ -168,6 +174,23 @@ class User(db.Model):
             self.preferences_json = json.dumps(prefs or {})
         except Exception:
             self.preferences_json = '{}'
+
+    # ====== Permissions ======
+    def has_perm(self, perm_attr: str) -> bool:
+        """Retourne True si l'utilisateur possède la permission demandée.
+        - Les admins (is_admin=True) ont tous les droits.
+        - Sinon, on délègue au profil associé le booléen nommé perm_attr.
+        """
+        try:
+            if not self or not self.is_active:
+                return False
+            if self.is_admin:
+                return True
+            if self.profile and hasattr(self.profile, perm_attr):
+                return bool(getattr(self.profile, perm_attr))
+            return False
+        except Exception:
+            return False
 
 
 class Country(db.Model):
@@ -390,6 +413,59 @@ class AnswerImageLink(db.Model):
     def __repr__(self):
         return f"<AnswerImageLink q={self.question_id} idx={self.answer_index} img={self.image_id}>"
 
+
+# ===================== Modèle de Profil & Permissions =====================
+
+class Profile(db.Model):
+    __tablename__ = 'profiles'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Métadonnées
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+
+    # Accès général
+    can_access_admin = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Questions (propriété = auteur)
+    can_create_question = db.Column(db.Boolean, nullable=False, default=False)
+    can_update_delete_own_question = db.Column(db.Boolean, nullable=False, default=False)
+    can_update_delete_any_question = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Règles de quiz (propriété = created_by_user_id)
+    can_create_rule = db.Column(db.Boolean, nullable=False, default=False)
+    can_update_delete_own_rule = db.Column(db.Boolean, nullable=False, default=False)
+    can_update_delete_any_rule = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Utilisateurs et Profils
+    can_manage_users = db.Column(db.Boolean, nullable=False, default=False)
+    can_manage_profiles = db.Column(db.Boolean, nullable=False, default=False)
+
+    def __repr__(self):
+        return f"<Profile {self.id}: {self.name}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'can_access_admin': self.can_access_admin,
+            'can_create_question': self.can_create_question,
+            'can_update_delete_own_question': self.can_update_delete_own_question,
+            'can_update_delete_any_question': self.can_update_delete_any_question,
+            'can_create_rule': self.can_create_rule,
+            'can_update_delete_own_rule': self.can_update_delete_own_rule,
+            'can_update_delete_any_rule': self.can_update_delete_any_rule,
+            'can_manage_users': self.can_manage_users,
+            'can_manage_profiles': self.can_manage_profiles,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 # ===================== Modèle pour les ensembles de règles du quiz =====================
 

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, Profile
 from datetime import datetime
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -34,9 +34,90 @@ with app.app_context():
             # preferences_json
             if 'preferences_json' not in existing_cols:
                 db.session.execute(text("ALTER TABLE users ADD COLUMN preferences_json TEXT"))
+            # profile_id (nullable)
+            if 'profile_id' not in existing_cols:
+                db.session.execute(text("ALTER TABLE users ADD COLUMN profile_id INTEGER"))
             db.session.commit()
     except Exception:
         # Ne bloque pas l'app; pour autres SGBD, utiliser une migration Alembic
+        db.session.rollback()
+
+    # Seed de profils par défaut (idempotent)
+    try:
+        def ensure_profile(name: str, **perms):
+            p = Profile.query.filter_by(name=name).first()
+            if not p:
+                p = Profile(name=name, **perms)
+                db.session.add(p)
+            else:
+                # Mettre à jour si de nouveaux flags ajoutés
+                for k, v in perms.items():
+                    if hasattr(p, k):
+                        setattr(p, k, v)
+            return p
+
+        # Administrateur: tous droits
+        ensure_profile(
+            'Administrateur',
+            description="Accès complet à l'administration",
+            can_access_admin=True,
+            can_create_question=True,
+            can_update_delete_own_question=True,
+            can_update_delete_any_question=True,
+            can_create_rule=True,
+            can_update_delete_own_rule=True,
+            can_update_delete_any_rule=True,
+            can_manage_users=True,
+            can_manage_profiles=True,
+        )
+
+        # Éditeur: gère ses contenus, accès admin
+        ensure_profile(
+            'Éditeur',
+            description="Peut gérer ses questions et ses règles",
+            can_access_admin=True,
+            can_create_question=True,
+            can_update_delete_own_question=True,
+            can_update_delete_any_question=False,
+            can_create_rule=True,
+            can_update_delete_own_rule=True,
+            can_update_delete_any_rule=False,
+            can_manage_users=False,
+            can_manage_profiles=False,
+        )
+
+        # Modérateur: peut modifier/supprimer globalement, mais ne gère pas utilisateurs/profils
+        ensure_profile(
+            'Modérateur',
+            description="Peut modérer toutes les questions et règles",
+            can_access_admin=True,
+            can_create_question=False,
+            can_update_delete_own_question=True,
+            can_update_delete_any_question=True,
+            can_create_rule=False,
+            can_update_delete_own_rule=True,
+            can_update_delete_any_rule=True,
+            can_manage_users=False,
+            can_manage_profiles=False,
+        )
+
+        # Lecteur: accès admin en lecture (listes), pas de création ni modification
+        ensure_profile(
+            'Lecteur',
+            description="Accès en lecture seule à l'administration",
+            can_access_admin=True,
+            can_create_question=False,
+            can_update_delete_own_question=False,
+            can_update_delete_any_question=False,
+            can_create_rule=False,
+            can_update_delete_own_rule=False,
+            can_update_delete_any_rule=False,
+            can_manage_users=False,
+            can_manage_profiles=False,
+        )
+
+        db.session.commit()
+    except Exception:
         db.session.rollback()
 
 # ================== Gestion Session / Utilisateur ==================
@@ -50,6 +131,32 @@ def load_current_user():
 @app.context_processor
 def inject_current_user():
     return { 'current_user': getattr(g, 'current_user', None) }
+
+
+# ================== Helpers Permissions ==================
+
+def _has_perm(perm_attr: str) -> bool:
+    user = getattr(g, 'current_user', None)
+    return bool(user and user.has_perm(perm_attr))
+
+
+def _ensure_admin_page_redirect():
+    """Pour les pages complètes: redirige si pas d'accès admin."""
+    if not _has_perm('can_access_admin'):
+        return redirect(url_for('play_quiz'))
+    return None
+
+
+def _ensure_perm_api(*perm_attrs: str):
+    """Pour endpoints HTMX/API: renvoie (resp, code) si refusé, sinon None.
+    Toutes les permissions listées doivent être vraies (ET logique).
+    """
+    if not _has_perm('can_access_admin'):
+        return ("Accès refusé", 403)
+    for p in perm_attrs:
+        if not _has_perm(p):
+            return ("Accès refusé", 403)
+    return None
 
 
 @app.route('/auth/widget')
@@ -206,11 +313,17 @@ def uploaded_file(filename):
 
 @app.route('/images')
 def images_page():
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('images.html')
 
 
 @app.route('/api/images')
 def list_images_api():
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     search = request.args.get('search', '').strip()
     query = ImageAsset.query
     if search:
@@ -221,11 +334,17 @@ def list_images_api():
 
 @app.route('/image/new')
 def new_image():
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('image_form.html', image=None)
 
 
 @app.route('/image/<int:image_id>/edit')
 def edit_image(image_id: int):
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     image = ImageAsset.query.get_or_404(image_id)
     return render_template('image_form.html', image=image)
 
@@ -244,6 +363,9 @@ def _secure_filename(original_name: str) -> str:
 @app.route('/api/image', methods=['POST'])
 def create_image():
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         title = request.form.get('title', '').strip()
         alt_text = request.form.get('alt_text', '').strip()
         file = request.files.get('file')
@@ -278,6 +400,9 @@ def create_image():
 @app.route('/api/image/<int:image_id>', methods=['POST', 'PUT'])
 def update_image(image_id: int):
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         image = ImageAsset.query.get_or_404(image_id)
         title = request.form.get('title', '').strip()
         alt_text = request.form.get('alt_text', '').strip()
@@ -310,6 +435,9 @@ def update_image(image_id: int):
 @app.route('/api/image/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id: int):
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         image = ImageAsset.query.get_or_404(image_id)
         # Empêcher la suppression si utilisée par des réponses ou questions
         if image.questions.count() > 0 or AnswerImageLink.query.filter_by(image_id=image.id).count() > 0:
@@ -335,12 +463,18 @@ def delete_image(image_id: int):
 @app.route('/')
 def index():
     """Page d'accueil avec la liste des questions"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('index.html')
 
 
 @app.route('/questions')
 def list_questions():
     """Retourner la liste des questions en HTML (pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     view = request.args.get('view', 'cards')
     sort_by = request.args.get('sort_by', 'updated_at')
     sort_order = request.args.get('sort_order', 'desc')
@@ -354,6 +488,11 @@ def list_questions():
 @app.route('/question/new')
 def new_question():
     """Formulaire pour créer une nouvelle question"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_create_question'):
+        return ("Accès refusé", 403)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -372,7 +511,14 @@ def view_question(question_id):
 @app.route('/question/<int:question_id>/edit')
 def edit_question(question_id):
     """Formulaire pour éditer une question"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     question = Question.query.get_or_404(question_id)
+    can_any = _has_perm('can_update_delete_any_question')
+    can_own = _has_perm('can_update_delete_own_question')
+    if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
+        return ("Accès refusé", 403)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -385,6 +531,9 @@ def edit_question(question_id):
 def create_question():
     """Créer une nouvelle question"""
     try:
+        denied = _ensure_perm_api('can_create_question')
+        if denied:
+            return denied
         data = request.form
         
         # Traiter les réponses possibles (en conservant l'index des réponses retenues)
@@ -407,8 +556,14 @@ def create_question():
                     answer_images_per_answer.append('')
             i += 1
         
+        # Attribuer l'auteur en fonction des droits
+        if _has_perm('can_update_delete_any_question') and (data.get('author_id') or '').isdigit():
+            author_id = int(data.get('author_id'))
+        else:
+            author_id = g.current_user.id if getattr(g, 'current_user', None) else None
+
         question = Question(
-            author_id=int(data.get('author_id')),
+            author_id=author_id,
             question_text=data.get('question_text'),
             possible_answers='|||'.join(possible_answers),
             answer_images='|||'.join(answer_images_per_answer),
@@ -463,7 +618,14 @@ def create_question():
 def update_question(question_id):
     """Mettre à jour une question existante"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         question = Question.query.get_or_404(question_id)
+        can_any = _has_perm('can_update_delete_any_question')
+        can_own = _has_perm('can_update_delete_own_question')
+        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
+            return ("Accès refusé", 403)
         data = request.form
         
         # Traiter les réponses possibles (en conservant l'index des réponses retenues)
@@ -487,7 +649,9 @@ def update_question(question_id):
             i += 1
         
         # Mettre à jour les champs
-        question.author_id = int(data.get('author_id'))
+        # Changer l'auteur uniquement avec le droit global
+        if can_any and (data.get('author_id') or '').isdigit():
+            question.author_id = int(data.get('author_id'))
         question.question_text = data.get('question_text')
         question.possible_answers = '|||'.join(possible_answers)
         question.answer_images = '|||'.join(answer_images_per_answer)
@@ -543,7 +707,14 @@ def update_question(question_id):
 def delete_question(question_id):
     """Supprimer une question"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         question = Question.query.get_or_404(question_id)
+        can_any = _has_perm('can_update_delete_any_question')
+        can_own = _has_perm('can_update_delete_own_question')
+        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
+            return ("Accès refusé", 403)
         db.session.delete(question)
         db.session.commit()
 
@@ -559,7 +730,14 @@ def delete_question(question_id):
 def toggle_question_status(question_id):
     """Changer le statut de publication d'une question"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         question = Question.query.get_or_404(question_id)
+        can_any = _has_perm('can_update_delete_any_question')
+        can_own = _has_perm('can_update_delete_own_question')
+        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
+            return ("Accès refusé", 403)
         question.is_published = not question.is_published
         question.updated_at = datetime.utcnow()
         db.session.commit()
@@ -616,6 +794,9 @@ def _apply_sorting(query, sort_by, sort_order):
 @app.route('/api/questions/search')
 def search_questions():
     """Rechercher des questions"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     query_param = request.args.get('q', '').strip()
     view = request.args.get('view', 'cards')
     sort_by = request.args.get('sort_by', 'updated_at')
@@ -642,6 +823,9 @@ def search_questions():
 @app.route('/api/questions/sort')
 def sort_questions():
     """Trier les questions"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     view = request.args.get('view', 'cards')
     sort_by = request.args.get('sort_by', 'updated_at')
     query_param = request.args.get('q', '').strip()
@@ -680,12 +864,18 @@ def sort_questions():
 @app.route('/themes')
 def themes_page():
     """Page de gestion des thèmes"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('themes.html')
 
 
 @app.route('/api/themes')
 def list_themes():
     """Retourner la liste des thèmes en HTML (pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     return render_template('themes_list.html', themes=themes)
 
@@ -693,12 +883,18 @@ def list_themes():
 @app.route('/theme/new')
 def new_theme():
     """Formulaire pour créer un nouveau thème"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('theme_form.html', theme=None)
 
 
 @app.route('/theme/<int:theme_id>/edit')
 def edit_theme(theme_id):
     """Formulaire pour éditer un thème"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     theme = BroadTheme.query.get_or_404(theme_id)
     return render_template('theme_form.html', theme=theme)
 
@@ -707,6 +903,9 @@ def edit_theme(theme_id):
 def create_theme():
     """Créer un nouveau thème"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         data = request.form
         
         theme = BroadTheme(
@@ -733,6 +932,9 @@ def create_theme():
 def update_theme(theme_id):
     """Mettre à jour un thème existant"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         theme = BroadTheme.query.get_or_404(theme_id)
         data = request.form
         
@@ -759,6 +961,9 @@ def update_theme(theme_id):
 def delete_theme(theme_id):
     """Supprimer un thème"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         theme = BroadTheme.query.get_or_404(theme_id)
 
         # Vérifier si des questions utilisent ce thème
@@ -782,12 +987,18 @@ def delete_theme(theme_id):
 @app.route('/specific-themes')
 def specific_themes_page():
     """Page de gestion des sous-thèmes"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('specific_themes.html')
 
 
 @app.route('/api/specific-themes')
 def list_specific_themes():
     """Retourner la liste des sous-thèmes en HTML (pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     return render_template('specific_themes_list.html', specific_themes=specific_themes)
 
@@ -795,6 +1006,9 @@ def list_specific_themes():
 @app.route('/specific-theme/new')
 def new_specific_theme():
     """Formulaire pour créer un nouveau sous-thème"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
     return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes)
 
@@ -802,6 +1016,9 @@ def new_specific_theme():
 @app.route('/specific-theme/<int:specific_theme_id>/edit')
 def edit_specific_theme(specific_theme_id):
     """Formulaire pour éditer un sous-thème"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
     broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
     return render_template('specific_theme_form.html', specific_theme=specific_theme, broad_themes=broad_themes)
@@ -811,6 +1028,9 @@ def edit_specific_theme(specific_theme_id):
 def create_specific_theme():
     """Créer un nouveau sous-thème"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         data = request.form
 
         specific_theme = SpecificTheme(
@@ -838,6 +1058,9 @@ def create_specific_theme():
 def update_specific_theme(specific_theme_id):
     """Mettre à jour un sous-thème existant"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
         data = request.form
 
@@ -865,6 +1088,9 @@ def update_specific_theme(specific_theme_id):
 def delete_specific_theme(specific_theme_id):
     """Supprimer un sous-thème"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         specific_theme = SpecificTheme.query.get_or_404(specific_theme_id)
 
         # Vérifier si des questions utilisent ce sous-thème
@@ -886,6 +1112,9 @@ def delete_specific_theme(specific_theme_id):
 @app.route('/api/specific-themes/for-theme/')
 def get_specific_themes_for_broad_theme():
     """Obtenir les sous-thèmes pour un thème large (retourne HTML pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     broad_theme_id = request.args.get('broad_theme_id')
     if broad_theme_id and broad_theme_id.isdigit():
         specific_themes = SpecificTheme.query.filter_by(broad_theme_id=int(broad_theme_id)).order_by(SpecificTheme.name).all()
@@ -899,12 +1128,20 @@ def get_specific_themes_for_broad_theme():
 @app.route('/users')
 def users_page():
     """Page de gestion des utilisateurs"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_users'):
+        return redirect(url_for('play_quiz'))
     return render_template('users.html')
 
 
 @app.route('/api/users')
 def list_users():
     """Retourner la liste des utilisateurs en HTML (pour HTMX)"""
+    denied = _ensure_perm_api('can_manage_users')
+    if denied:
+        return denied
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
     return render_template('users_list.html', users=users)
 
@@ -912,27 +1149,43 @@ def list_users():
 @app.route('/user/new')
 def new_user():
     """Formulaire pour créer un nouvel utilisateur"""
-    return render_template('user_form.html', user=None)
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_users'):
+        return ("Accès refusé", 403)
+    profiles = Profile.query.order_by(Profile.name).all()
+    return render_template('user_form.html', user=None, profiles=profiles)
 
 
 @app.route('/user/<int:user_id>/edit')
 def edit_user(user_id):
     """Formulaire pour éditer un utilisateur"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_users'):
+        return ("Accès refusé", 403)
     user = User.query.get_or_404(user_id)
-    return render_template('user_form.html', user=user)
+    profiles = Profile.query.order_by(Profile.name).all()
+    return render_template('user_form.html', user=user, profiles=profiles)
 
 
 @app.route('/api/user', methods=['POST'])
 def create_user():
     """Créer un nouvel utilisateur"""
     try:
+        denied = _ensure_perm_api('can_manage_users')
+        if denied:
+            return denied
         data = request.form
 
         user = User(
             username=data.get('username'),
             email=data.get('email') or None,
             display_name=data.get('display_name'),
-            is_active=data.get('is_active') == 'on'
+            is_active=data.get('is_active') == 'on',
+            profile_id=(int(data.get('profile_id')) if (data.get('profile_id') or '').isdigit() else None)
         )
 
         db.session.add(user)
@@ -950,6 +1203,9 @@ def create_user():
 def update_user(user_id):
     """Mettre à jour un utilisateur existant"""
     try:
+        denied = _ensure_perm_api('can_manage_users')
+        if denied:
+            return denied
         user = User.query.get_or_404(user_id)
         data = request.form
 
@@ -958,6 +1214,7 @@ def update_user(user_id):
         user.email = data.get('email') or None
         user.display_name = data.get('display_name')
         user.is_active = data.get('is_active') == 'on'
+        user.profile_id = int(data.get('profile_id')) if (data.get('profile_id') or '').isdigit() else None
 
         db.session.commit()
 
@@ -973,6 +1230,9 @@ def update_user(user_id):
 def delete_user(user_id):
     """Désactiver un utilisateur (soft delete)"""
     try:
+        denied = _ensure_perm_api('can_manage_users')
+        if denied:
+            return denied
         user = User.query.get_or_404(user_id)
 
         # Vérifier si l'utilisateur a des questions
@@ -992,17 +1252,162 @@ def delete_user(user_id):
         return f"Erreur: {str(e)}", 400
 
 
+# ===== Routes pour les profils (permissions) =====
+
+@app.route('/profiles')
+def profiles_page():
+    """Page de gestion des profils"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_profiles'):
+        return redirect(url_for('play_quiz'))
+    return render_template('profiles.html')
+
+
+@app.route('/api/profiles')
+def list_profiles():
+    """Retourner la liste des profils en HTML (pour HTMX)"""
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+    profiles = Profile.query.order_by(Profile.name).all()
+    return render_template('profiles_list.html', profiles=profiles)
+
+
+@app.route('/profile/new')
+def new_profile():
+    """Formulaire pour créer un nouveau profil"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_profiles'):
+        return ("Accès refusé", 403)
+    return render_template('profile_form.html', profile=None)
+
+
+@app.route('/profile/<int:profile_id>/edit')
+def edit_profile(profile_id: int):
+    """Formulaire pour éditer un profil"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_manage_profiles'):
+        return ("Accès refusé", 403)
+    profile = Profile.query.get_or_404(profile_id)
+    return render_template('profile_form.html', profile=profile)
+
+
+def _bool_from_form(key: str) -> bool:
+    return request.form.get(key) == 'on'
+
+
+@app.route('/api/profile', methods=['POST'])
+def create_profile():
+    """Créer un nouveau profil"""
+    try:
+        denied = _ensure_perm_api('can_manage_profiles')
+        if denied:
+            return denied
+        data = request.form
+        name = (data.get('name') or '').strip()
+        if not name:
+            return "Nom requis", 400
+
+        profile = Profile(
+            name=name,
+            description=(data.get('description') or '').strip() or None,
+            can_access_admin=_bool_from_form('can_access_admin'),
+            can_create_question=_bool_from_form('can_create_question'),
+            can_update_delete_own_question=_bool_from_form('can_update_delete_own_question'),
+            can_update_delete_any_question=_bool_from_form('can_update_delete_any_question'),
+            can_create_rule=_bool_from_form('can_create_rule'),
+            can_update_delete_own_rule=_bool_from_form('can_update_delete_own_rule'),
+            can_update_delete_any_rule=_bool_from_form('can_update_delete_any_rule'),
+            can_manage_users=_bool_from_form('can_manage_users'),
+            can_manage_profiles=_bool_from_form('can_manage_profiles'),
+        )
+
+        db.session.add(profile)
+        db.session.commit()
+
+        profiles = Profile.query.order_by(Profile.name).all()
+        return render_template('profiles_list.html', profiles=profiles)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/profile/<int:profile_id>', methods=['PUT', 'POST'])
+def update_profile(profile_id: int):
+    """Mettre à jour un profil existant"""
+    try:
+        denied = _ensure_perm_api('can_manage_profiles')
+        if denied:
+            return denied
+        profile = Profile.query.get_or_404(profile_id)
+        data = request.form
+
+        name = (data.get('name') or '').strip()
+        if name:
+            profile.name = name
+        profile.description = (data.get('description') or '').strip() or None
+        profile.can_access_admin = _bool_from_form('can_access_admin')
+        profile.can_create_question = _bool_from_form('can_create_question')
+        profile.can_update_delete_own_question = _bool_from_form('can_update_delete_own_question')
+        profile.can_update_delete_any_question = _bool_from_form('can_update_delete_any_question')
+        profile.can_create_rule = _bool_from_form('can_create_rule')
+        profile.can_update_delete_own_rule = _bool_from_form('can_update_delete_own_rule')
+        profile.can_update_delete_any_rule = _bool_from_form('can_update_delete_any_rule')
+        profile.can_manage_users = _bool_from_form('can_manage_users')
+        profile.can_manage_profiles = _bool_from_form('can_manage_profiles')
+        profile.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        profiles = Profile.query.order_by(Profile.name).all()
+        return render_template('profiles_list.html', profiles=profiles)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/profile/<int:profile_id>', methods=['DELETE'])
+def delete_profile(profile_id: int):
+    """Supprimer un profil"""
+    try:
+        denied = _ensure_perm_api('can_manage_profiles')
+        if denied:
+            return denied
+        profile = Profile.query.get_or_404(profile_id)
+        # Empêcher la suppression si des utilisateurs utilisent ce profil
+        if profile.users.count() > 0:
+            return "Impossible de supprimer: des utilisateurs utilisent ce profil.", 400
+
+        db.session.delete(profile)
+        db.session.commit()
+
+        profiles = Profile.query.order_by(Profile.name).all()
+        return render_template('profiles_list.html', profiles=profiles)
+    except Exception as e:
+        return f"Erreur: {str(e)}", 400
+
+
 # ============ Routes pour la gestion des Pays ============
 
 @app.route('/countries')
 def countries():
     """Page de gestion des pays"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('countries.html')
 
 
 @app.route('/api/countries')
 def list_countries_api():
     """Retourner la liste des pays en HTML (pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     search = request.args.get('search', '')
     query = Country.query
     
@@ -1016,6 +1421,9 @@ def list_countries_api():
 @app.route('/country/new')
 def new_country():
     """Formulaire pour créer un nouveau pays"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     countries = Country.query.order_by(Country.name).all()
     return render_template('country_form.html', country=None, countries=countries)
 
@@ -1023,6 +1431,9 @@ def new_country():
 @app.route('/country/<int:country_id>/edit')
 def edit_country(country_id):
     """Formulaire pour éditer un pays"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     country = Country.query.get_or_404(country_id)
     countries = Country.query.order_by(Country.name).all()
     return render_template('country_form.html', country=country, countries=countries)
@@ -1032,6 +1443,9 @@ def edit_country(country_id):
 def create_country():
     """Créer un nouveau pays"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         data = request.form
         
         country = Country(
@@ -1058,6 +1472,9 @@ def create_country():
 def update_country(country_id):
     """Mettre à jour un pays existant"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         country = Country.query.get_or_404(country_id)
         data = request.form
         
@@ -1084,6 +1501,9 @@ def update_country(country_id):
 def delete_country(country_id):
     """Supprimer un pays"""
     try:
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
         country = Country.query.get_or_404(country_id)
         
         # Vérifier si le pays est utilisé dans des questions
@@ -1438,12 +1858,18 @@ def _slugify(value: str) -> str:
 @app.route('/quiz-rules')
 def quiz_rules_page():
     """Page d'administration des ensembles de règles du quiz"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     return render_template('quiz_rules.html')
 
 
 @app.route('/api/quiz-rules')
 def list_quiz_rules():
     """Retourner la liste des sets de règles en HTML (pour HTMX)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
     rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
     return render_template('quiz_rules_list.html', rules=rules)
 
@@ -1451,6 +1877,11 @@ def list_quiz_rules():
 @app.route('/quiz-rule/new')
 def new_quiz_rule():
     """Formulaire pour créer un nouveau set de règles"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    if not _has_perm('can_create_rule'):
+        return ("Accès refusé", 403)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -1460,7 +1891,14 @@ def new_quiz_rule():
 @app.route('/quiz-rule/<int:rule_id>/edit')
 def edit_quiz_rule(rule_id: int):
     """Formulaire pour éditer un set de règles existant"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
     rule = QuizRuleSet.query.get_or_404(rule_id)
+    can_any = _has_perm('can_update_delete_any_rule')
+    can_own = _has_perm('can_update_delete_own_rule')
+    if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
+        return ("Accès refusé", 403)
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -1471,6 +1909,9 @@ def edit_quiz_rule(rule_id: int):
 def create_quiz_rule():
     """Créer un nouveau set de règles"""
     try:
+        denied = _ensure_perm_api('can_create_rule')
+        if denied:
+            return denied
         data = request.form
 
         name = (data.get('name') or '').strip()
@@ -1479,13 +1920,14 @@ def create_quiz_rule():
 
         slug = (data.get('slug') or '').strip() or _slugify(name)
 
+        created_by_user_id = g.current_user.id if getattr(g, 'current_user', None) else None
         rule = QuizRuleSet(
             name=name,
             slug=slug,
             description=(data.get('description') or '').strip() or None,
             comment=(data.get('comment') or '').strip() or None,
             is_active=(data.get('is_active') == 'on'),
-            created_by_user_id=int(data.get('created_by_user_id')),
+            created_by_user_id=created_by_user_id,
             timer_seconds=int(data.get('timer_seconds') or 30),
             use_all_broad_themes=(data.get('use_all_broad_themes') == 'on'),
             use_all_specific_themes=(data.get('use_all_specific_themes') == 'on'),
@@ -1547,6 +1989,13 @@ def update_quiz_rule(rule_id: int):
     """Mettre à jour un set de règles existant"""
     try:
         rule = QuizRuleSet.query.get_or_404(rule_id)
+        can_any = _has_perm('can_update_delete_any_rule')
+        can_own = _has_perm('can_update_delete_own_rule')
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
+        if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
+            return ("Accès refusé", 403)
         data = request.form
 
         name = (data.get('name') or '').strip()
@@ -1564,7 +2013,7 @@ def update_quiz_rule(rule_id: int):
         rule.comment = (data.get('comment') or '').strip() or None
         rule.is_active = (data.get('is_active') == 'on')
 
-        if data.get('created_by_user_id') and data.get('created_by_user_id').isdigit():
+        if can_any and data.get('created_by_user_id') and data.get('created_by_user_id').isdigit():
             rule.created_by_user_id = int(data.get('created_by_user_id'))
 
         rule.timer_seconds = int(data.get('timer_seconds') or rule.timer_seconds or 30)
@@ -1629,6 +2078,13 @@ def delete_quiz_rule(rule_id: int):
     """Supprimer un set de règles"""
     try:
         rule = QuizRuleSet.query.get_or_404(rule_id)
+        can_any = _has_perm('can_update_delete_any_rule')
+        can_own = _has_perm('can_update_delete_own_rule')
+        denied = _ensure_perm_api()
+        if denied:
+            return denied
+        if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
+            return ("Accès refusé", 403)
         db.session.delete(rule)
         db.session.commit()
         rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()

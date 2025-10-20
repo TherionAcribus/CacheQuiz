@@ -25,6 +25,9 @@
                 <a href="/countries" class="nav-link">Pays</a>
                 <a href="/images" class="nav-link">Images</a>
                 <a href="/users" class="nav-link">Utilisateurs</a>
+                {% if current_user and current_user.has_perm('can_manage_profiles') %}
+                <a href="/profiles" class="nav-link">Profils</a>
+                {% endif %}
                 <a href="/quiz-rules" class="nav-link">Règles du Quiz</a>
             </nav>
         </div>

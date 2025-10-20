@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Gestion des profils</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                onclick="document.getElementById('profile-form-container').classList.remove('hidden')"
+                hx-get="/profile/new"
+                hx-target="#profile-form-container"
+                hx-swap="innerHTML">
+            + Nouveau Profil
+        </button>
+    </div>
+    <p class="text-muted">Les profils déterminent les autorisations dans la zone d'administration.</p>
+    <div class="notice">Les utilisateurs avec le rôle administrateur (is_admin) ont tous les droits.</div>
+    <div class="notice">Les autorisations s'appliquent en plus de l'accès admin global.</div>
+</div>
+
+<div id="profile-form-container" class="hidden form-modal"></div>
+
+<div id="profiles-list"
+     hx-get="/api/profiles"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement des profils...</div>
+    
+</div>
+
+<style>
+    .hidden { display:none; }
+    .form-modal { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; padding:2rem; overflow-y:auto; }
+    .form-modal.hidden { display:none; }
+    .text-muted { color: var(--text-light); }
+    .notice { font-size: 0.9rem; color: var(--text-light); margin-top: 0.25rem; }
+</style>
+{% endblock %}
+
+

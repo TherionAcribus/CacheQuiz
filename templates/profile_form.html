@@ -1,0 +1,57 @@
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2>{% if profile %}Éditer le profil{% else %}Nouveau profil{% endif %}</h2>
+        <button class="btn-close" type="button" onclick="document.getElementById('profile-form-container').classList.add('hidden')">✕</button>
+    </div>
+
+    <form {% if profile %} hx-post="/api/profile/{{ profile.id }}" {% else %} hx-post="/api/profile" {% endif %}
+          hx-target="#profiles-list" hx-swap="innerHTML" hx-on::after-request="document.getElementById('profile-form-container').classList.add('hidden')">
+
+        <div class="form-grid">
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="name">Nom du profil *</label>
+                    <input type="text" id="name" name="name" value="{{ profile.name if profile else '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3">{{ profile.description if profile else '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-column">
+                <fieldset>
+                    <legend>Accès</legend>
+                    <label class="checkbox-label"><input type="checkbox" name="can_access_admin" {% if profile and profile.can_access_admin %}checked{% endif %}> Accès à l'administration</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Questions</legend>
+                    <label class="checkbox-label"><input type="checkbox" name="can_create_question" {% if profile and profile.can_create_question %}checked{% endif %}> Créer des questions</label>
+                    <label class="checkbox-label"><input type="checkbox" name="can_update_delete_own_question" {% if profile and profile.can_update_delete_own_question %}checked{% endif %}> Modifier/Supprimer ses questions</label>
+                    <label class="checkbox-label"><input type="checkbox" name="can_update_delete_any_question" {% if profile and profile.can_update_delete_any_question %}checked{% endif %}> Modifier/Supprimer toutes les questions</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Règles du Quiz</legend>
+                    <label class="checkbox-label"><input type="checkbox" name="can_create_rule" {% if profile and profile.can_create_rule %}checked{% endif %}> Créer des règles</label>
+                    <label class="checkbox-label"><input type="checkbox" name="can_update_delete_own_rule" {% if profile and profile.can_update_delete_own_rule %}checked{% endif %}> Modifier/Supprimer ses règles</label>
+                    <label class="checkbox-label"><input type="checkbox" name="can_update_delete_any_rule" {% if profile and profile.can_update_delete_any_rule %}checked{% endif %}> Modifier/Supprimer toutes les règles</label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Utilisateurs & Profils</legend>
+                    <label class="checkbox-label"><input type="checkbox" name="can_manage_users" {% if profile and profile.can_manage_users %}checked{% endif %}> Gérer les utilisateurs</label>
+                    <label class="checkbox-label"><input type="checkbox" name="can_manage_profiles" {% if profile and profile.can_manage_profiles %}checked{% endif %}> Gérer les profils</label>
+                </fieldset>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('profile-form-container').classList.add('hidden')">Annuler</button>
+            <button type="submit" class="btn btn-primary">{% if profile %}Mettre à jour{% else %}Créer{% endif %}</button>
+        </div>
+    </form>
+</div>
+
+
