@@ -140,23 +140,38 @@ def _has_perm(perm_attr: str) -> bool:
     return bool(user and user.has_perm(perm_attr))
 
 
+@app.route('/access-denied')
+def access_denied_page():
+    """Page d'explication d'accès refusé."""
+    user = getattr(g, 'current_user', None)
+    return render_template('access_denied_full.html', current_user=user)
+
+
 def _ensure_admin_page_redirect():
     """Pour les pages complètes: redirige si pas d'accès admin."""
     if not _has_perm('can_access_admin'):
-        return redirect(url_for('play_quiz'))
+        return redirect(url_for('access_denied_page'))
     return None
 
 
 def _ensure_perm_api(*perm_attrs: str):
-    """Pour endpoints HTMX/API: renvoie (resp, code) si refusé, sinon None.
+    """Pour endpoints HTMX/API: renvoie (template_html, 200) si refusé, sinon None.
     Toutes les permissions listées doivent être vraies (ET logique).
+    HTMX traite mieux les 200 avec contenu HTML qu'un 403.
     """
+    user = getattr(g, 'current_user', None)
     if not _has_perm('can_access_admin'):
-        return ("Accès refusé", 403)
+        return (render_template('access_denied.html', reason="Accès à l'administration requis", current_user=user), 200)
     for p in perm_attrs:
         if not _has_perm(p):
-            return ("Accès refusé", 403)
+            return (render_template('access_denied.html', reason=f"Permission '{p}' requise", current_user=user), 200)
     return None
+
+
+def _deny_access(reason: str):
+    """Retourne un template d'accès refusé avec la raison spécifiée."""
+    user = getattr(g, 'current_user', None)
+    return render_template('access_denied.html', reason=reason, current_user=user), 200
 
 
 @app.route('/auth/widget')
@@ -492,7 +507,7 @@ def new_question():
     if resp:
         return resp
     if not _has_perm('can_create_question'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_create_question' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -518,7 +533,8 @@ def edit_question(question_id):
     can_any = _has_perm('can_update_delete_any_question')
     can_own = _has_perm('can_update_delete_own_question')
     if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-        return ("Accès refusé", 403)
+        user = getattr(g, 'current_user', None)
+        return render_template('access_denied.html', reason="Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise", current_user=user), 200
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -625,7 +641,7 @@ def update_question(question_id):
         can_any = _has_perm('can_update_delete_any_question')
         can_own = _has_perm('can_update_delete_own_question')
         if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return ("Accès refusé", 403)
+            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
         data = request.form
         
         # Traiter les réponses possibles (en conservant l'index des réponses retenues)
@@ -714,7 +730,7 @@ def delete_question(question_id):
         can_any = _has_perm('can_update_delete_any_question')
         can_own = _has_perm('can_update_delete_own_question')
         if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return ("Accès refusé", 403)
+            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
         db.session.delete(question)
         db.session.commit()
 
@@ -737,7 +753,7 @@ def toggle_question_status(question_id):
         can_any = _has_perm('can_update_delete_any_question')
         can_own = _has_perm('can_update_delete_own_question')
         if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return ("Accès refusé", 403)
+            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
         question.is_published = not question.is_published
         question.updated_at = datetime.utcnow()
         db.session.commit()
@@ -1153,7 +1169,7 @@ def new_user():
     if resp:
         return resp
     if not _has_perm('can_manage_users'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_manage_users' requise")
     profiles = Profile.query.order_by(Profile.name).all()
     return render_template('user_form.html', user=None, profiles=profiles)
 
@@ -1165,7 +1181,7 @@ def edit_user(user_id):
     if resp:
         return resp
     if not _has_perm('can_manage_users'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_manage_users' requise")
     user = User.query.get_or_404(user_id)
     profiles = Profile.query.order_by(Profile.name).all()
     return render_template('user_form.html', user=user, profiles=profiles)
@@ -1282,7 +1298,7 @@ def new_profile():
     if resp:
         return resp
     if not _has_perm('can_manage_profiles'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_manage_profiles' requise")
     return render_template('profile_form.html', profile=None)
 
 
@@ -1293,7 +1309,7 @@ def edit_profile(profile_id: int):
     if resp:
         return resp
     if not _has_perm('can_manage_profiles'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_manage_profiles' requise")
     profile = Profile.query.get_or_404(profile_id)
     return render_template('profile_form.html', profile=profile)
 
@@ -1881,7 +1897,7 @@ def new_quiz_rule():
     if resp:
         return resp
     if not _has_perm('can_create_rule'):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -1898,7 +1914,7 @@ def edit_quiz_rule(rule_id: int):
     can_any = _has_perm('can_update_delete_any_rule')
     can_own = _has_perm('can_update_delete_own_rule')
     if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
-        return ("Accès refusé", 403)
+        return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
     users = User.query.filter_by(is_active=True).order_by(User.display_name).all()
@@ -1995,7 +2011,7 @@ def update_quiz_rule(rule_id: int):
         if denied:
             return denied
         if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
-            return ("Accès refusé", 403)
+            return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
         data = request.form
 
         name = (data.get('name') or '').strip()
@@ -2084,7 +2100,7 @@ def delete_quiz_rule(rule_id: int):
         if denied:
             return denied
         if not (can_any or (can_own and getattr(g, 'current_user', None) and rule.created_by_user_id == g.current_user.id)):
-            return ("Accès refusé", 403)
+            return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
         db.session.delete(rule)
         db.session.commit()
         rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()

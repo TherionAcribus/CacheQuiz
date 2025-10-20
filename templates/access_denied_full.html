@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🚫 Accès refusé</h2>
+</div>
+
+<div class="access-denied-container">
+    <div class="access-denied-card">
+        <h3>Vous n'avez pas accès à cette page</h3>
+        <p>Vous devez avoir un profil avec accès à l'administration.</p>
+
+        {% if current_user %}
+            <div class="user-info">
+                <p><strong>Votre profil actuel:</strong> {{ current_user.profile.name if current_user.profile else "Aucun profil" }}</p>
+                {% if current_user.is_admin %}
+                    <p><em>Vous êtes administrateur, vérifiez vos droits ou contactez le support technique.</em></p>
+                {% else %}
+                    <p><em>Contactez un administrateur pour obtenir les droits nécessaires ou changer votre profil.</em></p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p><em>Vous devez être connecté pour accéder à cette zone.</em></p>
+        {% endif %}
+
+        <div class="actions">
+            <a href="/play" class="btn btn-primary">Retour au quiz</a>
+            {% if not current_user %}
+                <a href="/login" class="btn btn-secondary">Se connecter</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .access-denied-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+        padding: 2rem 0;
+    }
+
+    .access-denied-card {
+        background: var(--card-bg);
+        padding: 3rem 2rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+        border: 1px solid var(--border-color);
+    }
+
+    .access-denied-card h3 {
+        color: #e53e3e;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+
+    .access-denied-card p {
+        margin-bottom: 1rem;
+        color: var(--text-light);
+        font-size: 1.1rem;
+    }
+
+    .user-info {
+        background: var(--bg-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid var(--border-color);
+    }
+
+    .user-info p {
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .actions {
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+        border: 1px solid var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background: #2b6cb0;
+        border-color: #2b6cb0;
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+        border-color: #cbd5e0;
+    }
+</style>
+{% endblock %}

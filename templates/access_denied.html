@@ -1,0 +1,40 @@
+<div class="access-denied">
+    <h3>🚫 Accès refusé</h3>
+    <p>{{ reason }}</p>
+    {% if current_user %}
+        <p><strong>Votre profil actuel:</strong> {{ current_user.profile.name if current_user.profile else "Aucun profil" }}</p>
+        {% if current_user.is_admin %}
+            <p><em>Vous êtes administrateur, vérifiez vos droits ou contactez le support.</em></p>
+        {% else %}
+            <p><em>Contactez un administrateur pour obtenir les droits nécessaires.</em></p>
+        {% endif %}
+    {% else %}
+        <p><em>Vous devez être connecté.</em></p>
+    {% endif %}
+    <button class="btn btn-secondary" onclick="history.back()">Retour</button>
+</div>
+
+<style>
+    .access-denied {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        max-width: 400px;
+        margin: 0 auto;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+    .access-denied h3 {
+        color: #e53e3e;
+        margin-bottom: 1rem;
+    }
+    .access-denied p {
+        margin-bottom: 0.75rem;
+        color: var(--text-light);
+    }
+    .access-denied em {
+        font-style: italic;
+        color: var(--text-light);
+    }
+</style>
