@@ -51,6 +51,15 @@
                            placeholder="email@exemple.com">
                     <small>Email optionnel pour contacter l'utilisateur</small>
                 </div>
+
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="••••••••">
+                    <small id="password-help">Requis pour les utilisateurs avec accès administration</small>
+                </div>
             </div>
 
             <!-- Colonne droite -->
@@ -98,6 +107,48 @@
             </button>
         </div>
     </form>
+
+    <script>
+        // Données des profils pour JavaScript
+        const profilesData = [
+            {% for p in profiles or [] %}
+            {id: {{ p.id }}, canAccessAdmin: {{ p.can_access_admin|tojson }}, name: "{{ p.name }}"},
+            {% endfor %}
+        ];
+
+        // Fonction pour vérifier si un profil nécessite un mot de passe
+        function profileRequiresPassword(profileId) {
+            if (!profileId) return false;
+            const profile = profilesData.find(p => p.id == profileId);
+            return profile && profile.canAccessAdmin;
+        }
+
+        // Mettre à jour la validation du mot de passe
+        function updatePasswordValidation() {
+            const profileSelect = document.getElementById('profile_id');
+            const passwordField = document.getElementById('password');
+            const passwordHelp = document.getElementById('password-help');
+
+            const selectedProfileId = profileSelect.value;
+            const requiresPassword = profileRequiresPassword(selectedProfileId);
+
+            if (requiresPassword) {
+                passwordField.setAttribute('required', 'required');
+                passwordHelp.textContent = 'Requis pour les utilisateurs avec accès administration';
+                passwordHelp.style.color = 'var(--text-color)';
+            } else {
+                passwordField.removeAttribute('required');
+                passwordHelp.textContent = 'Optionnel pour les joueurs standards';
+                passwordHelp.style.color = 'var(--text-light)';
+            }
+        }
+
+        // Écouter les changements du sélecteur de profil
+        document.getElementById('profile_id').addEventListener('change', updatePasswordValidation);
+
+        // Validation initiale
+        updatePasswordValidation();
+    </script>
 </div>
 
 <style>

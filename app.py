@@ -105,7 +105,7 @@ with app.app_context():
         ensure_profile(
             'Lecteur',
             description="Accès en lecture seule à l'administration",
-            can_access_admin=True,
+            can_access_admin=False,  # Pas d'accès admin pour les lecteurs
             can_create_question=False,
             can_update_delete_own_question=False,
             can_update_delete_any_question=False,
@@ -184,13 +184,19 @@ def quick_login():
     pseudo = (request.form.get('pseudo') or '').strip()
     if not pseudo:
         return "Pseudo requis", 400
+
     # Chercher utilisateur par username exact
     user = User.query.filter_by(username=pseudo).first()
+
     if not user:
-        # Créer un user sans mot de passe
+        # Créer un user sans mot de passe (joueur standard)
         user = User(username=pseudo, display_name=pseudo, email=None, is_active=True)
         db.session.add(user)
         db.session.commit()
+    elif user.password_hash:
+        # Si l'utilisateur a un mot de passe (utilisateur admin), il doit utiliser le login normal
+        return "Cet utilisateur doit se connecter avec un mot de passe", 400
+
     session['user_id'] = user.id
     # Assurer que le widget reflète l'état connecté dans cette même réponse
     g.current_user = user
@@ -1196,13 +1202,26 @@ def create_user():
             return denied
         data = request.form
 
+        # Validation du mot de passe pour les profils admin
+        profile_id = data.get('profile_id')
+        password = (data.get('password') or '').strip()
+
+        if profile_id and profile_id.isdigit():
+            profile = Profile.query.get(int(profile_id))
+            if profile and profile.can_access_admin and not password:
+                return "Mot de passe requis pour les utilisateurs avec accès administration", 400
+
         user = User(
             username=data.get('username'),
             email=data.get('email') or None,
             display_name=data.get('display_name'),
             is_active=data.get('is_active') == 'on',
-            profile_id=(int(data.get('profile_id')) if (data.get('profile_id') or '').isdigit() else None)
+            profile_id=(int(profile_id) if profile_id and profile_id.isdigit() else None)
         )
+
+        # Définir le mot de passe si fourni
+        if password:
+            user.password_hash = generate_password_hash(password)
 
         db.session.add(user)
         db.session.commit()
@@ -1225,12 +1244,32 @@ def update_user(user_id):
         user = User.query.get_or_404(user_id)
         data = request.form
 
+        # Validation du mot de passe pour les profils admin
+        profile_id = data.get('profile_id')
+        password = (data.get('password') or '').strip()
+
+        if profile_id and profile_id.isdigit():
+            profile = Profile.query.get(int(profile_id))
+            if profile and profile.can_access_admin and not password and not user.password_hash:
+                return "Mot de passe requis pour les utilisateurs avec accès administration", 400
+
+        # Validation supplémentaire : si on attribue un profil admin à un utilisateur sans mot de passe
+        new_profile_id = int(profile_id) if profile_id and profile_id.isdigit() else None
+        if new_profile_id and new_profile_id != user.profile_id:
+            new_profile = Profile.query.get(new_profile_id)
+            if new_profile and new_profile.can_access_admin and not user.password_hash and not password:
+                return "Impossible d'attribuer un profil admin sans mot de passe. Définissez d'abord un mot de passe.", 400
+
         # Mettre à jour les champs
         user.username = data.get('username')
         user.email = data.get('email') or None
         user.display_name = data.get('display_name')
         user.is_active = data.get('is_active') == 'on'
-        user.profile_id = int(data.get('profile_id')) if (data.get('profile_id') or '').isdigit() else None
+        user.profile_id = new_profile_id
+
+        # Mettre à jour le mot de passe si fourni
+        if password:
+            user.password_hash = generate_password_hash(password)
 
         db.session.commit()
 
