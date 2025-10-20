@@ -1821,6 +1821,16 @@ def next_quiz_question():
                 # Si pas de quotas, compter toutes les questions publiées
                 total_questions = Question.query.filter(Question.is_published.is_(True)).count()
 
+            # Si aucune question n'est disponible (fin de partie par quotas ou épuisement), afficher l'écran final
+            if not question:
+                return render_template(
+                    'quiz_final.html',
+                    rule_set=rule_set,
+                    total_questions=len(history_ids),
+                    total_score=total_score,
+                    history=history_raw or ''
+                )
+
         return render_template('quiz_question.html',
                              question=question,
                              history=history_raw,

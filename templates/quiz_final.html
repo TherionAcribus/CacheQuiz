@@ -1,0 +1,58 @@
+{% set page_title = 'Fin du quiz' %}
+<div class="quiz-game-container">
+    <div class="quiz-summary-card">
+        <h2 class="summary-title">🏁 Fin du quiz</h2>
+        {% if rule_set %}
+        <div class="summary-subtitle">Mode: <strong>{{ rule_set.name }}</strong></div>
+        {% endif %}
+
+        <div class="score-block">
+            <div class="score-line">
+                <span class="label">Score total</span>
+                <span class="value">{{ total_score }} pts</span>
+            </div>
+            {% if total_questions %}
+            <div class="score-line">
+                <span class="label">Questions jouées</span>
+                <span class="value">{{ total_questions }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="final-actions">
+            <button class="btn btn-primary btn-large"
+                    type="button"
+                    hx-get="/api/quiz/next"
+                    hx-target="#quiz-stage"
+                    hx-swap="innerHTML"
+                    hx-vals='{"history": ""{% if rule_set %}, "rule_set": "{{ rule_set.slug }}"{% endif %}}'>
+                🔁 Rejouer un nouveau quiz
+            </button>
+            <a href="/play" class="btn">Changer de mode</a>
+        </div>
+    </div>
+
+    <style>
+        .quiz-summary-card {
+            max-width: 700px;
+            margin: 1rem auto;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+        .summary-title { margin: 0 0 0.5rem 0; color: var(--primary-color); }
+        .summary-subtitle { color: var(--muted-color); margin-bottom: 1.5rem; }
+        .score-block {
+            display: grid; gap: .75rem; margin: 1rem 0 2rem 0;
+        }
+        .score-line { display: flex; justify-content: space-between; font-size: 1.1rem; }
+        .score-line .label { color: var(--text-color); }
+        .score-line .value { font-weight: 700; color: var(--primary-color); }
+        .final-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    </style>
+</div>
+
+
