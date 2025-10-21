@@ -50,4 +50,24 @@
 .admin-btn:hover{background:rgba(255,255,255,0.1);border-color:white}
 </style>
 
+<script>
+// Mettre automatiquement le focus sur le champ mot de passe quand il est affiché
+function focusPasswordField() {
+    const passwordInput = document.querySelector('.password-input');
+    if (passwordInput) {
+        passwordInput.focus();
+    }
+}
+
+// Focus au chargement initial
+document.addEventListener('DOMContentLoaded', focusPasswordField);
+
+// Focus après les mises à jour HTMX
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.target.id === 'auth-widget') {
+        focusPasswordField();
+    }
+});
+</script>
+
 
