@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Quiz Géocaching{% endblock %}</title>
+    <title>{% block title %}CacheQuiz{% endblock %}</title>
     
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
@@ -18,7 +18,7 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <h1>🗺️ Quiz Géocaching</h1>
+                <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz" style="height: 40px; vertical-align: middle;"> CacheQuiz</h1>
                 {% block auth_widget %}
                 <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
                 {% endblock %}
