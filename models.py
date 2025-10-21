@@ -190,6 +190,38 @@ class User(db.Model):
         except Exception:
             return False
 
+    def has_any_admin_perm(self) -> bool:
+        """Vérifie si l'utilisateur a au moins une permission administrative."""
+        if not self or not self.is_active:
+            return False
+
+        # Si c'est un admin, il a tous les droits
+        if self.is_admin:
+            return True
+
+        # Si pas de profil, pas de droits admin
+        if not self.profile:
+            return False
+
+        # Liste des permissions administratives
+        admin_perms = [
+            'can_access_admin',
+            'can_create_question',
+            'can_update_delete_own_question',
+            'can_update_delete_any_question',
+            'can_create_rule',
+            'can_update_delete_own_rule',
+            'can_update_delete_any_rule',
+            'can_manage_users',
+            'can_manage_profiles'
+        ]
+
+        # Vérifier si au moins une permission est True
+        for perm in admin_perms:
+            if hasattr(self.profile, perm) and getattr(self.profile, perm, False):
+                return True
+        return False
+
 
 class Country(db.Model):
     __tablename__ = 'countries'

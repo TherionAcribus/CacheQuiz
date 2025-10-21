@@ -1,6 +1,9 @@
 {% if current_user %}
 <div id="auth-widget" class="auth-widget">
   <span>Connecté: <strong>{{ current_user.username }}</strong></span>
+  {% if current_user.has_any_admin_perm() %}
+  <a href="/admin" class="btn btn-outline admin-btn">⚙️ Administration</a>
+  {% endif %}
   <a class="btn btn-link" href="/me">Mes stats</a>
   <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline">
     <button class="btn btn-secondary" type="submit">Se déconnecter</button>
@@ -50,6 +53,8 @@
 .auth-widget .separator{color:rgba(255,255,255,0.5)}
 .btn-link{background:transparent;border:none;color:var(--primary-color);text-decoration:underline;padding:0}
 .btn-link:hover{text-decoration:none}
+.admin-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.85rem;text-decoration:none}
+.admin-btn:hover{background:rgba(255,255,255,0.1);border-color:white}
 </style>
 
 <script>
