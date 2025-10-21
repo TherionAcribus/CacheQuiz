@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for
+from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, Profile
 from datetime import datetime
 import os
@@ -198,7 +198,9 @@ def quick_login():
         session['user_id'] = user.id
         # Assurer que le widget reflète l'état connecté dans cette même réponse
         g.current_user = user
-        return render_template('auth_widget.html')
+        resp = make_response('')
+        resp.headers['HX-Redirect'] = url_for('play_quiz')
+        return resp
     elif user.password_hash:
         # Si l'utilisateur a un mot de passe, afficher le formulaire de connexion avec pseudo pré-rempli
         return render_template('auth_widget.html', login_username=pseudo, show_password_form=True)
@@ -207,7 +209,9 @@ def quick_login():
         session['user_id'] = user.id
         # Assurer que le widget reflète l'état connecté dans cette même réponse
         g.current_user = user
-        return render_template('auth_widget.html')
+        resp = make_response('')
+        resp.headers['HX-Redirect'] = url_for('play_quiz')
+        return resp
 
 
 @app.route('/auth/logout', methods=['POST'])
@@ -215,7 +219,9 @@ def logout():
     session.pop('user_id', None)
     # Assurer que le widget reflète l'état déconnecté dans cette même réponse
     g.current_user = None
-    return render_template('auth_widget.html')
+    resp = make_response('')
+    resp.headers['HX-Redirect'] = url_for('index')
+    return resp
 
 
 @app.route('/auth/widget-login', methods=['POST'])
@@ -234,7 +240,9 @@ def widget_login():
     session['user_id'] = user.id
     # Assurer que le widget reflète l'état connecté dans cette même réponse
     g.current_user = user
-    return render_template('auth_widget.html')
+    resp = make_response('')
+    resp.headers['HX-Redirect'] = url_for('play_quiz')
+    return resp
 
 
 @app.route('/auth/upgrade-account', methods=['POST'])
@@ -570,8 +578,10 @@ def delete_image(image_id: int):
 
 @app.route('/')
 def index():
-    """Redirige vers la page de jeu (nouvelle page d'accueil)"""
-    return redirect(url_for('play_quiz'))
+    """Accueil: page publique si non connecté, sinon page de jeu."""
+    if getattr(g, 'current_user', None):
+        return redirect(url_for('play_quiz'))
+    return render_template('home_public.html')
 
 
 @app.route('/admin')

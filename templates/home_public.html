@@ -1,0 +1,59 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<section class="public-hero">
+  <div class="hero-left">
+    <h2>Bienvenue sur CacheQuiz</h2>
+    <p>Testez vos connaissances en Géocaching avec des questions thématiques, des difficultés progressives, et des sets de règles personnalisés.</p>
+    <ul class="features">
+      <li>Questions classées par thèmes et pays</li>
+      <li>Niveaux de difficulté ajustables</li>
+      <li>Modes de jeu via ensembles de règles</li>
+      <li>Statistiques personnelles si vous vous connectez</li>
+    </ul>
+    <div class="cta">
+      <a href="/play" class="btn btn-primary">Commencer à jouer</a>
+      <a href="/register" class="btn btn-secondary">Créer un compte</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz" class="hero-logo">
+  </div>
+  </section>
+
+<section class="public-info">
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Comment ça marche ?</h3>
+      <p>Choisissez un mode de jeu, répondez aux questions, et progressez. Votre score peut être calculé selon la difficulté et vos séries de bonnes réponses.</p>
+    </div>
+    <div class="info-card">
+      <h3>Pourquoi créer un compte ?</h3>
+      <p>Un compte vous permet de sauvegarder vos statistiques, reprendre plus tard, et accéder à des options avancées.</p>
+    </div>
+    <div class="info-card">
+      <h3>Jouer sans compte</h3>
+      <p>Vous pouvez jouer immédiatement sans inscription. Entrez simplement un pseudo dans la barre du haut.</p>
+    </div>
+  </div>
+</section>
+
+<style>
+.public-hero{display:flex;gap:2rem;align-items:center;justify-content:space-between;padding:2rem 0}
+.hero-left{flex:1}
+.hero-right{flex:0 0 auto}
+.hero-logo{height:120px}
+.features{margin:1rem 0 1.25rem 1.25rem}
+.features li{margin:.25rem 0;color:var(--text-light)}
+.cta{display:flex;gap:.75rem;align-items:center;margin-top:1rem}
+.public-info{margin-top:2rem}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.info-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.75rem;padding:1rem;box-shadow:var(--shadow)}
+@media (max-width:768px){
+  .public-hero{flex-direction:column;align-items:flex-start}
+  .hero-logo{height:80px}
+}
+</style>
+{% endblock %}
+
+

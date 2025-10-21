@@ -5,7 +5,7 @@
   <a href="/admin" class="btn btn-outline admin-btn">⚙️ Administration</a>
   {% endif %}
   <a class="btn btn-link" href="/me">Mes stats</a>
-  <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline">
+  <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline" hx-headers='{"HX-Redirect":"/"}'>
     <button class="btn btn-secondary" type="submit">Se déconnecter</button>
   </form>
 </div>
@@ -13,7 +13,7 @@
 <div id="auth-widget" class="auth-widget">
   {% if show_password_form %}
   <!-- Formulaire de connexion avec mot de passe -->
-  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML">
+  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"/play"}'>
     <div class="login-fields">
       <input type="text" name="username" value="{{ login_username }}" placeholder="Votre pseudo" class="pseudo-input" readonly>
       <input type="password" name="password" placeholder="Mot de passe" class="password-input" required>
@@ -22,7 +22,7 @@
   </form>
   {% else %}
   <!-- Formulaire de connexion rapide -->
-  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML">
+  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"/play"}'>
     <input type="text" name="pseudo" placeholder="Votre pseudo" class="pseudo-input" required>
     <button class="btn btn-primary" type="submit">Entrer</button>
   </form>
