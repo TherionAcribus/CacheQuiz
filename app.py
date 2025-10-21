@@ -570,7 +570,13 @@ def delete_image(image_id: int):
 
 @app.route('/')
 def index():
-    """Page d'accueil avec la liste des questions"""
+    """Redirige vers la page de jeu (nouvelle page d'accueil)"""
+    return redirect(url_for('play_quiz'))
+
+
+@app.route('/admin')
+def admin_page():
+    """Page d'administration avec la liste des questions"""
     resp = _ensure_admin_page_redirect()
     if resp:
         return resp

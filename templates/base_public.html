@@ -19,6 +19,9 @@
         <div class="container">
             <div class="header-content">
                 <h1>🗺️ Quiz Géocaching</h1>
+                {% if current_user and current_user.has_perm('can_access_admin') %}
+                <a href="/admin" class="admin-link">⚙️ Administration</a>
+                {% endif %}
                 {% block auth_widget %}
                 <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
                 {% endblock %}
