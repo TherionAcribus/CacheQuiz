@@ -62,10 +62,20 @@
                 {% for answer in answers %}
                 <div class="answer-summary-item {% if loop.index == question.correct_answer|int %}correct{% else %}incorrect{% endif %}">
                     <span class="answer-num">{{ loop.index }}</span>
-                    <span class="answer-text">{{ answer }}</span>
-                    {% if loop.index == selected|int %}
-                    <span class="your-choice">(votre choix)</span>
-                    {% endif %}
+                    <div class="answer-content">
+                        {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
+                        {% if link and link[0] and link[0].image %}
+                        <div class="answer-image-container">
+                            <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}">
+                        </div>
+                        {% endif %}
+                        <div class="answer-text-container">
+                            <span class="answer-text">{{ answer }}</span>
+                            {% if loop.index == selected|int %}
+                            <span class="your-choice">(votre choix)</span>
+                            {% endif %}
+                        </div>
+                    </div>
                     {% if loop.index == question.correct_answer|int %}
                     <span class="correct-indicator">✓</span>
                     {% endif %}
@@ -293,6 +303,36 @@
         background: var(--bg-color);
     }
 
+    .answer-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .answer-image-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .answer-thumb {
+        max-width: 120px;
+        max-height: 120px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+    }
+
+    .answer-text-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .answer-summary-item.correct {
         background: #ecfdf5;
         border-color: #10b981;
@@ -445,6 +485,15 @@
             padding: 0.875rem;
         }
 
+        .answer-content {
+            gap: 0.5rem;
+        }
+
+        .answer-thumb {
+            max-width: 100px;
+            max-height: 100px;
+        }
+
         .answer-text {
             font-size: 0.95rem;
         }
@@ -483,6 +532,15 @@
         .answer-summary-item {
             padding: 0.75rem;
             gap: 0.5rem;
+        }
+
+        .answer-content {
+            gap: 0.5rem;
+        }
+
+        .answer-thumb {
+            max-width: 80px;
+            max-height: 80px;
         }
 
         .answer-num {
