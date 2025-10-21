@@ -20,11 +20,6 @@
     </div>
     <button class="btn btn-primary" type="submit">Se connecter</button>
   </form>
-  <div class="login-actions">
-    <a href="#" onclick="resetToQuickLogin()" class="btn-link">Changer de pseudo</a>
-    <span class="separator">|</span>
-    <a href="/login" class="btn-link">Connexion classique</a>
-  </div>
   {% else %}
   <!-- Formulaire de connexion rapide -->
   <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML">
@@ -44,30 +39,15 @@
 .auth-widget .pseudo-input::placeholder{color:rgba(255,255,255,0.7)}
 .auth-widget .pseudo-input:focus{outline:none;border-color:white;background-color:rgba(255,255,255,0.2)}
 .auth-widget .pseudo-input[readonly]{background-color:rgba(255,255,255,0.15);cursor:not-allowed}
-.auth-widget .password-input{padding:.75rem 1rem;font-size:1.1rem;border:2px solid rgba(255,255,255,0.3);border-radius:.5rem;background-color:rgba(255,255,255,0.1);color:white;width:200px;min-width:180px;margin-top:.5rem}
+.auth-widget .password-input{padding:.75rem 1rem;font-size:1.1rem;border:2px solid rgba(255,255,255,0.3);border-radius:.5rem;background-color:rgba(255,255,255,0.1);color:white;width:200px;min-width:180px}
 .auth-widget .password-input::placeholder{color:rgba(255,255,255,0.7)}
 .auth-widget .password-input:focus{outline:none;border-color:white;background-color:rgba(255,255,255,0.2)}
-.auth-widget .login-fields{display:flex;flex-direction:column;gap:.25rem}
-.auth-widget .password-login{display:flex;flex-direction:column;gap:.5rem;align-items:stretch}
-.auth-widget .login-actions{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
-.auth-widget .separator{color:rgba(255,255,255,0.5)}
+.auth-widget .login-fields{display:flex;gap:.5rem;align-items:center}
+.auth-widget .password-login{display:flex;gap:.5rem;align-items:center}
 .btn-link{background:transparent;border:none;color:var(--primary-color);text-decoration:underline;padding:0}
 .btn-link:hover{text-decoration:none}
 .admin-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.85rem;text-decoration:none}
 .admin-btn:hover{background:rgba(255,255,255,0.1);border-color:white}
 </style>
 
-<script>
-function resetToQuickLogin() {
-    // Recharger le widget d'authentification dans son état initial
-    fetch('/auth/widget')
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('auth-widget').outerHTML = html;
-        })
-        .catch(error => {
-            console.error('Erreur lors du rechargement du widget:', error);
-        });
-}
-</script>
 
