@@ -2359,6 +2359,38 @@ def check_quiz_rule_slug():
         return f'<span style="color: #28a745; font-size: 0.875rem;">✓ Le slug \'{slug}\' est disponible</span>'
 
 
+@app.route('/api/quiz-rule/count-questions', methods=['GET'])
+def count_questions_for_rule():
+    """Compter le nombre de questions disponibles selon les critères sélectionnés"""
+    specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
+
+    if not specific_theme_ids or not difficulty_levels:
+        return {'count': 0, 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
+
+    try:
+        # Compter les questions qui correspondent aux critères
+        query = Question.query.filter(
+            Question.specific_theme_id.in_(specific_theme_ids),
+            Question.difficulty_level.in_(difficulty_levels)
+        )
+
+        count = query.count()
+
+        if count == 0:
+            message = 'Aucune question ne correspond à ces critères'
+        elif count == 1:
+            message = '1 question disponible'
+        else:
+            message = f'{count} questions disponibles'
+
+        return {'count': count, 'message': message}
+
+    except Exception as e:
+        print(f"Erreur lors du comptage des questions: {e}")
+        return {'count': 0, 'message': 'Erreur lors du calcul'}
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 
