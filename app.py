@@ -6,6 +6,7 @@ import re
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from unidecode import unidecode
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///geocaching_quiz.db'
@@ -2265,6 +2266,59 @@ def delete_quiz_rule(rule_id: int):
         return render_template('quiz_rules_list.html', rules=rules)
     except Exception as e:
         return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz-rule/check-name', methods=['GET'])
+def check_quiz_rule_name():
+    """Vérifier si un nom de règle existe déjà"""
+    name = request.args.get('name', '').strip()
+    exclude_id = request.args.get('exclude_id')
+
+    if not name:
+        return ''
+
+    # Normaliser le nom saisi (supprimer accents et convertir en minuscules)
+    normalized_input = unidecode(name).lower()
+
+    # Récupérer tous les noms existants et les normaliser
+    existing_rules = QuizRuleSet.query.all()
+    for rule in existing_rules:
+        # Exclure la règle actuelle en édition
+        if exclude_id and str(rule.id) == exclude_id:
+            continue
+
+        # Normaliser le nom existant
+        normalized_existing = unidecode(rule.name).lower()
+
+        # Vérifier si les noms normalisés correspondent
+        if normalized_input == normalized_existing:
+            return f'<span class="field-error">Le nom \'{name}\' existe déjà</span>'
+
+    # Si aucun nom similaire n'est trouvé
+    return f'<span style="color: #28a745; font-size: 0.875rem;">✓ Le nom \'{name}\' est disponible</span>'
+
+
+@app.route('/api/quiz-rule/check-slug', methods=['GET'])
+def check_quiz_rule_slug():
+    """Vérifier si un slug de règle existe déjà"""
+    slug = request.args.get('slug', '').strip()
+    exclude_id = request.args.get('exclude_id')
+
+    if not slug:
+        return ''
+
+    # Vérifier si le slug existe déjà
+    query = QuizRuleSet.query.filter_by(slug=slug)
+    if exclude_id and exclude_id.isdigit():
+        query = query.filter(QuizRuleSet.id != int(exclude_id))
+
+    exists = query.first() is not None
+
+    if exists:
+        return f'<span class="field-error">Le slug \'{slug}\' existe déjà</span>'
+    else:
+        return f'<span style="color: #28a745; font-size: 0.875rem;">✓ Le slug \'{slug}\' est disponible</span>'
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
