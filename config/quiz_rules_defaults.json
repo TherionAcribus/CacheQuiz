@@ -1,0 +1,35 @@
+{
+  "defaults": {
+    "is_active": true,
+    "timer_seconds": 30,
+    "use_all_broad_themes": true,
+    "use_all_specific_themes": true,
+    "check_all_broad_themes": true,
+    "check_all_specific_themes": true,
+    "allowed_difficulties": [1, 2, 3, 4, 5],
+    "questions_per_difficulty": {
+      "1": 2,
+      "2": 3,
+      "3": 3,
+      "4": 2,
+      "5": 1
+    },
+    "scoring_base_points": 10,
+    "scoring_difficulty_bonus_type": "add",
+    "difficulty_bonus_map": {
+      "1": 0,
+      "2": 5,
+      "3": 10,
+      "4": 15,
+      "5": 20
+    },
+    "combo_bonus_enabled": true,
+    "combo_step": 3,
+    "combo_bonus_points": 5,
+    "perfect_quiz_bonus": 50,
+    "intro_message": "Bonne chance ! 🍀",
+    "success_message": "Félicitations ! 🎉"
+  },
+  "description": "Configuration par défaut pour la création de nouveaux sets de règles de quiz. 'check_all_broad_themes' et 'check_all_specific_themes' permettent de cocher automatiquement tous les thèmes individuels lors de la création."
+}
+

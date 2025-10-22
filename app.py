@@ -3,6 +3,7 @@ from models import db, Question, BroadTheme, SpecificTheme, User, Country, Image
 from datetime import datetime
 import os
 import re
+import json
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -2051,6 +2052,39 @@ def list_quiz_rules():
     return render_template('quiz_rules_list.html', rules=rules)
 
 
+def _load_quiz_rule_defaults():
+    """Charger les valeurs par défaut depuis le fichier JSON"""
+    defaults_path = os.path.join(os.path.dirname(__file__), 'config', 'quiz_rules_defaults.json')
+    try:
+        if os.path.exists(defaults_path):
+            with open(defaults_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                return config.get('defaults', {})
+    except Exception as e:
+        print(f"Erreur lors du chargement des valeurs par défaut: {e}")
+    
+    # Valeurs par défaut en dur si le fichier n'existe pas
+    return {
+        'is_active': True,
+        'timer_seconds': 30,
+        'use_all_broad_themes': True,
+        'use_all_specific_themes': True,
+        'check_all_broad_themes': True,
+        'check_all_specific_themes': True,
+        'allowed_difficulties': [1, 2, 3, 4, 5],
+        'questions_per_difficulty': {'1': 2, '2': 3, '3': 3, '4': 2, '5': 1},
+        'scoring_base_points': 10,
+        'scoring_difficulty_bonus_type': 'add',
+        'difficulty_bonus_map': {'1': 0, '2': 5, '3': 10, '4': 15, '5': 20},
+        'combo_bonus_enabled': True,
+        'combo_step': 3,
+        'combo_bonus_points': 5,
+        'perfect_quiz_bonus': 50,
+        'intro_message': 'Bonne chance ! 🍀',
+        'success_message': 'Félicitations ! 🎉'
+    }
+
+
 @app.route('/quiz-rule/new')
 def new_quiz_rule():
     """Formulaire pour créer un nouveau set de règles"""
@@ -2061,7 +2095,12 @@ def new_quiz_rule():
         return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes)
+    
+    # Charger les valeurs par défaut
+    defaults = _load_quiz_rule_defaults()
+    print(f"Defaults chargés pour création: {defaults}")
+    
+    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, defaults=defaults)
 
 
 @app.route('/quiz-rule/<int:rule_id>/edit')
@@ -2077,7 +2116,7 @@ def edit_quiz_rule(rule_id: int):
         return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes)
+    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, defaults={})
 
 
 @app.route('/api/quiz-rule', methods=['POST'])

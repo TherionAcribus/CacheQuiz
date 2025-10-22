@@ -46,7 +46,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule and rule.is_active %}checked{% endif %}> Actif</label>
+                            <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule %}{% if rule.is_active %}checked{% endif %}{% else %}{% if defaults.get('is_active', true) %}checked{% endif %}{% endif %}> Actif</label>
                         </div>
                     </div>
 
@@ -61,14 +61,14 @@
                             <legend>Timer</legend>
                             <div class="form-group">
                                 <label for="timer_seconds">Durée par question (secondes)</label>
-                                <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else 30 }}">
+                                <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else defaults.get('timer_seconds', 30) }}">
                             </div>
                         </fieldset>
 
                         <fieldset class="fieldset">
                             <legend>Difficultés utilisées</legend>
                             <div class="checkboxes-inline">
-                                {% set selected = rule.get_allowed_difficulties() if rule else [] %}
+                                {% set selected = rule.get_allowed_difficulties() if rule else defaults.get('allowed_difficulties', [1,2,3,4,5]) %}
                                 {% for d in [1,2,3,4,5] %}
                                 <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
                                 {% endfor %}
@@ -79,8 +79,8 @@
                                     {% for d in [1,2,3,4,5] %}
                                     <div>
                                         <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
-                                        {% set qmap = rule.get_questions_per_difficulty() if rule else {} %}
-                                        <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string) if qmap.get(d|string) else '' }}">
+                                        {% set qmap = rule.get_questions_per_difficulty() if rule else defaults.get('questions_per_difficulty', {}) %}
+                                        <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string, '') }}">
                                     </div>
                                     {% endfor %}
                                 </div>
@@ -97,17 +97,18 @@
                     <div class="form-column">
                         <fieldset class="fieldset">
                             <legend>Thèmes utilisés</legend>
-                            <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if not rule or rule.use_all_broad_themes %}checked{% endif %}> Utiliser tous les thèmes larges</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les thèmes larges</label>
+                            <!-- Debug: defaults={{ defaults }}, check_all_broad_themes={{ defaults.get('check_all_broad_themes', 'NOT_SET') }} -->
                             <div class="themes-grid-select">
                                 {% for theme in themes %}
-                                <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule and (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
+                                <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule %}{% if (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}{% else %}{% if defaults.get('check_all_broad_themes', true) %}checked{% endif %}{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
                                 {% endfor %}
                             </div>
 
-                            <label class="checkbox-label"><input type="checkbox" id="use_all_specific_themes" name="use_all_specific_themes" {% if not rule or rule.use_all_specific_themes %}checked{% endif %}> Utiliser tous les sous-thèmes</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_specific_themes" name="use_all_specific_themes" {% if rule %}{% if rule.use_all_specific_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_specific_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les sous-thèmes</label>
                             <div class="themes-grid-select">
                                 {% for st in specific_themes %}
-                                <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule and (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
+                                <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule %}{% if (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}{% else %}{% if defaults.get('check_all_specific_themes', true) %}checked{% endif %}{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
                                 {% endfor %}
                             </div>
                         </fieldset>
@@ -124,12 +125,12 @@
                             <legend>Scoring</legend>
                             <div class="form-group">
                                 <label for="scoring_base_points">Points par question</label>
-                                <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else 1 }}">
+                                <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else defaults.get('scoring_base_points', 10) }}">
                             </div>
                             <div class="form-group">
                                 <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
                                 <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
-                                    {% set s = rule.scoring_difficulty_bonus_type if rule else 'none' %}
+                                    {% set s = rule.scoring_difficulty_bonus_type if rule else defaults.get('scoring_difficulty_bonus_type', 'add') %}
                                     <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
                                     <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
                                     <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
@@ -138,31 +139,31 @@
                             <div class="form-group">
                                 <label>Valeurs bonus par difficulté</label>
                                 <div class="grid-5">
-                                    {% set bmap = rule.get_difficulty_bonus_map() if rule else {} %}
+                                    {% set bmap = rule.get_difficulty_bonus_map() if rule else defaults.get('difficulty_bonus_map', {}) %}
                                     {% for d in [1,2,3,4,5] %}
                                     <div>
                                         <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
-                                        <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string) if bmap.get(d|string) else '' }}">
+                                        <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string, '') }}">
                                     </div>
                                     {% endfor %}
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule and rule.combo_bonus_enabled %}checked{% endif %}> Activer bonus de combo</label>
+                                <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule %}{% if rule.combo_bonus_enabled %}checked{% endif %}{% else %}{% if defaults.get('combo_bonus_enabled', true) %}checked{% endif %}{% endif %}> Activer bonus de combo</label>
                                 <div class="grid-2">
                                     <div>
                                         <label for="combo_step" class="small">Taille du palier</label>
-                                        <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule and rule.combo_step else '' }}">
+                                        <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule else defaults.get('combo_step', 3) }}">
                                     </div>
                                     <div>
                                         <label for="combo_bonus_points" class="small">Points par palier</label>
-                                        <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule and rule.combo_bonus_points else '' }}">
+                                        <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule else defaults.get('combo_bonus_points', 5) }}">
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="perfect_quiz_bonus">Bonus perfect</label>
-                                <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else 0 }}">
+                                <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else defaults.get('perfect_quiz_bonus', 50) }}">
                             </div>
                         </fieldset>
                     </div>
@@ -178,11 +179,11 @@
                             <legend>Messages</legend>
                             <div class="form-group">
                                 <label for="intro_message">Message d'introduction</label>
-                                <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else '' }}</textarea>
+                                <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else defaults.get('intro_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label for="success_message">Message de réussite</label>
-                                <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else '' }}</textarea>
+                                <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else defaults.get('success_message', '') }}</textarea>
                             </div>
                         </fieldset>
                     </div>
@@ -365,10 +366,11 @@ function initThemeCheckboxes() {
     });
 
     // Initialisation : vérifier l'état au chargement
-    if (useAllBroadThemes) {
+    // Ne pas modifier si déjà coché par défaut
+    if (useAllBroadThemes && !useAllBroadThemes.checked) {
         useAllBroadThemes.checked = checkAllBroadThemesChecked();
     }
-    if (useAllSpecificThemes) {
+    if (useAllSpecificThemes && !useAllSpecificThemes.checked) {
         useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
     }
 }
