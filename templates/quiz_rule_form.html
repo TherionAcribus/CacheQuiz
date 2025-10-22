@@ -99,7 +99,19 @@
                             <legend>Thèmes utilisés</legend>
                             <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les thèmes larges</label>
                             <!-- Debug: defaults={{ defaults }}, check_all_broad_themes={{ defaults.get('check_all_broad_themes', 'NOT_SET') }} -->
-                            <div class="themes-grid-select">
+                            <div class="themes-grid-select" data-theme-relations='{
+                                {% for theme in themes %}
+                                "{{ theme.id }}": [
+                                    {% set specific_ids = [] %}
+                                    {% for st in specific_themes %}
+                                    {% if st.broad_theme_id == theme.id %}
+                                    {% set _ = specific_ids.append(st.id) %}
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% for id in specific_ids %}{{ id }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                ]{% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            }'>
                                 {% for theme in themes %}
                                 <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule %}{% if (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}{% else %}{% if defaults.get('check_all_broad_themes', true) %}checked{% endif %}{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
                                 {% endfor %}
@@ -304,6 +316,15 @@ function checkRuleSlug(input) {
 function initThemeCheckboxes() {
     console.log('Initialisation des checkboxes de thèmes...');
 
+    // Récupérer les relations depuis l'attribut data
+    const themesGrid = document.querySelector('.themes-grid-select');
+    const themeRelations = JSON.parse(themesGrid.dataset.themeRelations || '{}');
+
+    console.log('Relations thèmes:', themeRelations);
+
+    // Flag pour éviter les boucles infinies
+    let isUpdating = false;
+
     // Thèmes larges
     const useAllBroadThemes = document.getElementById('use_all_broad_themes');
     const broadThemeCheckboxes = document.querySelectorAll('input[name="allowed_broad_theme_ids"]');
@@ -334,34 +355,115 @@ function initThemeCheckboxes() {
 
     // Gestionnaire pour "Utiliser tous les thèmes larges"
     useAllBroadThemes?.addEventListener('change', function() {
+        if (isUpdating) return;
+        isUpdating = true;
         console.log('Changement de "Utiliser tous les thèmes larges":', this.checked);
         broadThemeCheckboxes.forEach(cb => {
             cb.checked = this.checked;
+            // Déclencher manuellement l'événement change pour synchroniser les sous-thèmes
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
         });
+        isUpdating = false;
     });
 
     // Gestionnaire pour "Utiliser tous les sous-thèmes"
     useAllSpecificThemes?.addEventListener('change', function() {
+        if (isUpdating) return;
+        isUpdating = true;
+        console.log('Changement de "Utiliser tous les sous-thèmes":', this.checked);
         specificThemeCheckboxes.forEach(cb => {
             cb.checked = this.checked;
         });
+        isUpdating = false;
     });
 
     // Gestionnaire pour les thèmes larges individuels
     broadThemeCheckboxes.forEach(cb => {
         cb.addEventListener('change', function() {
+            if (isUpdating) return; // Éviter les boucles
+            isUpdating = true;
+
+            const broadThemeId = this.value;
+            const relatedSpecificThemeIds = themeRelations[broadThemeId] || [];
+
+            console.log('Changement thème large:', broadThemeId, 'coche:', this.checked, 'sous-thèmes:', relatedSpecificThemeIds);
+
+            // Synchroniser les sous-thèmes correspondants
+            relatedSpecificThemeIds.forEach(specificThemeId => {
+                const specificCheckbox = document.querySelector(`input[name="allowed_specific_theme_ids"][value="${specificThemeId}"]`);
+                if (specificCheckbox) {
+                    specificCheckbox.checked = this.checked;
+                    console.log('Sous-thème', specificThemeId, 'mis à', this.checked);
+                }
+            });
+
+            // Vérifier l'état de "Utiliser tous les thèmes larges"
             if (useAllBroadThemes) {
                 useAllBroadThemes.checked = checkAllBroadThemesChecked();
             }
+
+            // Si on décoche un thème large, décocher aussi "Utiliser tous les sous-thèmes"
+            // car tous les sous-thèmes ne sont plus utilisés
+            if (!this.checked && useAllSpecificThemes) {
+                useAllSpecificThemes.checked = false;
+                console.log('Décoche "Utiliser tous les sous-thèmes" car thème large décoché');
+            }
+
+            isUpdating = false;
         });
     });
 
     // Gestionnaire pour les sous-thèmes individuels
     specificThemeCheckboxes.forEach(cb => {
         cb.addEventListener('change', function() {
+            if (isUpdating) return; // Éviter les boucles
+            isUpdating = true;
+
+            const specificThemeId = parseInt(this.value);
+
+            console.log('Changement sous-thème:', specificThemeId, 'coche:', this.checked);
+
+            // Trouver le thème large parent
+            let parentBroadThemeId = null;
+            for (const [broadId, specificIds] of Object.entries(themeRelations)) {
+                if (specificIds.includes(specificThemeId)) {
+                    parentBroadThemeId = broadId;
+                    break;
+                }
+            }
+
+            if (parentBroadThemeId) {
+                const parentBroadCheckbox = document.querySelector(`input[name="allowed_broad_theme_ids"][value="${parentBroadThemeId}"]`);
+
+                if (this.checked) {
+                    // Si on coche un sous-thème, cocher automatiquement le thème large parent
+                    if (parentBroadCheckbox) {
+                        parentBroadCheckbox.checked = true;
+                        console.log('Thème large parent', parentBroadThemeId, 'coché car sous-thème coché');
+                    }
+                } else {
+                    // Si on décoche un sous-thème, ne décocher le thème large parent
+                    // que si TOUS les autres sous-thèmes sont aussi décochés
+                    const parentSpecificIds = themeRelations[parentBroadThemeId] || [];
+                    const anyParentSpecificChecked = parentSpecificIds.some(id => {
+                        const checkbox = document.querySelector(`input[name="allowed_specific_theme_ids"][value="${id}"]`);
+                        return checkbox && checkbox.checked;
+                    });
+
+                    // Ne décocher que si AUCUN sous-thème n'est coché
+                    if (parentBroadCheckbox && !anyParentSpecificChecked) {
+                        parentBroadCheckbox.checked = false;
+                        console.log('Thème large parent', parentBroadThemeId, 'décoché car tous les sous-thèmes sont décochés');
+                    }
+                }
+            }
+
+            // Vérifier l'état de "Utiliser tous les sous-thèmes"
             if (useAllSpecificThemes) {
                 useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
             }
+
+            isUpdating = false;
         });
     });
 
