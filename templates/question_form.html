@@ -267,11 +267,21 @@
                 
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" 
-                               name="is_published" 
+                        <input type="checkbox"
+                               name="is_published"
                                {% if question and question.is_published %}checked{% endif %}>
                         Question en ligne (publiée)
                     </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox"
+                               name="is_private"
+                               {% if question and question.is_private %}checked{% endif %}>
+                        Question privée (utilisable uniquement par son créateur)
+                    </label>
+                    <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
                 </div>
                 
                 {% if question %}

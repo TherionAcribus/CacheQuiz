@@ -40,6 +40,14 @@ with app.app_context():
             if 'profile_id' not in existing_cols:
                 db.session.execute(text("ALTER TABLE users ADD COLUMN profile_id INTEGER"))
             db.session.commit()
+
+            # Migration pour la table questions
+            result_questions = db.session.execute(text("PRAGMA table_info(questions)"))
+            existing_cols_questions = {row[1] for row in result_questions.fetchall()}
+            # is_private (False par défaut = publique)
+            if 'is_private' not in existing_cols_questions:
+                db.session.execute(text("ALTER TABLE questions ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT 0"))
+            db.session.commit()
     except Exception:
         # Ne bloque pas l'app; pour autres SGBD, utiliser une migration Alembic
         db.session.rollback()
@@ -701,7 +709,8 @@ def create_question():
             specific_theme_id=int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None,
             difficulty_level=int(data.get('difficulty_level', 1)),
             translation_id=int(data.get('translation_id')) if data.get('translation_id') else None,
-            is_published=data.get('is_published') == 'on'
+            is_published=data.get('is_published') == 'on',
+            is_private=data.get('is_private') == 'on'
         )
         
         # Gérer les pays (relation many-to-many)
@@ -790,6 +799,7 @@ def update_question(question_id):
         question.difficulty_level = int(data.get('difficulty_level', 1))
         question.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
         question.is_published = data.get('is_published') == 'on'
+        question.is_private = data.get('is_private') == 'on'
         question.updated_at = datetime.utcnow()
         
         # Gérer les pays (relation many-to-many)

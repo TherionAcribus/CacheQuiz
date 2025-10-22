@@ -333,6 +333,7 @@ class Question(db.Model):
     # Traduction et publication
     translation_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=True)
     is_published = db.Column(db.Boolean, default=False)
+    is_private = db.Column(db.Boolean, default=False)  # False = publique, True = privée (utilisable uniquement par le créateur)
 
     # Source (optionnelle) - URL ou référence pour vérifier la réponse
     source = db.Column(db.Text)
@@ -381,6 +382,7 @@ class Question(db.Model):
             'times_answered': self.times_answered,
             'translation_id': self.translation_id,
             'is_published': self.is_published,
+            'is_private': self.is_private,
             'source': self.source,
             'detailed_answer_image': self.detailed_answer_image.to_dict() if self.detailed_answer_image else None
         }
