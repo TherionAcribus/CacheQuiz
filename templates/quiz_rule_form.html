@@ -29,15 +29,6 @@
                             <input id="slug" name="slug" type="text" placeholder="mode-expert" value="{{ rule.slug if rule and rule.slug else '' }}">
                         </div>
 
-                        <div class="form-group">
-                            <label for="created_by_user_id">Créateur *</label>
-                            <select id="created_by_user_id" name="created_by_user_id" required>
-                                {% for user in users %}
-                                <option value="{{ user.id }}" {% if rule and rule.created_by_user_id == user.id %}selected{% endif %}>{{ user.username }}</option>
-                                {% endfor %}
-                            </select>
-                            <small><a href="/users" target="_blank" style="color: var(--primary-color)">→ Gérer les utilisateurs</a></small>
-                        </div>
 
                         <div class="form-group">
                             <label for="description">Description</label>

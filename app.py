@@ -2060,8 +2060,7 @@ def new_quiz_rule():
         return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, users=users)
+    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes)
 
 
 @app.route('/quiz-rule/<int:rule_id>/edit')
@@ -2077,8 +2076,7 @@ def edit_quiz_rule(rule_id: int):
         return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, users=users)
+    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes)
 
 
 @app.route('/api/quiz-rule', methods=['POST'])
