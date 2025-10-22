@@ -97,14 +97,14 @@
                     <div class="form-column">
                         <fieldset class="fieldset">
                             <legend>Thèmes utilisés</legend>
-                            <label class="checkbox-label"><input type="checkbox" name="use_all_broad_themes" {% if not rule or rule.use_all_broad_themes %}checked{% endif %}> Utiliser tous les thèmes larges</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if not rule or rule.use_all_broad_themes %}checked{% endif %}> Utiliser tous les thèmes larges</label>
                             <div class="themes-grid-select">
                                 {% for theme in themes %}
                                 <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule and (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
                                 {% endfor %}
                             </div>
 
-                            <label class="checkbox-label"><input type="checkbox" name="use_all_specific_themes" {% if not rule or rule.use_all_specific_themes %}checked{% endif %}> Utiliser tous les sous-thèmes</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_specific_themes" name="use_all_specific_themes" {% if not rule or rule.use_all_specific_themes %}checked{% endif %}> Utiliser tous les sous-thèmes</label>
                             <div class="themes-grid-select">
                                 {% for st in specific_themes %}
                                 <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule and (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
@@ -297,6 +297,110 @@ function checkRuleSlug(input) {
             console.error('Erreur lors de la vérification:', error);
             errorDiv.innerHTML = '<span style="color: #dc3545;">Erreur de vérification</span>';
         });
+}
+
+// Gestion de la concordance des checkboxes de thèmes
+function initThemeCheckboxes() {
+    console.log('Initialisation des checkboxes de thèmes...');
+
+    // Thèmes larges
+    const useAllBroadThemes = document.getElementById('use_all_broad_themes');
+    const broadThemeCheckboxes = document.querySelectorAll('input[name="allowed_broad_theme_ids"]');
+
+    console.log('useAllBroadThemes:', useAllBroadThemes);
+    console.log('broadThemeCheckboxes:', broadThemeCheckboxes.length, 'trouvés');
+
+    // Sous-thèmes
+    const useAllSpecificThemes = document.getElementById('use_all_specific_themes');
+    const specificThemeCheckboxes = document.querySelectorAll('input[name="allowed_specific_theme_ids"]');
+
+    console.log('useAllSpecificThemes:', useAllSpecificThemes);
+    console.log('specificThemeCheckboxes:', specificThemeCheckboxes.length, 'trouvés');
+
+    // Fonction pour vérifier si tous les thèmes larges sont cochés
+    function checkAllBroadThemesChecked() {
+        const checkedCount = Array.from(broadThemeCheckboxes).filter(cb => cb.checked).length;
+        const totalCount = broadThemeCheckboxes.length;
+        return checkedCount === totalCount && totalCount > 0;
+    }
+
+    // Fonction pour vérifier si tous les sous-thèmes sont cochés
+    function checkAllSpecificThemesChecked() {
+        const checkedCount = Array.from(specificThemeCheckboxes).filter(cb => cb.checked).length;
+        const totalCount = specificThemeCheckboxes.length;
+        return checkedCount === totalCount && totalCount > 0;
+    }
+
+    // Gestionnaire pour "Utiliser tous les thèmes larges"
+    useAllBroadThemes?.addEventListener('change', function() {
+        console.log('Changement de "Utiliser tous les thèmes larges":', this.checked);
+        broadThemeCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+    });
+
+    // Gestionnaire pour "Utiliser tous les sous-thèmes"
+    useAllSpecificThemes?.addEventListener('change', function() {
+        specificThemeCheckboxes.forEach(cb => {
+            cb.checked = this.checked;
+        });
+    });
+
+    // Gestionnaire pour les thèmes larges individuels
+    broadThemeCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (useAllBroadThemes) {
+                useAllBroadThemes.checked = checkAllBroadThemesChecked();
+            }
+        });
+    });
+
+    // Gestionnaire pour les sous-thèmes individuels
+    specificThemeCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (useAllSpecificThemes) {
+                useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
+            }
+        });
+    });
+
+    // Initialisation : vérifier l'état au chargement
+    if (useAllBroadThemes) {
+        useAllBroadThemes.checked = checkAllBroadThemesChecked();
+    }
+    if (useAllSpecificThemes) {
+        useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
+    }
+}
+
+// Initialiser les checkboxes de thèmes après le chargement HTMX
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded déclenché');
+    // Délai pour s'assurer que HTMX a fini de charger le contenu
+    setTimeout(function() {
+        console.log('Timeout DOMContentLoaded terminé, appel initThemeCheckboxes');
+        initThemeCheckboxes();
+    }, 100);
+});
+
+// Aussi essayer avec un événement HTMX si disponible
+document.addEventListener('htmx:afterSwap', function(evt) {
+    console.log('htmx:afterSwap déclenché', evt.detail.target);
+    if (evt.detail.target.id === 'rule-form-container' || evt.detail.target.closest('#rule-form-container')) {
+        console.log('Cible correspond, appel initThemeCheckboxes');
+        setTimeout(function() {
+            console.log('Timeout htmx:afterSwap terminé, appel initThemeCheckboxes');
+            initThemeCheckboxes();
+        }, 50);
+    }
+});
+
+// Appel direct au cas où les événements ne se déclenchent pas
+console.log('Script chargé, tentative d\'initialisation directe');
+try {
+    initThemeCheckboxes();
+} catch (e) {
+    console.error('Erreur lors de l\'initialisation directe:', e);
 }
 </script>
 <style>
