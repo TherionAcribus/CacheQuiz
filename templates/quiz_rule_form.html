@@ -8,155 +8,197 @@
           hx-target="#quiz-rules-list" hx-swap="innerHTML"
           hx-on::after-request="document.getElementById('rule-form-container').classList.add('hidden')">
 
-        <div class="form-grid">
-            <div class="form-column">
-                <div class="form-group">
-                    <label for="name">Nom *</label>
-                    <input id="name" name="name" type="text" required value="{{ rule.name if rule else '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label for="slug">Slug</label>
-                    <input id="slug" name="slug" type="text" placeholder="mode-expert" value="{{ rule.slug if rule and rule.slug else '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label for="created_by_user_id">Créateur *</label>
-                    <select id="created_by_user_id" name="created_by_user_id" required>
-                        {% for user in users %}
-                        <option value="{{ user.id }}" {% if rule and rule.created_by_user_id == user.id %}selected{% endif %}>{{ user.username }}</option>
-                        {% endfor %}
-                    </select>
-                    <small><a href="/users" target="_blank" style="color: var(--primary-color)">→ Gérer les utilisateurs</a></small>
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3">{{ rule.description if rule else '' }}</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="comment">Commentaire interne</label>
-                    <textarea id="comment" name="comment" rows="2">{{ rule.comment if rule else '' }}</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule and rule.is_active %}checked{% endif %}> Actif</label>
-                </div>
+        <div class="tabs" hx-on:click="var btn=event.target.closest('.tab, .tab-next'); if(!btn) return; var wrap=event.currentTarget; var nav=wrap.querySelector('.tabs-nav'); var key=btn.classList.contains('tab')?btn.getAttribute('data-tab'):btn.getAttribute('data-next-tab'); if(key){nav.querySelectorAll('.tab').forEach(function(b){var on=b.getAttribute('data-tab')===key; b.classList.toggle('active',on); b.setAttribute('aria-selected',on?'true':'false')}); wrap.querySelectorAll('.tabs-panels .tab-panel').forEach(function(p){p.classList.toggle('active', p.getAttribute('data-tab')===key)});}">
+            <div class="tabs-nav" role="tablist" aria-label="Règles - onglets">
+                <button type="button" class="tab active" data-tab="general" aria-selected="true">Général</button>
+                <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
+                <button type="button" class="tab" data-tab="themes" aria-selected="false">Thèmes</button>
+                <button type="button" class="tab" data-tab="scoring" aria-selected="false">Scoring</button>
+                <button type="button" class="tab" data-tab="messages" aria-selected="false">Messages</button>
             </div>
+            <div class="tabs-panels">
+                <div class="tab-panel active" data-tab="general">
+                    <div class="form-column">
+                        <div class="form-group">
+                            <label for="name">Nom *</label>
+                            <input id="name" name="name" type="text" required value="{{ rule.name if rule else '' }}">
+                        </div>
 
-            <div class="form-column">
-                <fieldset class="fieldset">
-                    <legend>Timer</legend>
-                    <div class="form-group">
-                        <label for="timer_seconds">Durée par question (secondes)</label>
-                        <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else 30 }}">
-                    </div>
-                </fieldset>
+                        <div class="form-group">
+                            <label for="slug">Slug</label>
+                            <input id="slug" name="slug" type="text" placeholder="mode-expert" value="{{ rule.slug if rule and rule.slug else '' }}">
+                        </div>
 
-                <fieldset class="fieldset">
-                    <legend>Difficultés utilisées</legend>
-                    <div class="checkboxes-inline">
-                        {% set selected = rule.get_allowed_difficulties() if rule else [] %}
-                        {% for d in [1,2,3,4,5] %}
-                        <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
-                        {% endfor %}
-                    </div>
-                    <div class="form-group">
-                        <label>Nombre de questions par difficulté</label>
-                        <div class="grid-5">
-                            {% for d in [1,2,3,4,5] %}
-                            <div>
-                                <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
-                                {% set qmap = rule.get_questions_per_difficulty() if rule else {} %}
-                                <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string) if qmap.get(d|string) else '' }}">
-                            </div>
-                            {% endfor %}
+                        <div class="form-group">
+                            <label for="created_by_user_id">Créateur *</label>
+                            <select id="created_by_user_id" name="created_by_user_id" required>
+                                {% for user in users %}
+                                <option value="{{ user.id }}" {% if rule and rule.created_by_user_id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <small><a href="/users" target="_blank" style="color: var(--primary-color)">→ Gérer les utilisateurs</a></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="3">{{ rule.description if rule else '' }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comment">Commentaire interne</label>
+                            <textarea id="comment" name="comment" rows="2">{{ rule.comment if rule else '' }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule and rule.is_active %}checked{% endif %}> Actif</label>
                         </div>
                     </div>
-                </fieldset>
 
-                <fieldset class="fieldset">
-                    <legend>Thèmes utilisés</legend>
-                    <label class="checkbox-label"><input type="checkbox" name="use_all_broad_themes" {% if not rule or rule.use_all_broad_themes %}checked{% endif %}> Utiliser tous les thèmes larges</label>
-                    <div class="themes-grid-select">
-                        {% for theme in themes %}
-                        <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule and (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
-                        {% endfor %}
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="timing">Suivant →</button>
                     </div>
+                </div>
 
-                    <label class="checkbox-label"><input type="checkbox" name="use_all_specific_themes" {% if not rule or rule.use_all_specific_themes %}checked{% endif %}> Utiliser tous les sous-thèmes</label>
-                    <div class="themes-grid-select">
-                        {% for st in specific_themes %}
-                        <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule and (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
-                        {% endfor %}
-                    </div>
-                </fieldset>
-
-                <fieldset class="fieldset">
-                    <legend>Scoring</legend>
-                    <div class="form-group">
-                        <label for="scoring_base_points">Points par question</label>
-                        <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else 1 }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
-                        <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
-                            {% set s = rule.scoring_difficulty_bonus_type if rule else 'none' %}
-                            <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
-                            <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
-                            <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Valeurs bonus par difficulté</label>
-                        <div class="grid-5">
-                            {% set bmap = rule.get_difficulty_bonus_map() if rule else {} %}
-                            {% for d in [1,2,3,4,5] %}
-                            <div>
-                                <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
-                                <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string) if bmap.get(d|string) else '' }}">
+                <div class="tab-panel" data-tab="timing">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Timer</legend>
+                            <div class="form-group">
+                                <label for="timer_seconds">Durée par question (secondes)</label>
+                                <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else 30 }}">
                             </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule and rule.combo_bonus_enabled %}checked{% endif %}> Activer bonus de combo</label>
-                        <div class="grid-2">
-                            <div>
-                                <label for="combo_step" class="small">Taille du palier</label>
-                                <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule and rule.combo_step else '' }}">
-                            </div>
-                            <div>
-                                <label for="combo_bonus_points" class="small">Points par palier</label>
-                                <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule and rule.combo_bonus_points else '' }}">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="perfect_quiz_bonus">Bonus perfect</label>
-                        <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else 0 }}">
-                    </div>
-                </fieldset>
+                        </fieldset>
 
-                <fieldset class="fieldset">
-                    <legend>Messages</legend>
-                    <div class="form-group">
-                        <label for="intro_message">Message d'introduction</label>
-                        <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else '' }}</textarea>
+                        <fieldset class="fieldset">
+                            <legend>Difficultés utilisées</legend>
+                            <div class="checkboxes-inline">
+                                {% set selected = rule.get_allowed_difficulties() if rule else [] %}
+                                {% for d in [1,2,3,4,5] %}
+                                <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre de questions par difficulté</label>
+                                <div class="grid-5">
+                                    {% for d in [1,2,3,4,5] %}
+                                    <div>
+                                        <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
+                                        {% set qmap = rule.get_questions_per_difficulty() if rule else {} %}
+                                        <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string) if qmap.get(d|string) else '' }}">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </fieldset>
                     </div>
-                    <div class="form-group">
-                        <label for="success_message">Message de réussite</label>
-                        <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else '' }}</textarea>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="themes">Suivant →</button>
                     </div>
-                </fieldset>
+                </div>
+
+                <div class="tab-panel" data-tab="themes">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Thèmes utilisés</legend>
+                            <label class="checkbox-label"><input type="checkbox" name="use_all_broad_themes" {% if not rule or rule.use_all_broad_themes %}checked{% endif %}> Utiliser tous les thèmes larges</label>
+                            <div class="themes-grid-select">
+                                {% for theme in themes %}
+                                <label class="chip"><input type="checkbox" name="allowed_broad_theme_ids" value="{{ theme.id }}" {% if rule and (not rule.use_all_broad_themes) and (theme in rule.allowed_broad_themes) %}checked{% endif %}> {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</label>
+                                {% endfor %}
+                            </div>
+
+                            <label class="checkbox-label"><input type="checkbox" name="use_all_specific_themes" {% if not rule or rule.use_all_specific_themes %}checked{% endif %}> Utiliser tous les sous-thèmes</label>
+                            <div class="themes-grid-select">
+                                {% for st in specific_themes %}
+                                <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule and (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="scoring">Suivant →</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel" data-tab="scoring">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Scoring</legend>
+                            <div class="form-group">
+                                <label for="scoring_base_points">Points par question</label>
+                                <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else 1 }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
+                                <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
+                                    {% set s = rule.scoring_difficulty_bonus_type if rule else 'none' %}
+                                    <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
+                                    <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
+                                    <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Valeurs bonus par difficulté</label>
+                                <div class="grid-5">
+                                    {% set bmap = rule.get_difficulty_bonus_map() if rule else {} %}
+                                    {% for d in [1,2,3,4,5] %}
+                                    <div>
+                                        <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
+                                        <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string) if bmap.get(d|string) else '' }}">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule and rule.combo_bonus_enabled %}checked{% endif %}> Activer bonus de combo</label>
+                                <div class="grid-2">
+                                    <div>
+                                        <label for="combo_step" class="small">Taille du palier</label>
+                                        <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule and rule.combo_step else '' }}">
+                                    </div>
+                                    <div>
+                                        <label for="combo_bonus_points" class="small">Points par palier</label>
+                                        <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule and rule.combo_bonus_points else '' }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="perfect_quiz_bonus">Bonus perfect</label>
+                                <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else 0 }}">
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="messages">Suivant →</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel" data-tab="messages">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Messages</legend>
+                            <div class="form-group">
+                                <label for="intro_message">Message d'introduction</label>
+                                <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else '' }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="success_message">Message de réussite</label>
+                                <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else '' }}</textarea>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('rule-form-container').classList.add('hidden')">Annuler</button>
+                        <button type="submit" class="btn btn-primary">{% if rule %}Mettre à jour{% else %}Créer{% endif %}</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('rule-form-container').classList.add('hidden')">Annuler</button>
-            <button type="submit" class="btn btn-primary">{% if rule %}Mettre à jour{% else %}Créer{% endif %}</button>
-        </div>
     </form>
 </div>
 
@@ -172,6 +214,17 @@
 .themes-grid-select{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem;max-height:200px;overflow:auto;border:1px dashed var(--border-color);border-radius:.5rem;padding:.5rem}
 .chip{display:flex;align-items:center;gap:.35rem;padding:.35rem .5rem;border:1px solid var(--border-color);border-radius:999px;background:#fff;cursor:pointer}
 .small{font-size:.8rem;color:var(--text-light)}
+
+/* Onglets */
+.tabs{display:flex;flex-direction:column;gap:.75rem}
+.tabs-nav{display:flex;gap:.25rem;align-items:flex-end;border-bottom:1px solid var(--border-color)}
+.tab{appearance:none;background:transparent;border:none;padding:.5rem .75rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-light)}
+.tab:hover{color:inherit}
+.tab.active{color:inherit;border-bottom-color:var(--primary-color);font-weight:600}
+.tabs-panels{padding-top:.25rem}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.tab-actions{display:flex;justify-content:flex-end;gap:.75rem;margin-top:1rem}
 </style>
 
 
