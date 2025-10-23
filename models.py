@@ -514,6 +514,13 @@ quiz_rule_set_specific_themes = db.Table(
     db.Column('specific_theme_id', db.Integer, db.ForeignKey('specific_themes.id'), primary_key=True)
 )
 
+# Table d'association pour lier un set de règles à des questions spécifiques
+quiz_rule_set_questions = db.Table(
+    'quiz_rule_set_questions',
+    db.Column('rule_set_id', db.Integer, db.ForeignKey('quiz_rule_sets.id'), primary_key=True),
+    db.Column('question_id', db.Integer, db.ForeignKey('questions.id'), primary_key=True)
+)
+
 
 class QuizRuleSet(db.Model):
     __tablename__ = 'quiz_rule_sets'
@@ -542,7 +549,12 @@ class QuizRuleSet(db.Model):
     allowed_difficulties_csv = db.Column(db.String(50), nullable=True)
     questions_per_difficulty_json = db.Column(db.Text, nullable=True)
 
-    # Thèmes utilisés (tous ou sélection)
+    # Mode de sélection des questions
+    # 'auto' = sélection automatique par thèmes/difficultés (mode par défaut)
+    # 'manual' = sélection manuelle d'une liste de questions spécifiques
+    question_selection_mode = db.Column(db.String(20), nullable=False, default='auto')
+
+    # Thèmes utilisés (tous ou sélection) - utilisé uniquement en mode 'auto'
     use_all_broad_themes = db.Column(db.Boolean, nullable=False, default=True)
     use_all_specific_themes = db.Column(db.Boolean, nullable=False, default=True)
     allowed_broad_themes = db.relationship(
@@ -554,6 +566,14 @@ class QuizRuleSet(db.Model):
         'SpecificTheme',
         secondary=quiz_rule_set_specific_themes,
         lazy='subquery'
+    )
+
+    # Questions spécifiques sélectionnées manuellement - utilisé uniquement en mode 'manual'
+    selected_questions = db.relationship(
+        'Question',
+        secondary=quiz_rule_set_questions,
+        lazy='subquery',
+        backref=db.backref('used_in_rule_sets', lazy='dynamic')
     )
 
     # Scoring
