@@ -251,6 +251,14 @@
                                 <label for="perfect_quiz_bonus">Bonus perfect</label>
                                 <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else defaults.get('perfect_quiz_bonus', 50) }}">
                             </div>
+
+                            <!-- Résumé score maximum -->
+                            <div class="score-summary">
+                                <div class="score-line">
+                                    Score max théorique: <strong id="max-score-value">0</strong> points
+                                </div>
+                                <div id="max-score-breakdown" class="score-breakdown small"></div>
+                            </div>
                         </fieldset>
                     </div>
 
@@ -399,6 +407,81 @@ function updateQuestionCount() {
         });
 }
 
+// Calcul du score maximum théorique (sans-faute)
+function computeMaxScore() {
+    // Difficultés sélectionnées
+    const selectedDifficulties = Array.from(document.querySelectorAll('input[name="allowed_difficulties"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    // Nombre de questions par difficulté
+    const questionsPerDifficulty = {};
+    let totalQuestions = 0;
+    selectedDifficulties.forEach(d => {
+        const el = document.getElementById(`qpd${d}`);
+        const n = el ? parseInt(el.value || '0', 10) : 0;
+        questionsPerDifficulty[d] = isNaN(n) ? 0 : n;
+        totalQuestions += questionsPerDifficulty[d];
+    });
+
+    // Paramètres de scoring
+    const basePointsEl = document.getElementById('scoring_base_points');
+    const basePoints = basePointsEl ? parseFloat(basePointsEl.value || '0') : 0;
+
+    const bonusTypeEl = document.getElementById('scoring_difficulty_bonus_type');
+    const bonusType = bonusTypeEl ? bonusTypeEl.value : 'none'; // none | add | mult
+
+    const bonusMap = {};
+    selectedDifficulties.forEach(d => {
+        const el = document.getElementById(`bonus${d}`);
+        const v = el ? parseFloat(el.value || (bonusType === 'mult' ? '1' : '0')) : (bonusType === 'mult' ? 1 : 0);
+        bonusMap[d] = isNaN(v) ? (bonusType === 'mult' ? 1 : 0) : v;
+    });
+
+    // Calcul des points liés aux questions
+    let questionsPoints = 0;
+    const breakdownParts = [];
+    selectedDifficulties.forEach(d => {
+        const num = questionsPerDifficulty[d];
+        if (!num) return;
+        let perQuestion = basePoints;
+        if (bonusType === 'add') perQuestion = basePoints + (bonusMap[d] || 0);
+        else if (bonusType === 'mult') perQuestion = basePoints * (bonusMap[d] || 1);
+        const subtotal = perQuestion * num;
+        questionsPoints += subtotal;
+        breakdownParts.push(`D${d}: ${num}×${perQuestion}${bonusType!=='none' ? '' : ''} = ${Math.round(subtotal)}`);
+    });
+
+    // Bonus combo
+    const comboEnabled = document.querySelector('input[name="combo_bonus_enabled"]')?.checked;
+    let comboBonus = 0;
+    if (comboEnabled && totalQuestions > 0) {
+        const stepEl = document.getElementById('combo_step');
+        const pointsEl = document.getElementById('combo_bonus_points');
+        const step = stepEl ? parseInt(stepEl.value || '0', 10) : 0;
+        const pts = pointsEl ? parseInt(pointsEl.value || '0', 10) : 0;
+        if (step > 0 && pts > 0) {
+            comboBonus = Math.floor(totalQuestions / step) * pts;
+        }
+    }
+
+    // Bonus perfect
+    const perfectEl = document.getElementById('perfect_quiz_bonus');
+    const perfectBonus = perfectEl ? parseInt(perfectEl.value || '0', 10) : 0;
+
+    const total = Math.round(questionsPoints + comboBonus + perfectBonus);
+
+    const outEl = document.getElementById('max-score-value');
+    if (outEl) outEl.textContent = `${total}`;
+    const breakdownEl = document.getElementById('max-score-breakdown');
+    if (breakdownEl) {
+        const parts = [];
+        if (breakdownParts.length) parts.push(`Questions: ${Math.round(questionsPoints)} (${breakdownParts.join(', ')})`);
+        if (comboBonus) parts.push(`Combo: +${comboBonus}`);
+        if (perfectBonus) parts.push(`Perfect: +${perfectBonus}`);
+        breakdownEl.textContent = parts.length ? parts.join(' | ') : '—';
+    }
+}
+
 function checkRuleSlug(input) {
     const slug = input.value.trim();
     const excludeId = '{{ rule.id if rule else "" }}';
@@ -484,6 +567,8 @@ function initThemeCheckboxes() {
         });
         // Mettre à jour le compteur de questions
         updateQuestionCount();
+        // Recalculer le score maximum
+        computeMaxScore();
         isUpdating = false;
     });
 
@@ -497,6 +582,8 @@ function initThemeCheckboxes() {
         });
         // Mettre à jour le compteur de questions
         updateQuestionCount();
+        // Recalculer le score maximum
+        computeMaxScore();
         isUpdating = false;
     });
 
@@ -534,6 +621,8 @@ function initThemeCheckboxes() {
 
             // Mettre à jour le compteur de questions
             updateQuestionCount();
+            // Recalculer le score maximum
+            computeMaxScore();
 
             isUpdating = false;
         });
@@ -591,6 +680,8 @@ function initThemeCheckboxes() {
 
             // Mettre à jour le compteur de questions
             updateQuestionCount();
+            // Recalculer le score maximum
+            computeMaxScore();
 
             isUpdating = false;
         });
@@ -602,6 +693,8 @@ function initThemeCheckboxes() {
             console.log('Changement difficulté:', this.value, 'coche:', this.checked);
             // Mettre à jour le compteur de questions
             updateQuestionCount();
+            // Recalculer le score maximum
+            computeMaxScore();
         });
     });
 
@@ -616,6 +709,8 @@ function initThemeCheckboxes() {
 
     // Calcul initial du nombre de questions
     updateQuestionCount();
+    // Calcul initial du score maximum
+    computeMaxScore();
 }
 
 // Charger les questions disponibles pour la sélection
@@ -885,6 +980,8 @@ document.addEventListener('click', function(e) {
     const tab = e.target.closest('.tab[data-tab="questions"]');
     if (tab) {
         setTimeout(loadQuestionsForSelection, 100);
+            // Recalculer le score quand on navigue ici (au cas où)
+            setTimeout(computeMaxScore, 150);
     }
 });
 
@@ -973,6 +1070,11 @@ try {
 .source-text{font-size:.9rem;color:var(--text-light);font-style:italic}
 .detail-stats{display:flex;gap:2rem;justify-content:center;padding:1rem;background:#e3f2fd;border-radius:.5rem;font-size:.9rem;color:#0c5460}
 .detail-stats span{font-weight:600}
+
+/* Score maximum */
+.score-summary{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:.5rem;background:#f8f9fa}
+.score-line{font-size:1rem;margin-bottom:.25rem}
+.score-breakdown{color:var(--text-light)}
 </style>
 
 
