@@ -184,6 +184,20 @@
                     </div>
                 </div>
 
+                <!-- Modale de détail de question -->
+                <div id="question-detail-modal" class="question-modal hidden">
+                    <div class="question-modal-overlay" onclick="closeQuestionDetailModal()"></div>
+                    <div class="question-modal-content">
+                        <div class="question-modal-header">
+                            <h3>Détail de la question</h3>
+                            <button type="button" class="btn-close" onclick="closeQuestionDetailModal()">✕</button>
+                        </div>
+                        <div class="question-modal-body" id="question-detail-body">
+                            <div class="loading-message">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="tab-panel" data-tab="scoring">
                     <div class="form-column">
                         <fieldset class="fieldset">
@@ -630,14 +644,24 @@ function loadQuestionsForSelection() {
                 tableBody.innerHTML = '';
                 data.questions.forEach(question => {
                     const row = document.createElement('tr');
+                    row.classList.add('question-row');
+                    row.dataset.questionId = question.id;
                     row.innerHTML = `
-                        <td><input type="checkbox" name="selected_question_ids" value="${question.id}" checked onchange="updateSelectedQuestionsCount()"></td>
+                        <td onclick="event.stopPropagation()"><input type="checkbox" name="selected_question_ids" value="${question.id}" checked onchange="updateSelectedQuestionsCount()"></td>
                         <td>${question.id}</td>
                         <td class="question-text">${escapeHtml(question.question_text)}</td>
                         <td>${escapeHtml(question.broad_theme_name || '-')}</td>
                         <td>${escapeHtml(question.specific_theme_name || '-')}</td>
                         <td class="difficulty-badge difficulty-${question.difficulty_level}">${question.difficulty_level}</td>
                     `;
+                    
+                    // Ajouter l'événement de clic sur la ligne (sauf sur le checkbox)
+                    row.addEventListener('click', function(e) {
+                        if (e.target.type !== 'checkbox') {
+                            showQuestionDetail(question.id);
+                        }
+                    });
+                    
                     tableBody.appendChild(row);
                 });
                 
@@ -687,6 +711,120 @@ function initSelectAllQuestions() {
             });
             updateSelectedQuestionsCount();
         });
+    }
+}
+
+// Afficher le détail d'une question
+function showQuestionDetail(questionId) {
+    const modal = document.getElementById('question-detail-modal');
+    const modalBody = document.getElementById('question-detail-body');
+    
+    if (!modal || !modalBody) return;
+    
+    // Afficher la modale avec un message de chargement
+    modal.classList.remove('hidden');
+    modalBody.innerHTML = '<div class="loading-message">Chargement du détail de la question...</div>';
+    
+    // Charger les détails de la question
+    fetch(`/api/question/${questionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                modalBody.innerHTML = `<div class="error-message">${data.error}</div>`;
+                return;
+            }
+            
+            // Construire le HTML du détail
+            let html = `
+                <div class="question-detail">
+                    <div class="detail-section">
+                        <h4>Question #${data.id}</h4>
+                        <p class="question-full-text">${escapeHtml(data.question_text)}</p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>Réponses possibles</h4>
+                        <ol class="answers-list">
+            `;
+            
+            const answers = data.possible_answers || [];
+            answers.forEach((answer, index) => {
+                const isCorrect = data.correct_answer === String(index + 1);
+                html += `<li class="${isCorrect ? 'correct-answer' : ''}">${escapeHtml(answer)} ${isCorrect ? '✓' : ''}</li>`;
+            });
+            
+            html += `
+                        </ol>
+                    </div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <strong>Thème large:</strong>
+                            <span>${escapeHtml(data.broad_theme_name || '-')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Sous-thème:</strong>
+                            <span>${escapeHtml(data.specific_theme_name || '-')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Difficulté:</strong>
+                            <span class="difficulty-badge difficulty-${data.difficulty_level}">${data.difficulty_level}</span>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Auteur:</strong>
+                            <span>${escapeHtml(data.author_name || '-')}</span>
+                        </div>
+                    </div>
+            `;
+            
+            if (data.hint) {
+                html += `
+                    <div class="detail-section">
+                        <h4>Indice</h4>
+                        <p>${escapeHtml(data.hint)}</p>
+                    </div>
+                `;
+            }
+            
+            if (data.detailed_answer) {
+                html += `
+                    <div class="detail-section">
+                        <h4>Réponse détaillée</h4>
+                        <p>${escapeHtml(data.detailed_answer)}</p>
+                    </div>
+                `;
+            }
+            
+            if (data.source) {
+                html += `
+                    <div class="detail-section">
+                        <h4>Source</h4>
+                        <p class="source-text">${escapeHtml(data.source)}</p>
+                    </div>
+                `;
+            }
+            
+            html += `
+                    <div class="detail-stats">
+                        <span>Répondue ${data.times_answered || 0} fois</span>
+                        <span>Taux de réussite: ${data.success_rate ? data.success_rate.toFixed(1) : 0}%</span>
+                    </div>
+                </div>
+            `;
+            
+            modalBody.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement du détail:', error);
+            modalBody.innerHTML = '<div class="error-message">Erreur lors du chargement du détail de la question.</div>';
+        });
+}
+
+// Fermer la modale de détail
+function closeQuestionDetailModal() {
+    const modal = document.getElementById('question-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
 
@@ -777,6 +915,30 @@ try {
 .loading-message,.no-questions-message,.error-message{text-align:center;padding:2rem;color:var(--text-light);font-style:italic}
 .error-message{color:#dc3545}
 .questions-selection-summary{margin-top:1rem;padding:.75rem;background:#f8f9fa;border-radius:.5rem;text-align:center;font-weight:600}
+.question-row{cursor:pointer}
+.question-row:hover{background:#e3f2fd !important}
+
+/* Modale de détail de question */
+.question-modal{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;display:flex;align-items:center;justify-content:center}
+.question-modal.hidden{display:none}
+.question-modal-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);cursor:pointer}
+.question-modal-content{position:relative;background:var(--card-bg);border-radius:.75rem;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-width:800px;width:90%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.question-modal-header{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;border-bottom:1px solid var(--border-color);background:#f8f9fa}
+.question-modal-header h3{margin:0;font-size:1.25rem}
+.question-modal-body{padding:1.5rem;overflow-y:auto;flex:1}
+.question-detail{display:flex;flex-direction:column;gap:1.5rem}
+.detail-section h4{margin:0 0 .75rem 0;color:var(--primary-color);font-size:1rem;border-bottom:2px solid var(--primary-color);padding-bottom:.25rem}
+.question-full-text{font-size:1.1rem;font-weight:500;line-height:1.6;margin:0}
+.answers-list{margin:0;padding-left:1.5rem}
+.answers-list li{padding:.5rem 0;line-height:1.5}
+.correct-answer{color:#28a745;font-weight:600;background:#d4edda;padding:.5rem;border-radius:.25rem;margin:.25rem 0}
+.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.detail-item{display:flex;flex-direction:column;gap:.25rem;padding:.75rem;background:#f8f9fa;border-radius:.5rem}
+.detail-item strong{color:var(--text-light);font-size:.875rem}
+.detail-item span{font-size:1rem}
+.source-text{font-size:.9rem;color:var(--text-light);font-style:italic}
+.detail-stats{display:flex;gap:2rem;justify-content:center;padding:1rem;background:#e3f2fd;border-radius:.5rem;font-size:.9rem;color:#0c5460}
+.detail-stats span{font-weight:600}
 </style>
 
 

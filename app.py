@@ -750,6 +750,21 @@ def create_question():
         return f"Erreur: {str(e)}", 400
 
 
+@app.route('/api/question/<int:question_id>', methods=['GET'])
+def get_question_detail(question_id):
+    """Récupérer le détail complet d'une question"""
+    try:
+        question = Question.query.get(question_id)
+        if not question:
+            return {'error': 'Question non trouvée'}, 404
+        
+        return question.to_dict()
+    
+    except Exception as e:
+        print(f"Erreur lors de la récupération de la question {question_id}: {e}")
+        return {'error': str(e)}, 500
+
+
 @app.route('/api/question/<int:question_id>', methods=['PUT', 'POST'])
 def update_question(question_id):
     """Mettre à jour une question existante"""

@@ -363,7 +363,7 @@ class Question(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'author_id': self.author_id,
-            'author_name': self.author_user.display_name if self.author_user else None,
+            'author_name': self.author_user.username if self.author_user else None,
             'question_text': self.question_text,
             'possible_answers': self.possible_answers.split('|||') if self.possible_answers else [],
             'answer_images_legacy': self.answer_images.split('|||') if self.answer_images else [],
