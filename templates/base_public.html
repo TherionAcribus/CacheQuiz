@@ -18,7 +18,9 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz" style="height: 40px; vertical-align: middle;"> CacheQuiz</h1>
+                <a href="/" class="logo-link">
+                    <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz" style="height: 40px; vertical-align: middle;"> CacheQuiz</h1>
+                </a>
                 {% block auth_widget %}
                 <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
                 {% endblock %}
