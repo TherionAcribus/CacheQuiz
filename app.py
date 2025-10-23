@@ -2204,6 +2204,34 @@ def create_quiz_rule():
             if ids:
                 rule.allowed_specific_themes = SpecificTheme.query.filter(SpecificTheme.id.in_(ids)).all()
 
+        # Détection automatique du mode de sélection
+        selected_question_ids = [int(x) for x in data.getlist('selected_question_ids') if (x or '').isdigit()]
+        
+        # Récupérer toutes les questions disponibles selon les critères
+        available_question_ids = []
+        if not rule.use_all_specific_themes and rule.allowed_specific_themes:
+            specific_theme_ids = [st.id for st in rule.allowed_specific_themes]
+        else:
+            specific_theme_ids = [st.id for st in SpecificTheme.query.all()]
+        
+        if specific_theme_ids and difficulties:
+            available_questions = Question.query.filter(
+                Question.specific_theme_id.in_(specific_theme_ids),
+                Question.difficulty_level.in_(difficulties)
+            ).all()
+            available_question_ids = [q.id for q in available_questions]
+        
+        # Déterminer le mode : si toutes les questions disponibles sont sélectionnées -> mode auto
+        # sinon -> mode manuel
+        if selected_question_ids and set(selected_question_ids) != set(available_question_ids):
+            # Mode manuel : l'utilisateur a désélectionné des questions
+            rule.question_selection_mode = 'manual'
+            rule.selected_questions = Question.query.filter(Question.id.in_(selected_question_ids)).all()
+        else:
+            # Mode auto : toutes les questions sont sélectionnées
+            rule.question_selection_mode = 'auto'
+            rule.selected_questions = []  # Vider la liste en mode auto
+
         db.session.add(rule)
         db.session.commit()
 
@@ -2292,6 +2320,34 @@ def update_quiz_rule(rule_id: int):
         else:
             ids = [int(x) for x in data.getlist('allowed_specific_theme_ids') if (x or '').isdigit()]
             rule.allowed_specific_themes = SpecificTheme.query.filter(SpecificTheme.id.in_(ids)).all() if ids else []
+
+        # Détection automatique du mode de sélection
+        selected_question_ids = [int(x) for x in data.getlist('selected_question_ids') if (x or '').isdigit()]
+        
+        # Récupérer toutes les questions disponibles selon les critères
+        available_question_ids = []
+        if not rule.use_all_specific_themes and rule.allowed_specific_themes:
+            specific_theme_ids = [st.id for st in rule.allowed_specific_themes]
+        else:
+            specific_theme_ids = [st.id for st in SpecificTheme.query.all()]
+        
+        if specific_theme_ids and difficulties:
+            available_questions = Question.query.filter(
+                Question.specific_theme_id.in_(specific_theme_ids),
+                Question.difficulty_level.in_(difficulties)
+            ).all()
+            available_question_ids = [q.id for q in available_questions]
+        
+        # Déterminer le mode : si toutes les questions disponibles sont sélectionnées -> mode auto
+        # sinon -> mode manuel
+        if selected_question_ids and set(selected_question_ids) != set(available_question_ids):
+            # Mode manuel : l'utilisateur a désélectionné des questions
+            rule.question_selection_mode = 'manual'
+            rule.selected_questions = Question.query.filter(Question.id.in_(selected_question_ids)).all()
+        else:
+            # Mode auto : toutes les questions sont sélectionnées
+            rule.question_selection_mode = 'auto'
+            rule.selected_questions = []  # Vider la liste en mode auto
 
         rule.updated_at = datetime.utcnow()
         db.session.commit()

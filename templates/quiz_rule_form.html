@@ -147,6 +147,13 @@
                             
                             <div class="question-selection-info">
                                 <p><strong>Instructions :</strong> Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les questions affichées correspondent aux sous-thèmes et difficultés sélectionnés dans les onglets précédents.</p>
+                                <p><strong>Mode automatique :</strong> Si toutes les questions restent sélectionnées, le quiz utilisera automatiquement toutes les questions correspondant aux thèmes et difficultés choisis (y compris les nouvelles questions ajoutées ultérieurement).</p>
+                                <p><strong>Mode manuel :</strong> Si vous désélectionnez des questions, le quiz utilisera uniquement la liste spécifique de questions que vous avez sélectionnées.</p>
+                            </div>
+                            
+                            <div id="selection-mode-indicator" class="selection-mode-indicator">
+                                <span class="mode-badge mode-auto">Mode: Automatique</span>
+                                <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
                             </div>
 
                             <div id="questions-table-container">
@@ -690,13 +697,34 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Mettre à jour le compteur de questions sélectionnées
+// Mettre à jour le compteur de questions sélectionnées et l'indicateur de mode
 function updateSelectedQuestionsCount() {
+    const allCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]');
     const selectedCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]:checked');
-    const count = selectedCheckboxes.length;
+    const selectedCount = selectedCheckboxes.length;
+    const totalCount = allCheckboxes.length;
+    
     const countSpan = document.getElementById('selected-questions-count');
     if (countSpan) {
-        countSpan.textContent = `${count} question(s) sélectionnée(s)`;
+        countSpan.textContent = `${selectedCount} question(s) sélectionnée(s) sur ${totalCount}`;
+    }
+    
+    // Mettre à jour l'indicateur de mode
+    const modeIndicator = document.getElementById('selection-mode-indicator');
+    if (modeIndicator && totalCount > 0) {
+        const isAutoMode = selectedCount === totalCount;
+        
+        if (isAutoMode) {
+            modeIndicator.innerHTML = `
+                <span class="mode-badge mode-auto">Mode: Automatique</span>
+                <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées (y compris les nouvelles questions ajoutées ultérieurement)</span>
+            `;
+        } else {
+            modeIndicator.innerHTML = `
+                <span class="mode-badge mode-manual">Mode: Manuel</span>
+                <span class="mode-description">Seulement les ${selectedCount} question(s) sélectionnée(s) seront utilisées</span>
+            `;
+        }
     }
 }
 
@@ -898,7 +926,13 @@ try {
 
 /* Tableau de sélection de questions */
 .question-selection-info{margin-bottom:1rem;padding:.75rem;background:#e7f3ff;border-left:3px solid var(--primary-color);border-radius:.25rem}
-.question-selection-info p{margin:0;font-size:.9rem}
+.question-selection-info p{margin:0 0 .5rem 0;font-size:.9rem}
+.question-selection-info p:last-child{margin-bottom:0}
+.selection-mode-indicator{margin-bottom:1rem;padding:1rem;border-radius:.5rem;display:flex;align-items:center;gap:1rem;background:#f8f9fa;border:2px solid #dee2e6}
+.mode-badge{padding:.5rem 1rem;border-radius:.25rem;font-weight:600;font-size:.9rem}
+.mode-auto{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.mode-manual{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
+.mode-description{font-size:.875rem;color:var(--text-light);flex:1}
 #questions-table-container{max-height:500px;overflow:auto;border:1px solid var(--border-color);border-radius:.5rem}
 .questions-selection-table{width:100%;border-collapse:collapse;font-size:.9rem}
 .questions-selection-table thead{position:sticky;top:0;background:var(--card-bg);z-index:10;box-shadow:0 2px 4px rgba(0,0,0,.1)}
