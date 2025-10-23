@@ -13,6 +13,7 @@
                 <button type="button" class="tab active" data-tab="general" aria-selected="true">Général</button>
                 <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
                 <button type="button" class="tab" data-tab="themes" aria-selected="false">Thèmes</button>
+                <button type="button" class="tab" data-tab="questions" aria-selected="false">Sélection de questions</button>
                 <button type="button" class="tab" data-tab="scoring" aria-selected="false">Scoring</button>
                 <button type="button" class="tab" data-tab="messages" aria-selected="false">Messages</button>
             </div>
@@ -130,6 +131,50 @@
                                     <span class="count-icon">🔢</span>
                                     <span id="question-count-text">Calcul en cours...</span>
                                 </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="questions">Suivant →</button>
+                    </div>
+                </div>
+
+                <div class="tab-panel" data-tab="questions">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Sélection des questions</legend>
+                            
+                            <div class="question-selection-info">
+                                <p><strong>Instructions :</strong> Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les questions affichées correspondent aux sous-thèmes et difficultés sélectionnés dans les onglets précédents.</p>
+                            </div>
+
+                            <div id="questions-table-container">
+                                <table class="questions-selection-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 50px;">
+                                                <input type="checkbox" id="select-all-questions" title="Tout sélectionner / Tout désélectionner">
+                                            </th>
+                                            <th style="width: 60px;">ID</th>
+                                            <th>Question</th>
+                                            <th style="width: 150px;">Thème large</th>
+                                            <th style="width: 150px;">Sous-thème</th>
+                                            <th style="width: 80px;">Difficulté</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="questions-table-body">
+                                        <tr>
+                                            <td colspan="6" class="loading-message">
+                                                Chargement des questions...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="questions-selection-summary">
+                                <span id="selected-questions-count">0 question(s) sélectionnée(s)</span>
                             </div>
                         </fieldset>
                     </div>
@@ -552,6 +597,99 @@ function initThemeCheckboxes() {
     updateQuestionCount();
 }
 
+// Charger les questions disponibles pour la sélection
+function loadQuestionsForSelection() {
+    // Récupérer les sous-thèmes cochés
+    const selectedSpecificThemes = Array.from(document.querySelectorAll('input[name="allowed_specific_theme_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    // Récupérer les difficultés cochées
+    const selectedDifficulties = Array.from(document.querySelectorAll('input[name="allowed_difficulties"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    const tableBody = document.getElementById('questions-table-body');
+    
+    if (selectedSpecificThemes.length === 0 || selectedDifficulties.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Veuillez sélectionner au moins un sous-thème et une difficulté dans les onglets précédents.</td></tr>';
+        updateSelectedQuestionsCount();
+        return;
+    }
+
+    // Construire les paramètres pour la requête
+    const params = new URLSearchParams();
+    selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
+    selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
+
+    // Afficher un message de chargement
+    tableBody.innerHTML = '<tr><td colspan="6" class="loading-message">Chargement des questions...</td></tr>';
+
+    fetch(`/api/quiz-rule/get-questions?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.questions && data.questions.length > 0) {
+                tableBody.innerHTML = '';
+                data.questions.forEach(question => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="checkbox" name="selected_question_ids" value="${question.id}" checked onchange="updateSelectedQuestionsCount()"></td>
+                        <td>${question.id}</td>
+                        <td class="question-text">${escapeHtml(question.question_text)}</td>
+                        <td>${escapeHtml(question.broad_theme_name || '-')}</td>
+                        <td>${escapeHtml(question.specific_theme_name || '-')}</td>
+                        <td class="difficulty-badge difficulty-${question.difficulty_level}">${question.difficulty_level}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                
+                // Cocher aussi le checkbox "Tout sélectionner"
+                const selectAllCheckbox = document.getElementById('select-all-questions');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = true;
+                }
+                
+                updateSelectedQuestionsCount();
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Aucune question ne correspond aux critères sélectionnés.</td></tr>';
+                updateSelectedQuestionsCount();
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des questions:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" class="error-message">Erreur lors du chargement des questions.</td></tr>';
+        });
+}
+
+// Fonction pour échapper le HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Mettre à jour le compteur de questions sélectionnées
+function updateSelectedQuestionsCount() {
+    const selectedCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]:checked');
+    const count = selectedCheckboxes.length;
+    const countSpan = document.getElementById('selected-questions-count');
+    if (countSpan) {
+        countSpan.textContent = `${count} question(s) sélectionnée(s)`;
+    }
+}
+
+// Gérer le checkbox "Tout sélectionner"
+function initSelectAllQuestions() {
+    const selectAllCheckbox = document.getElementById('select-all-questions');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const questionCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]');
+            questionCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            updateSelectedQuestionsCount();
+        });
+    }
+}
+
 // Initialiser les checkboxes de thèmes après le chargement HTMX
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded déclenché');
@@ -559,6 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         console.log('Timeout DOMContentLoaded terminé, appel initThemeCheckboxes');
         initThemeCheckboxes();
+        initSelectAllQuestions();
     }, 100);
 });
 
@@ -570,7 +709,16 @@ document.addEventListener('htmx:afterSwap', function(evt) {
         setTimeout(function() {
             console.log('Timeout htmx:afterSwap terminé, appel initThemeCheckboxes');
             initThemeCheckboxes();
+            initSelectAllQuestions();
         }, 50);
+    }
+});
+
+// Charger les questions quand on accède à l'onglet "Sélection de questions"
+document.addEventListener('click', function(e) {
+    const tab = e.target.closest('.tab[data-tab="questions"]');
+    if (tab) {
+        setTimeout(loadQuestionsForSelection, 100);
     }
 });
 
@@ -609,6 +757,26 @@ try {
 .question-counter{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:.5rem;background:#f8f9fa}
 .question-count-info{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--text-color)}
 .count-icon{font-size:1.2rem}
+
+/* Tableau de sélection de questions */
+.question-selection-info{margin-bottom:1rem;padding:.75rem;background:#e7f3ff;border-left:3px solid var(--primary-color);border-radius:.25rem}
+.question-selection-info p{margin:0;font-size:.9rem}
+#questions-table-container{max-height:500px;overflow:auto;border:1px solid var(--border-color);border-radius:.5rem}
+.questions-selection-table{width:100%;border-collapse:collapse;font-size:.9rem}
+.questions-selection-table thead{position:sticky;top:0;background:var(--card-bg);z-index:10;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.questions-selection-table th{padding:.75rem;text-align:left;border-bottom:2px solid var(--border-color);font-weight:600;background:#f8f9fa}
+.questions-selection-table td{padding:.75rem;border-bottom:1px solid var(--border-color)}
+.questions-selection-table tbody tr:hover{background:#f8f9fa}
+.question-text{max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.difficulty-badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-weight:600;text-align:center}
+.difficulty-1{background:#d4edda;color:#155724}
+.difficulty-2{background:#d1ecf1;color:#0c5460}
+.difficulty-3{background:#fff3cd;color:#856404}
+.difficulty-4{background:#f8d7da;color:#721c24}
+.difficulty-5{background:#d6d8db;color:#1b1e21}
+.loading-message,.no-questions-message,.error-message{text-align:center;padding:2rem;color:var(--text-light);font-style:italic}
+.error-message{color:#dc3545}
+.questions-selection-summary{margin-top:1rem;padding:.75rem;background:#f8f9fa;border-radius:.5rem;text-align:center;font-weight:600}
 </style>
 
 

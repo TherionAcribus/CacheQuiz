@@ -2391,6 +2391,39 @@ def count_questions_for_rule():
         return {'count': 0, 'message': 'Erreur lors du calcul'}
 
 
+@app.route('/api/quiz-rule/get-questions', methods=['GET'])
+def get_questions_for_selection():
+    """Récupérer les questions disponibles pour la sélection manuelle"""
+    specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
+
+    if not specific_theme_ids or not difficulty_levels:
+        return {'questions': [], 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
+
+    try:
+        # Récupérer les questions qui correspondent aux critères
+        questions = Question.query.filter(
+            Question.specific_theme_id.in_(specific_theme_ids),
+            Question.difficulty_level.in_(difficulty_levels)
+        ).order_by(Question.specific_theme_id, Question.difficulty_level, Question.id).all()
+
+        questions_data = []
+        for q in questions:
+            questions_data.append({
+                'id': q.id,
+                'question_text': q.question_text[:200] + '...' if len(q.question_text) > 200 else q.question_text,
+                'broad_theme_name': q.theme.name if q.theme else None,
+                'specific_theme_name': q.specific_theme_obj.name if q.specific_theme_obj else None,
+                'difficulty_level': q.difficulty_level
+            })
+
+        return {'questions': questions_data, 'count': len(questions_data)}
+
+    except Exception as e:
+        print(f"Erreur lors de la récupération des questions: {e}")
+        return {'questions': [], 'error': str(e)}
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 
