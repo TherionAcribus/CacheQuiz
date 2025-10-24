@@ -6,6 +6,20 @@
         <div class="summary-subtitle">Mode: <strong>{{ rule_set.name }}</strong></div>
         {% endif %}
 
+        {% if rule_set %}
+        <div class="result-message">
+            {% if total_correct_answers >= rule_set.min_correct_answers_to_win %}
+                <div class="success-message">
+                    <h3>{{ rule_set.success_message or "Bravo ! Quiz réussi !" }}</h3>
+                </div>
+            {% else %}
+                <div class="failure-message">
+                    <h3>{{ rule_set.failure_message or "Dommage ! Quiz échoué." }}</h3>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="score-block">
             <div class="score-line">
                 <span class="label">Score total</span>
@@ -16,6 +30,18 @@
                 <span class="label">Questions jouées</span>
                 <span class="value">{{ total_questions }}</span>
             </div>
+            {% endif %}
+            {% if rule_set %}
+            <div class="score-line">
+                <span class="label">Bonnes réponses</span>
+                <span class="value">{{ total_correct_answers }}</span>
+            </div>
+            {% if rule_set.min_correct_answers_to_win > 0 %}
+            <div class="score-line">
+                <span class="label">Minimum requis</span>
+                <span class="value">{{ rule_set.min_correct_answers_to_win }}</span>
+            </div>
+            {% endif %}
             {% endif %}
         </div>
 
@@ -45,6 +71,9 @@
         }
         .summary-title { margin: 0 0 0.5rem 0; color: var(--primary-color); }
         .summary-subtitle { color: var(--muted-color); margin-bottom: 1.5rem; }
+        .result-message { margin-bottom: 1.5rem; }
+        .success-message h3 { color: #22c55e; margin: 0; }
+        .failure-message h3 { color: #ef4444; margin: 0; }
         .score-block {
             display: grid; gap: .75rem; margin: 1rem 0 2rem 0;
         }

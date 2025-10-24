@@ -1843,8 +1843,10 @@ def next_quiz_question():
         if rule_set:
             # Gestion du score en session (reset en début de session)
             score_session_key = f"quiz_score:{rule_set.slug}"
+            correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
             if not history_raw:
                 session[score_session_key] = 0
+                session[correct_answers_session_key] = 0
             total_score = int(session.get(score_session_key, 0) or 0)
 
             # Compter le nombre total de questions dans cette session
@@ -1866,11 +1868,16 @@ def next_quiz_question():
 
             # Si aucune question n'est disponible (fin de partie par quotas ou épuisement), afficher l'écran final
             if not question:
+                # Récupérer le nombre de bonnes réponses depuis la session
+                correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
+                total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
+
                 return render_template(
                     'quiz_final.html',
                     rule_set=rule_set,
                     total_questions=len(history_ids),
                     total_score=total_score,
+                    total_correct_answers=total_correct_answers,
                     history=history_raw or ''
                 )
 
@@ -1977,13 +1984,20 @@ def submit_quiz_answer():
 
         db.session.commit()
 
-        # Mettre à jour le score total en session uniquement si correct
+        # Mettre à jour le score total et le nombre de bonnes réponses en session
         if rule_set:
             score_session_key = f"quiz_score:{rule_set.slug}"
             total_score_session = int(session.get(score_session_key, 0) or 0)
             if is_correct and score:
                 total_score_session += int(score)
             session[score_session_key] = total_score_session
+
+            # Compter les bonnes réponses
+            correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
+            total_correct_answers_session = int(session.get(correct_answers_session_key, 0) or 0)
+            if is_correct:
+                total_correct_answers_session += 1
+            session[correct_answers_session_key] = total_correct_answers_session
 
         # Mettre à jour l'historique côté client (ajouter la question actuelle)
         history_ids = []
