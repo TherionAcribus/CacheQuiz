@@ -586,6 +586,9 @@ class QuizRuleSet(db.Model):
     combo_bonus_points = db.Column(db.Integer, nullable=True)  # points ajoutés par palier atteint
     perfect_quiz_bonus = db.Column(db.Integer, nullable=False, default=0)
 
+    # Nombre minimum de bonnes réponses pour gagner (0 = toujours gagné)
+    min_correct_answers_to_win = db.Column(db.Integer, nullable=False, default=0)
+
     # Messages
     intro_message = db.Column(db.Text)
     success_message = db.Column(db.Text)

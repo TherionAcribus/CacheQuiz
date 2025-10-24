@@ -251,6 +251,12 @@
                                 <label for="perfect_quiz_bonus">Bonus perfect</label>
                                 <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else defaults.get('perfect_quiz_bonus', 50) }}">
                             </div>
+                            <div class="form-group">
+                                <label for="min_correct_answers_to_win">Nombre minimum de bonnes réponses pour gagner</label>
+                                <input id="min_correct_answers_to_win" name="min_correct_answers_to_win" type="number" min="0" step="1" value="{{ rule.min_correct_answers_to_win if rule else defaults.get('min_correct_answers_to_win', 0) }}" onchange="validateMinCorrectAnswers()">
+                                <div class="small">0 = toujours gagné si le quiz est terminé</div>
+                                <div id="min-answers-warning" class="field-error" style="display: none;"></div>
+                            </div>
 
                             <!-- Résumé score maximum -->
                             <div class="score-summary">
@@ -407,6 +413,56 @@ function updateQuestionCount() {
         });
 }
 
+// Calcul du nombre total de questions dans le quiz
+function getTotalQuestionCount() {
+    let total = 0;
+    // Difficultés sélectionnées
+    const selectedDifficulties = Array.from(document.querySelectorAll('input[name="allowed_difficulties"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    // Nombre de questions par difficulté
+    selectedDifficulties.forEach(d => {
+        const el = document.getElementById(`qpd${d}`);
+        const n = el ? parseInt(el.value || '0', 10) : 0;
+        total += isNaN(n) ? 0 : n;
+    });
+
+    return total;
+}
+
+// Validation du nombre minimum de bonnes réponses
+function validateMinCorrectAnswers() {
+    const minAnswersEl = document.getElementById('min_correct_answers_to_win');
+    const minAnswers = minAnswersEl ? parseInt(minAnswersEl.value || '0', 10) : 0;
+    const totalQuestions = getTotalQuestionCount();
+
+    const warningEl = document.getElementById('min-answers-warning');
+    const submitBtn = document.querySelector('form button[type="submit"]');
+
+    if (minAnswers > totalQuestions && totalQuestions > 0) {
+        // Afficher l'avertissement
+        if (warningEl) {
+            warningEl.textContent = `Attention : ${minAnswers} bonnes réponses requises mais seulement ${totalQuestions} questions disponibles.`;
+            warningEl.style.display = 'block';
+        }
+        // Désactiver le bouton de sauvegarde
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+        }
+    } else {
+        // Masquer l'avertissement
+        if (warningEl) {
+            warningEl.style.display = 'none';
+        }
+        // Réactiver le bouton de sauvegarde
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+    }
+}
+
 // Calcul du score maximum théorique (sans-faute)
 function computeMaxScore() {
     // Difficultés sélectionnées
@@ -480,6 +536,9 @@ function computeMaxScore() {
         if (perfectBonus) parts.push(`Perfect: +${perfectBonus}`);
         breakdownEl.textContent = parts.length ? parts.join(' | ') : '—';
     }
+
+    // Valider le nombre minimum de bonnes réponses après recalcul du score
+    validateMinCorrectAnswers();
 }
 
 function checkRuleSlug(input) {
@@ -695,7 +754,23 @@ function initThemeCheckboxes() {
             updateQuestionCount();
             // Recalculer le score maximum
             computeMaxScore();
+            // Revalider le nombre minimum de bonnes réponses
+            validateMinCorrectAnswers();
         });
+    });
+
+    // Gestionnaire pour les champs "questions par difficulté"
+    [1, 2, 3, 4, 5].forEach(d => {
+        const el = document.getElementById(`qpd${d}`);
+        if (el) {
+            el.addEventListener('input', function() {
+                console.log('Changement qpd' + d + ':', this.value);
+                // Recalculer le score maximum
+                computeMaxScore();
+                // Revalider le nombre minimum de bonnes réponses
+                validateMinCorrectAnswers();
+            });
+        }
     });
 
     // Initialisation : vérifier l'état au chargement
@@ -711,6 +786,8 @@ function initThemeCheckboxes() {
     updateQuestionCount();
     // Calcul initial du score maximum
     computeMaxScore();
+    // Validation initiale du nombre minimum de bonnes réponses
+    validateMinCorrectAnswers();
 }
 
 // Charger les questions disponibles pour la sélection

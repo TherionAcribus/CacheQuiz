@@ -27,9 +27,10 @@
     "combo_step": 3,
     "combo_bonus_points": 5,
     "perfect_quiz_bonus": 50,
+    "min_correct_answers_to_win": 0,
     "intro_message": "Bonne chance ! 🍀",
     "success_message": "Félicitations ! 🎉"
   },
-  "description": "Configuration par défaut pour la création de nouveaux sets de règles de quiz. 'check_all_broad_themes' et 'check_all_specific_themes' permettent de cocher automatiquement tous les thèmes individuels lors de la création."
+  "description": "Configuration par défaut pour la création de nouveaux sets de règles de quiz. 'check_all_broad_themes' et 'check_all_specific_themes' permettent de cocher automatiquement tous les thèmes individuels lors de la création. 'min_correct_answers_to_win' = 0 signifie que le quiz est toujours gagné si terminé."
 }
 

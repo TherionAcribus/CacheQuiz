@@ -2166,6 +2166,7 @@ def create_quiz_rule():
             combo_step=(int(data.get('combo_step')) if data.get('combo_step') else None),
             combo_bonus_points=(int(data.get('combo_bonus_points')) if data.get('combo_bonus_points') else None),
             perfect_quiz_bonus=int(data.get('perfect_quiz_bonus') or 0),
+            min_correct_answers_to_win=int(data.get('min_correct_answers_to_win') or 0),
             intro_message=(data.get('intro_message') or '').strip() or None,
             success_message=(data.get('success_message') or '').strip() or None,
         )
@@ -2282,6 +2283,7 @@ def update_quiz_rule(rule_id: int):
         rule.combo_step = (int(data.get('combo_step')) if data.get('combo_step') else None)
         rule.combo_bonus_points = (int(data.get('combo_bonus_points')) if data.get('combo_bonus_points') else None)
         rule.perfect_quiz_bonus = int(data.get('perfect_quiz_bonus') or rule.perfect_quiz_bonus or 0)
+        rule.min_correct_answers_to_win = int(data.get('min_correct_answers_to_win') or rule.min_correct_answers_to_win or 0)
         rule.intro_message = (data.get('intro_message') or '').strip() or None
         rule.success_message = (data.get('success_message') or '').strip() or None
 

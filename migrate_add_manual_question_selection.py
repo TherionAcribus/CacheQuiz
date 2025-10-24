@@ -1,10 +1,11 @@
 """
 Script de migration pour ajouter le mode de sélection manuelle de questions
-aux QuizRuleSet.
+et le nombre minimum de bonnes réponses pour gagner aux QuizRuleSet.
 
 Ce script ajoute :
 1. Une nouvelle colonne 'question_selection_mode' (auto/manual)
-2. Une nouvelle table d'association 'quiz_rule_set_questions' pour lier
+2. Une nouvelle colonne 'min_correct_answers_to_win' (0 = toujours gagné)
+3. Une nouvelle table d'association 'quiz_rule_set_questions' pour lier
    les règles aux questions spécifiques sélectionnées manuellement
 """
 
@@ -27,6 +28,21 @@ def migrate():
             except Exception as e:
                 if "duplicate column name" in str(e).lower() or "already exists" in str(e).lower():
                     print("[INFO] La colonne 'question_selection_mode' existe deja")
+                    db.session.rollback()
+                else:
+                    raise
+
+            # 2. Ajouter la colonne min_correct_answers_to_win à la table quiz_rule_sets
+            print("[ETAPE 1b] Ajout de la colonne 'min_correct_answers_to_win' a 'quiz_rule_sets'...")
+            try:
+                db.session.execute(text(
+                    "ALTER TABLE quiz_rule_sets ADD COLUMN min_correct_answers_to_win INTEGER NOT NULL DEFAULT 0"
+                ))
+                db.session.commit()
+                print("[OK] Colonne 'min_correct_answers_to_win' ajoutee avec succes")
+            except Exception as e:
+                if "duplicate column name" in str(e).lower() or "already exists" in str(e).lower():
+                    print("[INFO] La colonne 'min_correct_answers_to_win' existe deja")
                     db.session.rollback()
                 else:
                     raise
@@ -60,6 +76,7 @@ def migrate():
             print("\n[SUCCES] Migration terminee avec succes !")
             print("\nResume des modifications :")
             print("  - Colonne 'question_selection_mode' ajoutee a 'quiz_rule_sets' (defaut: 'auto')")
+            print("  - Colonne 'min_correct_answers_to_win' ajoutee a 'quiz_rule_sets' (defaut: 0)")
             print("  - Table 'quiz_rule_set_questions' creee")
             print(f"  - {count} regles existantes conservees avec le mode 'auto' par defaut")
             
