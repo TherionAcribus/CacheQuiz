@@ -592,6 +592,7 @@ class QuizRuleSet(db.Model):
     # Messages
     intro_message = db.Column(db.Text)
     success_message = db.Column(db.Text)
+    failure_message = db.Column(db.Text)
 
     # Utilitaires de sérialisation/lecture
     def get_questions_per_difficulty(self):

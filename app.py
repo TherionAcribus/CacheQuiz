@@ -2169,6 +2169,7 @@ def create_quiz_rule():
             min_correct_answers_to_win=int(data.get('min_correct_answers_to_win') or 0),
             intro_message=(data.get('intro_message') or '').strip() or None,
             success_message=(data.get('success_message') or '').strip() or None,
+            failure_message=(data.get('failure_message') or '').strip() or None,
         )
 
         # Difficultés autorisées
@@ -2286,6 +2287,7 @@ def update_quiz_rule(rule_id: int):
         rule.min_correct_answers_to_win = int(data.get('min_correct_answers_to_win') or rule.min_correct_answers_to_win or 0)
         rule.intro_message = (data.get('intro_message') or '').strip() or None
         rule.success_message = (data.get('success_message') or '').strip() or None
+        rule.failure_message = (data.get('failure_message') or '').strip() or None
 
         # Difficultés autorisées
         difficulties = [int(x) for x in data.getlist('allowed_difficulties') if (x or '').isdigit()]

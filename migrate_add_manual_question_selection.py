@@ -1,11 +1,12 @@
 """
-Script de migration pour ajouter le mode de sélection manuelle de questions
-et le nombre minimum de bonnes réponses pour gagner aux QuizRuleSet.
+Script de migration pour ajouter le mode de sélection manuelle de questions,
+le nombre minimum de bonnes réponses pour gagner, et le message d'échec aux QuizRuleSet.
 
 Ce script ajoute :
 1. Une nouvelle colonne 'question_selection_mode' (auto/manual)
 2. Une nouvelle colonne 'min_correct_answers_to_win' (0 = toujours gagné)
-3. Une nouvelle table d'association 'quiz_rule_set_questions' pour lier
+3. Une nouvelle colonne 'failure_message' (message affiché en cas d'échec)
+4. Une nouvelle table d'association 'quiz_rule_set_questions' pour lier
    les règles aux questions spécifiques sélectionnées manuellement
 """
 
@@ -46,6 +47,21 @@ def migrate():
                     db.session.rollback()
                 else:
                     raise
+
+            # 3. Ajouter la colonne failure_message à la table quiz_rule_sets
+            print("[ETAPE 1c] Ajout de la colonne 'failure_message' a 'quiz_rule_sets'...")
+            try:
+                db.session.execute(text(
+                    "ALTER TABLE quiz_rule_sets ADD COLUMN failure_message TEXT"
+                ))
+                db.session.commit()
+                print("[OK] Colonne 'failure_message' ajoutee avec succes")
+            except Exception as e:
+                if "duplicate column name" in str(e).lower() or "already exists" in str(e).lower():
+                    print("[INFO] La colonne 'failure_message' existe deja")
+                    db.session.rollback()
+                else:
+                    raise
             
             # 2. Créer la table d'association quiz_rule_set_questions
             print("[ETAPE 2] Creation de la table 'quiz_rule_set_questions'...")
@@ -77,6 +93,7 @@ def migrate():
             print("\nResume des modifications :")
             print("  - Colonne 'question_selection_mode' ajoutee a 'quiz_rule_sets' (defaut: 'auto')")
             print("  - Colonne 'min_correct_answers_to_win' ajoutee a 'quiz_rule_sets' (defaut: 0)")
+            print("  - Colonne 'failure_message' ajoutee a 'quiz_rule_sets'")
             print("  - Table 'quiz_rule_set_questions' creee")
             print(f"  - {count} regles existantes conservees avec le mode 'auto' par defaut")
             
