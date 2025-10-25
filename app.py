@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, Profile
 from datetime import datetime
+import random
 import os
 import re
 import json
@@ -1755,6 +1756,100 @@ def _apply_quiz_filters(query, params):
     return query
 
 
+def _interleave_round_robin(lists_by_difficulty):
+    """Intercale les listes de questions par difficulté (round-robin) pour varier l'ordre.
+    Entrée: dict[int,list[int]]
+    Sortie: list[int]
+    """
+    # Convertir en liste de listes en conservant un ordre stable des clés
+    difficulties = sorted(lists_by_difficulty.keys())
+    buckets = [list(lists_by_difficulty[d]) for d in difficulties if lists_by_difficulty.get(d)]
+    result = []
+    # Tant qu'il reste des éléments dans au moins un bucket
+    while any(buckets):
+        next_buckets = []
+        for bucket in buckets:
+            if bucket:
+                result.append(bucket.pop(0))
+            # garder le bucket s'il reste des éléments
+            if bucket:
+                next_buckets.append(bucket)
+        buckets = next_buckets
+    return result
+
+
+def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) -> list[int]:
+    """Génère la playlist (liste d'IDs de questions) pour un quiz à longueur fixe.
+    - En mode 'manual': réordonne la liste sélectionnée en mettant d'abord les non-vues.
+    - En mode 'auto': respecte les quotas par difficulté, préférant non-vues puis complétant avec déjà vues.
+    - Mélange intra-difficulté.
+    """
+    try:
+        # Récupérer les IDs déjà vus par l'utilisateur (si connecté)
+        seen_ids = set()
+        if current_user_id:
+            seen_ids = {row.question_id for row in UserQuestionStat.query.with_entities(UserQuestionStat.question_id).filter_by(user_id=current_user_id).all()}
+
+        # Mode manuel: partir de la sélection explicite
+        if rule_set.question_selection_mode == 'manual' and rule_set.selected_questions:
+            selected = [q for q in rule_set.selected_questions if q.is_published]
+            unseen = [q.id for q in selected if q.id not in seen_ids]
+            seen = [q.id for q in selected if q.id in seen_ids]
+            random.shuffle(unseen)
+            random.shuffle(seen)
+            playlist = unseen + seen
+            return playlist
+
+        # Mode auto: quotas par difficulté et filtres de thèmes
+        qmap = rule_set.get_questions_per_difficulty() or {}
+        allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
+
+        # Construire la requête de base selon le set de règles
+        base_params = {'rule_set': rule_set.slug}
+        base_query = _apply_quiz_filters(Question.query.filter(Question.is_published.is_(True)), base_params)
+
+        # Préparer par difficulté
+        per_diff_ids: dict[int, list[int]] = {}
+        for d in allowed_diffs:
+            quota = int(qmap.get(str(d), 0) or 0)
+            if quota <= 0:
+                per_diff_ids[d] = []
+                continue
+
+            q_for_diff = base_query.filter(Question.difficulty_level == d)
+            candidates = q_for_diff.with_entities(Question.id).all()
+            candidate_ids = [row.id for row in candidates]
+
+            # Séparer non-vues / vues
+            unseen_ids = [qid for qid in candidate_ids if qid not in seen_ids]
+            seen_ids_for_diff = [qid for qid in candidate_ids if qid in seen_ids]
+
+            random.shuffle(unseen_ids)
+            random.shuffle(seen_ids_for_diff)
+
+            chosen = []
+            # Prendre d'abord non-vues
+            if unseen_ids:
+                chosen.extend(unseen_ids[:quota])
+            # Compléter si nécessaire avec vues
+            if len(chosen) < quota and seen_ids_for_diff:
+                remaining = quota - len(chosen)
+                chosen.extend(seen_ids_for_diff[:remaining])
+
+            per_diff_ids[d] = chosen
+
+        # Intercaler pour varier
+        playlist = _interleave_round_robin(per_diff_ids)
+        # Log si quotas non respectés faute de pool suffisant
+        expected_total = sum(int(qmap.get(str(d), 0) or 0) for d in allowed_diffs)
+        if len(playlist) < expected_total:
+            print(f"[QUIZ PLAYLIST] Avertissement: playlist incomplète ({len(playlist)}/{expected_total}). Pool insuffisant pour certains quotas.")
+
+        return playlist
+    except Exception as e:
+        print(f"[QUIZ PLAYLIST] Erreur génération playlist: {e}")
+        return []
+
 @app.route('/play')
 def play_quiz():
     """Page pour choisir un set de règles et jouer au quiz."""
@@ -1771,7 +1866,9 @@ def play_quiz():
 
 @app.route('/api/quiz/next')
 def next_quiz_question():
-    """Retourne une question aléatoire (selon filtres ou set de règles) pour le quiz."""
+    """Retourne la prochaine question du quiz en consommant une playlist pré-générée.
+    Si aucune playlist n'existe encore pour ce set, la génère et la stocke en session.
+    """
     try:
         params = request.args
         rule_set_slug = (params.get('rule_set') or '').strip()
@@ -1783,60 +1880,69 @@ def next_quiz_question():
                 if token.isdigit():
                     history_ids.append(int(token))
 
-        query = Question.query.filter(Question.is_published.is_(True))
-        query = _apply_quiz_filters(query, params)
-
-        if history_ids:
-            query = query.filter(~Question.id.in_(history_ids))
-
-        # Exclure questions déjà vues par l'utilisateur connecté
-        if getattr(g, 'current_user', None):
-            seen_ids = [row.question_id for row in UserQuestionStat.query.with_entities(UserQuestionStat.question_id).filter_by(user_id=g.current_user.id).all()]
-            if seen_ids:
-                query = query.filter(~Question.id.in_(seen_ids))
-
-        # Si on utilise un set de règles avec quotas par difficulté
         rule_set = None
         if rule_set_slug:
             rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+        
+        # Mode playlist: construire/charger la playlist en session
+        playlist_session_key = f"quiz_playlist:{rule_set.slug}" if rule_set else None
+        playlist_index_key = f"quiz_playlist_index:{rule_set.slug}" if rule_set else None
 
-        if rule_set and rule_set.get_questions_per_difficulty():
-            # Logique de quotas par difficulté
-            qmap = rule_set.get_questions_per_difficulty()
-            allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
+        question = None
+        total_questions = 0
+        if rule_set:
+            # Si pas encore de playlist, la générer
+            playlist: list[int] = session.get(playlist_session_key) or []
+            if not playlist:
+                playlist = _generate_quiz_playlist(rule_set, g.current_user.id if getattr(g, 'current_user', None) else None)
+                session[playlist_session_key] = playlist
+                session[playlist_index_key] = 0
+                print(f"[QUIZ PLAYLIST] Générée pour '{rule_set.slug}' (len={len(playlist)}): {playlist}")
 
-            # Compter les questions déjà posées par difficulté dans cette session
-            history_questions = []
+            total_questions = len(playlist)
+            index = int(session.get(playlist_index_key, 0) or 0)
+
+            # Si terminé: fin du quiz
+            if index >= total_questions:
+                # Récupérer le nombre de bonnes réponses depuis la session
+                correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
+                total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
+
+                total_score = int(session.get(f"quiz_score:{rule_set.slug}", 0) or 0)
+                return render_template(
+                    'quiz_final.html',
+                    rule_set=rule_set,
+                    total_questions=total_questions,
+                    total_score=total_score,
+                    total_correct_answers=total_correct_answers,
+                    history=history_raw or ''
+                )
+
+            # Charger la prochaine question via l'ID de la playlist
+            next_question_id = playlist[index]
+            question = Question.query.options(
+                db.joinedload(Question.images),
+                db.joinedload(Question.detailed_answer_image),
+                db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
+            ).get(next_question_id)
+        else:
+            # Mode sans set explicite: fallback à l'aléatoire historique (comme avant)
+            query = Question.query.filter(Question.is_published.is_(True))
+            query = _apply_quiz_filters(query, params)
             if history_ids:
-                history_questions = Question.query.filter(Question.id.in_(history_ids)).all()
+                query = query.filter(~Question.id.in_(history_ids))
+            question = query.options(
+                db.joinedload(Question.images),
+                db.joinedload(Question.detailed_answer_image),
+                db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
+            ).order_by(db.func.random()).first()
 
-            diff_counts = {d: sum(1 for q in history_questions if q.difficulty_level == d) for d in allowed_diffs}
-
-            # Trouver les difficultés qui n'ont pas atteint leur quota
-            available_diffs = []
-            for d in allowed_diffs:
-                max_q = qmap.get(str(d), 0)
-                current_q = diff_counts.get(d, 0)
-                if current_q < max_q:
-                    available_diffs.append(d)
-
-            if available_diffs:
-                # Trier les difficultés par ordre croissant (1, 2, 3, 4, 5)
-                available_diffs_sorted = sorted(available_diffs)
-
-                # Sélectionner la difficulté la plus basse disponible
-                selected_diff = available_diffs_sorted[0]
-                query = query.filter(Question.difficulty_level == selected_diff)
-
-        # SQLite: random(), PostgreSQL: RANDOM()
-        question = query.options(
-            db.joinedload(Question.images),
-            db.joinedload(Question.detailed_answer_image),
-            db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
-        ).order_by(db.func.random()).first()
+        # Debug logging
+        print(f"[QUIZ NEXT] Rule set: {rule_set_slug}, History: {history_raw}")
+        print(f"[QUIZ NEXT] Selected question ID: {question.id if question else 'None'}")
+        print(f"[QUIZ NEXT] Question difficulty: {question.difficulty_level if question else 'N/A'}")
 
         # Calculer la progression et le score total (stocké en session)
-        total_questions = 0
         total_score = 0
         current_question_num = 0
 
@@ -1849,37 +1955,14 @@ def next_quiz_question():
                 session[correct_answers_session_key] = 0
             total_score = int(session.get(score_session_key, 0) or 0)
 
-            # Compter le nombre total de questions dans cette session
-            history_ids = []
-            if history_raw:
-                for token in history_raw.split(','):
-                    token = token.strip()
-                    if token.isdigit():
-                        history_ids.append(int(token))
-            current_question_num = len(history_ids) + 1
-
-            # Calculer le nombre total de questions selon les quotas
-            if rule_set.get_questions_per_difficulty():
-                qmap = rule_set.get_questions_per_difficulty()
-                total_questions = sum(qmap.values())
-            else:
-                # Si pas de quotas, compter toutes les questions publiées
-                total_questions = Question.query.filter(Question.is_published.is_(True)).count()
-
-            # Si aucune question n'est disponible (fin de partie par quotas ou épuisement), afficher l'écran final
-            if not question:
-                # Récupérer le nombre de bonnes réponses depuis la session
-                correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
-                total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
-
-                return render_template(
-                    'quiz_final.html',
-                    rule_set=rule_set,
-                    total_questions=len(history_ids),
-                    total_score=total_score,
-                    total_correct_answers=total_correct_answers,
-                    history=history_raw or ''
-                )
+            # Progression basée sur la playlist
+            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
+            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
+            playlist = session.get(playlist_session_key) or []
+            index = int(session.get(playlist_index_key, 0) or 0)
+            # Affichage utilisateur: index courant (1-based)
+            current_question_num = min(index + 1, len(playlist)) if playlist else 1
+            total_questions = len(playlist)
 
         return render_template('quiz_question.html',
                              question=question,
@@ -1923,6 +2006,113 @@ def _calculate_score(rule_set, question, is_correct, history_questions):
 
     return score
 
+
+@app.route('/api/debug/quiz-questions')
+def debug_quiz_questions():
+    """Route de debug pour afficher toutes les questions disponibles pour un quiz."""
+    try:
+        params = request.args
+        rule_set_slug = (params.get('rule_set') or '').strip()
+        history_raw = (params.get('history') or '').strip()
+        history_ids = []
+        if history_raw:
+            for token in history_raw.split(','):
+                token = token.strip()
+                if token.isdigit():
+                    history_ids.append(int(token))
+
+        # Construire la requête identique à /api/quiz/next
+        query = Question.query.filter(Question.is_published.is_(True))
+        query = _apply_quiz_filters(query, params)
+
+        if history_ids:
+            query = query.filter(~Question.id.in_(history_ids))
+
+        # Exclure questions déjà vues par l'utilisateur connecté
+        if getattr(g, 'current_user', None):
+            seen_ids = [row.question_id for row in UserQuestionStat.query.with_entities(UserQuestionStat.question_id).filter_by(user_id=g.current_user.id).all()]
+            if seen_ids:
+                query = query.filter(~Question.id.in_(seen_ids))
+
+        # Appliquer la logique de set de règles si présent
+        rule_set = None
+        selected_diff = None
+        if rule_set_slug:
+            rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
+        if rule_set and rule_set.get_questions_per_difficulty():
+            # Logique de quotas par difficulté
+            qmap = rule_set.get_questions_per_difficulty()
+            allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
+
+            # Compter les questions déjà posées par difficulté dans cette session
+            history_questions = []
+            if history_ids:
+                history_questions = Question.query.filter(Question.id.in_(history_ids)).all()
+
+            diff_counts = {d: sum(1 for q in history_questions if q.difficulty_level == d) for d in allowed_diffs}
+
+            # Trouver les difficultés qui n'ont pas atteint leur quota
+            available_diffs = []
+            for d in allowed_diffs:
+                max_q = qmap.get(str(d), 0)
+                current_q = diff_counts.get(d, 0)
+                if current_q < max_q:
+                    available_diffs.append(d)
+
+            if available_diffs:
+                # Trier les difficultés par ordre croissant (1, 2, 3, 4, 5)
+                available_diffs_sorted = sorted(available_diffs)
+                # Sélectionner la difficulté la plus basse disponible
+                selected_diff = available_diffs_sorted[0]
+                query = query.filter(Question.difficulty_level == selected_diff)
+
+        # Récupérer toutes les questions disponibles (sans random)
+        questions = query.options(
+            db.joinedload(Question.broad_theme),
+            db.joinedload(Question.specific_theme),
+            db.joinedload(Question.countries)
+        ).order_by(Question.id).all()
+
+        # Préparer les données de debug
+        debug_data = {
+            'rule_set': rule_set.name if rule_set else None,
+            'rule_set_slug': rule_set_slug,
+            'history_ids': history_ids,
+            'selected_difficulty': selected_diff,
+            'total_available_questions': len(questions),
+            'questions': []
+        }
+
+        for q in questions:
+            question_data = {
+                'id': q.id,
+                'question_text': q.question_text[:100] + '...' if len(q.question_text) > 100 else q.question_text,
+                'difficulty_level': q.difficulty_level,
+                'correct_answer': q.correct_answer,
+                'broad_theme': q.broad_theme.name if q.broad_theme else None,
+                'specific_theme': q.specific_theme.name if q.specific_theme else None,
+                'countries': [c.name for c in q.countries] if q.countries else [],
+                'times_answered': q.times_answered,
+                'success_count': q.success_count
+            }
+            debug_data['questions'].append(question_data)
+
+        # Afficher aussi dans la console du serveur
+        print(f"\n=== DEBUG QUIZ QUESTIONS ===")
+        print(f"Rule set: {debug_data['rule_set']} ({rule_set_slug})")
+        print(f"History IDs: {history_ids}")
+        print(f"Selected difficulty: {selected_diff}")
+        print(f"Total available questions: {len(questions)}")
+        print(f"Questions: {[q['id'] for q in debug_data['questions']]}")
+        print("===========================\n")
+
+        return debug_data
+
+    except Exception as e:
+        return {'error': str(e)}, 400
+
+
 @app.route('/api/quiz/answer', methods=['POST'])
 def submit_quiz_answer():
     """Valider la réponse de l'utilisateur, mettre à jour les stats et retourner le résultat."""
@@ -1944,6 +2134,9 @@ def submit_quiz_answer():
         correct_value = (question.correct_answer or '').strip()
         # Si pas de réponse (timer expiré ou non sélection), considérer comme faux
         is_correct = bool(selected_answer) and (selected_answer == correct_value)
+
+        # Debug logging
+        print(f"[QUIZ ANSWER] Question ID: {question_id_raw}, Selected: '{selected_answer}', Correct: '{correct_value}', Is correct: {is_correct}")
 
         # Charger le set de règles si spécifié
         rule_set = None
@@ -1999,6 +2192,16 @@ def submit_quiz_answer():
                 total_correct_answers_session += 1
             session[correct_answers_session_key] = total_correct_answers_session
 
+        # Mettre à jour la progression de playlist (si set de règles)
+        if rule_set:
+            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
+            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
+            index = int(session.get(playlist_index_key, 0) or 0)
+            playlist = session.get(playlist_session_key) or []
+            # Avancer l'index si la question correspond à l'élément courant
+            if index < len(playlist) and playlist[index] == question.id:
+                session[playlist_index_key] = index + 1
+
         # Mettre à jour l'historique côté client (ajouter la question actuelle)
         history_ids = []
         if history_raw:
@@ -2016,14 +2219,13 @@ def submit_quiz_answer():
         total_score = 0
 
         if rule_set:
-            # Nombre total de questions dans cette session
-            if rule_set.get_questions_per_difficulty():
-                qmap = rule_set.get_questions_per_difficulty()
-                total_questions = sum(qmap.values())
-            else:
-                total_questions = Question.query.filter(Question.is_published.is_(True)).count()
-
-            current_question_num = len(history_ids)
+            # Progression basée sur la playlist
+            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
+            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
+            index = int(session.get(playlist_index_key, 0) or 0)
+            playlist = session.get(playlist_session_key) or []
+            total_questions = len(playlist)
+            current_question_num = min(index, total_questions)
 
             # Score total depuis la session
             score_session_key = f"quiz_score:{rule_set.slug}"
