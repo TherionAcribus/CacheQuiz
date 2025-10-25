@@ -439,6 +439,16 @@
         pointer-events: none;
     }
 </style>
+
+<script>
+// Préférence utilisateur pour la validation en double-clic
+const doubleClickValidationEnabled = {{ current_user.get_preferences().get('double_click_validation', false)|tojson }};
+// Option temporaire pour cette session (prise en compte si définie explicitement)
+const quickDoubleClickEnabled = {{ quick_double_click|tojson }};
+// Le choix temporaire prend le pas sur les préférences utilisateur
+const doubleClickEnabled = quickDoubleClickEnabled;
+</script>
+
 {% if rule_set and rule_set.timer_seconds %}
 <script>
 (function(){
@@ -510,6 +520,54 @@
 })();
 </script>
 {% endif %}
+
+<script>
+// Gestion de la validation en double-clic sur les réponses
+(function() {
+    if (!doubleClickEnabled) return;
+
+    const answerFrames = document.querySelectorAll('.answer-frame');
+    const form = document.querySelector('.answers-grid');
+
+    if (!form || !answerFrames.length) return;
+
+    answerFrames.forEach(frame => {
+        frame.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+
+            // Vérifier que cette réponse est sélectionnée
+            const radio = this.querySelector('input[type="radio"]');
+            if (!radio) return;
+
+            // Sélectionner cette réponse si elle ne l'est pas déjà
+            if (!radio.checked) {
+                radio.checked = true;
+                // Déclencher l'événement change pour mettre à jour l'UI
+                radio.dispatchEvent(new Event('change'));
+            }
+
+            // Soumettre le formulaire après un court délai pour permettre à l'UI de se mettre à jour
+            setTimeout(() => {
+                form.dispatchEvent(new Event('submit'));
+            }, 100);
+        });
+
+        // Ajouter un indicateur visuel pour montrer que le double-clic est disponible
+        frame.style.position = 'relative';
+        frame.title = frame.title ? frame.title + ' (Double-clic pour valider)' : 'Double-clic pour valider';
+    });
+
+    // Empêcher la validation automatique si l'utilisateur clique sur le bouton de validation
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.addEventListener('click', function() {
+            // Marquer que c'est une soumission manuelle
+            form.setAttribute('data-manual-submit', 'true');
+        });
+    }
+})();
+</script>
+
 {% endif %}
 
 

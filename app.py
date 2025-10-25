@@ -529,6 +529,13 @@ def preferences():
 
         # Mettre à jour l'email
         g.current_user.email = email
+
+        # Traiter les préférences de jeu
+        prefs = g.current_user.get_preferences()
+        double_click_validation = request.form.get('double_click_validation') == '1'
+        prefs['double_click_validation'] = double_click_validation
+        g.current_user.set_preferences(prefs)
+
         db.session.commit()
         flash("Préférences mises à jour avec succès.", "success")
         return redirect(url_for('preferences'))
@@ -2133,6 +2140,7 @@ def next_quiz_question():
         params = request.args
         rule_set_slug = (params.get('rule_set') or '').strip()
         history_raw = (params.get('history') or '').strip()
+        quick_double_click = params.get('quick_double_click', 'false').lower() == 'true'
         history_ids = []
         if history_raw:
             for token in history_raw.split(','):
@@ -2290,7 +2298,8 @@ def next_quiz_question():
                              rule_set=rule_set,
                              current_question_num=current_question_num,
                              total_questions=total_questions,
-                             total_score=total_score)
+                             total_score=total_score,
+                             quick_double_click=quick_double_click)
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 

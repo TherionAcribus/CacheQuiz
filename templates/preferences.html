@@ -36,6 +36,25 @@
     </form>
   </div>
 
+  <div class="game-preferences-form">
+    <h3>Préférences de jeu</h3>
+    <form method="POST">
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="double_click_validation" name="double_click_validation" value="1"
+                 {% if user.get_preferences().get('double_click_validation', False) %}checked{% endif %}>
+          <span class="checkmark"></span>
+          Activer la validation en double-clic
+        </label>
+        <small class="form-text">
+          Permet de valider votre réponse en cliquant deux fois sur la réponse sélectionnée, sans utiliser le bouton "Valider ma réponse".
+        </small>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Enregistrer les préférences de jeu</button>
+    </form>
+  </div>
+
   <div class="preferences-actions">
     <a href="/me" class="btn btn-secondary">Voir mes statistiques</a>
   </div>
@@ -90,6 +109,81 @@
   border-radius: 8px;
   margin-bottom: 2rem;
   box-shadow: var(--shadow);
+}
+
+.game-preferences-form {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.game-preferences-form h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  font-size: 1.3rem;
+}
+
+/* Styles pour les checkboxes personnalisées */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: normal;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+  color: var(--text-color);
+}
+
+.checkbox-label input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  height: 20px;
+  width: 20px;
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  margin-right: 0.75rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.checkbox-label:hover .checkmark {
+  border-color: var(--primary-color);
+}
+
+.checkbox-label input[type="checkbox"]:checked ~ .checkmark {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label input[type="checkbox"]:checked ~ .checkmark:after {
+  display: block;
 }
 
 .form-group {

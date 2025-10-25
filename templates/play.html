@@ -68,9 +68,28 @@
             hx-get="/api/quiz/next"
             hx-target="#quiz-stage"
             hx-swap="innerHTML"
-            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": ""}'>
+            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": ""}'
+            id="start-quiz-btn">
         🚀 Démarrer le quiz
     </button>
+
+    <!-- Option temporaire de double-clic -->
+    <div class="quick-double-click-option">
+        <label class="checkbox-label">
+            <input type="checkbox" id="quick-double-click" name="quick_double_click"
+                   {% if current_user and current_user.get_preferences().get('double_click_validation', False) %}checked{% endif %}>
+            <span class="checkmark"></span>
+            <span class="option-text">Double-clic pour valider</span>
+        </label>
+        <small class="option-description">
+            Double-cliquez sur une réponse pour la valider automatiquement
+            {% if current_user and current_user.get_preferences().get('double_click_validation', False) %}
+                (activé par défaut dans vos préférences)
+            {% else %}
+                (temporaire pour cette session)
+            {% endif %}
+        </small>
+    </div>
 
     <div class="rule-actions">
         <a href="/play" class="btn btn-secondary">Choisir un autre set</a>
@@ -518,6 +537,99 @@
         .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
         .btn-outline:hover { background: var(--primary-color); color: white; }
 
+        /* Styles pour l'option de double-clic rapide */
+        .quick-double-click-option {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: normal;
+            margin-bottom: 0;
+            gap: 0.5rem;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            height: 20px;
+            width: 20px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-label:hover .checkmark {
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked ~ .checkmark {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 6px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .option-text {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .option-description {
+            color: var(--muted-color);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .quick-double-click-option {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .option-description {
+                margin-left: 1.75rem;
+            }
+        }
+
     </style>
 
     <script>
@@ -559,8 +671,41 @@
             }
         }
 
+        // Gestion de l'option de double-clic rapide
+        function handleQuickDoubleClick() {
+            const startBtn = document.getElementById('start-quiz-btn');
+            const checkbox = document.getElementById('quick-double-click');
+
+            if (startBtn && checkbox) {
+                // Mettre à jour les valeurs HTMX quand la checkbox change
+                checkbox.addEventListener('change', function() {
+                    const currentVals = startBtn.getAttribute('hx-vals') || '{}';
+                    let vals = {};
+                    try {
+                        vals = JSON.parse(currentVals);
+                    } catch (e) {}
+
+                    vals.quick_double_click = this.checked;
+                    startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+                });
+
+                // Initialiser avec la valeur actuelle
+                const currentVals = startBtn.getAttribute('hx-vals') || '{}';
+                let vals = {};
+                try {
+                    vals = JSON.parse(currentVals);
+                } catch (e) {}
+
+                vals.quick_double_click = checkbox.checked;
+                startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+            }
+        }
+
         // Écouter les événements HTMX pour supprimer la configuration
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser la gestion du double-clic rapide
+            handleQuickDoubleClick();
+
             // Quand HTMX charge du contenu dans #quiz-stage, supprimer la configuration
             document.getElementById('quiz-stage').addEventListener('htmx:afterSwap', function(evt) {
                 // Vérifier si le contenu chargé contient une question (pas un placeholder)
