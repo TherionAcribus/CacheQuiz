@@ -424,6 +424,11 @@ class ImageAsset(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+    @property
+    def url(self):
+        """Retourne l'URL pour accéder à cette image"""
+        return f'/uploads/{self.filename}'
+
 
 class AnswerImageLink(db.Model):
     __tablename__ = 'answer_image_links'
