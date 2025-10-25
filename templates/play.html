@@ -145,29 +145,17 @@
         <div class="rule-set-card">
             <div class="card-header">
                 <h4>{{ rule_set_item.name }}</h4>
-                {% if rule_set_item.description %}
-                <p class="card-description">{{ rule_set_item.description }}</p>
-                {% endif %}
             </div>
-            <div class="card-body">
-                <div class="rule-summary">
-                    <span class="badge">⏱ {{ rule_set_item.timer_seconds }}s</span>
-                    <span class="badge">⚙️ {{ rule_set_item.scoring_base_points }} pt</span>
-                    {% if rule_set_item.perfect_quiz_bonus %}
-                    <span class="badge">🏆 +{{ rule_set_item.perfect_quiz_bonus }}</span>
-                    {% endif %}
-                </div>
-                {% set diffs = rule_set_item.get_allowed_difficulties() %}
-                {% if diffs %}
-                <p class="difficulty-info">Difficultés: {{ diffs|join(', ') }}</p>
-                {% else %}
-                <p class="difficulty-info">Toutes difficultés</p>
-                {% endif %}
-                {% set qmap = rule_set_item.get_questions_per_difficulty() %}
-                {% if qmap %}
-                <p class="questions-info">Questions par difficulté: {{ qmap|tojson }}</p>
-                {% endif %}
+            {% if rule_set_item.intro_image %}
+            <div class="card-image">
+                <img src="{{ rule_set_item.intro_image.url }}" alt="Image d'introduction" />
             </div>
+            {% endif %}
+            {% if rule_set_item.intro_message %}
+            <div class="card-intro">
+                {{ rule_set_item.intro_message|safe }}
+            </div>
+            {% endif %}
             <div class="card-actions">
                 <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">Jouer avec ce set</a>
             </div>
@@ -347,6 +335,8 @@
             transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 350px;
         }
         .rule-set-card:hover {
             transform: translateY(-2px);
@@ -355,20 +345,27 @@
 
         .card-header { margin-bottom: 1rem; }
         .card-header h4 { margin: 0 0 0.5rem 0; color: var(--primary-color); font-size: 1.25rem; }
-        .card-description { margin: 0; color: var(--text-color); font-size: 0.9rem; line-height: 1.4; }
 
-        .card-body { flex-grow: 1; margin-bottom: 1rem; }
-        .rule-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .rule-summary .badge {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.8rem;
-            font-weight: 500;
+        .card-image {
+            margin-bottom: 1rem;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 0.5rem;
         }
-        .difficulty-info, .questions-info { margin: 0.5rem 0; font-size: 0.85rem; color: var(--muted-color); }
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+
+        .card-intro {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-color);
+            flex-grow: 1;
+        }
 
         .card-actions { text-align: center; }
 
