@@ -19,34 +19,34 @@
             </div>
             <div class="tabs-panels">
                 <div class="tab-panel active" data-tab="general">
-                    <div class="form-column">
-                        <div class="form-group">
-                            <label for="name">Nom *</label>
+            <div class="form-column">
+                <div class="form-group">
+                    <label for="name">Nom *</label>
                             <input id="name" name="name" type="text" required value="{{ rule.name if rule else '' }}"
                                    onblur="checkRuleName(this)">
                             <div id="name-error" class="field-error"></div>
-                        </div>
+                </div>
 
-                        <div class="form-group">
-                            <label for="slug">Slug</label>
+                <div class="form-group">
+                    <label for="slug">Slug</label>
                             <input id="slug" name="slug" type="text" placeholder="mode-expert" value="{{ rule.slug if rule and rule.slug else '' }}"
                                    onblur="checkRuleSlug(this)"
                                    oninput="handleSlugInput(this)">
                             <div id="slug-error" class="field-error"></div>
-                        </div>
+                </div>
 
 
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea id="description" name="description" rows="3">{{ rule.description if rule else '' }}</textarea>
-                        </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3">{{ rule.description if rule else '' }}</textarea>
+                </div>
 
-                        <div class="form-group">
-                            <label for="comment">Commentaire interne</label>
-                            <textarea id="comment" name="comment" rows="2">{{ rule.comment if rule else '' }}</textarea>
-                        </div>
+                <div class="form-group">
+                    <label for="comment">Commentaire interne</label>
+                    <textarea id="comment" name="comment" rows="2">{{ rule.comment if rule else '' }}</textarea>
+                </div>
 
-                        <div class="form-group">
+                <div class="form-group">
                             <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule %}{% if rule.is_active %}checked{% endif %}{% else %}{% if defaults.get('is_active', true) %}checked{% endif %}{% endif %}> Actif</label>
                         </div>
                     </div>
@@ -58,6 +58,24 @@
 
                 <div class="tab-panel" data-tab="themes">
                     <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Pays utilisés</legend>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_countries" name="use_all_countries" {% if rule %}{% if rule.use_all_countries %}checked{% endif %}{% else %}{% if defaults.get('use_all_countries', true) %}checked{% endif %}{% endif %} onchange="toggleCountryCheckboxes(this)"> Inclure les questions de tous les pays</label>
+                            <div class="countries-grid">
+                                {% for country in countries %}
+                                <label class="country-checkbox">
+                                    <input type="checkbox"
+                                           name="allowed_country_ids"
+                                           value="{{ country.id }}"
+                                           {% if rule %}{% if (not rule.use_all_countries) and (country in rule.allowed_countries) %}checked{% endif %}{% else %}{% if defaults.get('check_all_countries', true) %}checked{% endif %}{% endif %}
+                                           onchange="updateUseAllCountries()">
+                                    {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}
+                                    {% if country.code %}({{ country.code }}){% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+
                         <fieldset class="fieldset">
                             <legend>Thèmes utilisés</legend>
                             <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les thèmes larges</label>
@@ -111,8 +129,8 @@
                                 <p><strong>Instructions :</strong> Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les questions affichées correspondent aux sous-thèmes et difficultés sélectionnés dans les onglets précédents.</p>
                                 <p><strong>Mode automatique :</strong> Si toutes les questions restent sélectionnées, le quiz utilisera automatiquement toutes les questions correspondant aux thèmes et difficultés choisis (y compris les nouvelles questions ajoutées ultérieurement).</p>
                                 <p><strong>Mode manuel :</strong> Si vous désélectionnez des questions, le quiz utilisera uniquement la liste spécifique de questions que vous avez sélectionnées.</p>
-                            </div>
-                            
+            </div>
+
                             <div id="selection-mode-indicator" class="selection-mode-indicator">
                                 <span class="mode-badge mode-auto">Mode: Automatique</span>
                                 <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
@@ -168,36 +186,36 @@
                 </div>
 
                 <div class="tab-panel" data-tab="timing">
-                    <div class="form-column">
-                        <fieldset class="fieldset">
-                            <legend>Timer</legend>
-                            <div class="form-group">
-                                <label for="timer_seconds">Durée par question (secondes)</label>
+            <div class="form-column">
+                <fieldset class="fieldset">
+                    <legend>Timer</legend>
+                    <div class="form-group">
+                        <label for="timer_seconds">Durée par question (secondes)</label>
                                 <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else defaults.get('timer_seconds', 30) }}">
-                            </div>
-                        </fieldset>
+                    </div>
+                </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend>Difficultés utilisées</legend>
-                            <div class="checkboxes-inline">
+                <fieldset class="fieldset">
+                    <legend>Difficultés utilisées</legend>
+                    <div class="checkboxes-inline">
                                 {% set selected = rule.get_allowed_difficulties() if rule else defaults.get('allowed_difficulties', [1,2,3,4,5]) %}
-                                {% for d in [1,2,3,4,5] %}
-                                <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
-                                {% endfor %}
-                            </div>
-                            <div class="form-group">
-                                <label>Nombre de questions par difficulté</label>
-                                <div class="grid-5">
-                                    {% for d in [1,2,3,4,5] %}
-                                    <div>
-                                        <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
+                        {% for d in [1,2,3,4,5] %}
+                        <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
+                        {% endfor %}
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre de questions par difficulté</label>
+                        <div class="grid-5">
+                            {% for d in [1,2,3,4,5] %}
+                            <div>
+                                <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
                                         {% set qmap = rule.get_questions_per_difficulty() if rule else defaults.get('questions_per_difficulty', {}) %}
                                         <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string, '') }}">
-                                    </div>
-                                    {% endfor %}
-                                </div>
                             </div>
-                        </fieldset>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </fieldset>
                     </div>
 
                     <div class="tab-actions">
@@ -207,48 +225,48 @@
 
                 <div class="tab-panel" data-tab="scoring">
                     <div class="form-column">
-                        <fieldset class="fieldset">
-                            <legend>Scoring</legend>
-                            <div class="form-group">
-                                <label for="scoring_base_points">Points par question</label>
+                <fieldset class="fieldset">
+                    <legend>Scoring</legend>
+                    <div class="form-group">
+                        <label for="scoring_base_points">Points par question</label>
                                 <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else defaults.get('scoring_base_points', 10) }}">
-                            </div>
-                            <div class="form-group">
-                                <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
-                                <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
+                    </div>
+                    <div class="form-group">
+                        <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
+                        <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
                                     {% set s = rule.scoring_difficulty_bonus_type if rule else defaults.get('scoring_difficulty_bonus_type', 'add') %}
-                                    <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
-                                    <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
-                                    <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Valeurs bonus par difficulté</label>
-                                <div class="grid-5">
+                            <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
+                            <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
+                            <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Valeurs bonus par difficulté</label>
+                        <div class="grid-5">
                                     {% set bmap = rule.get_difficulty_bonus_map() if rule else defaults.get('difficulty_bonus_map', {}) %}
-                                    {% for d in [1,2,3,4,5] %}
-                                    <div>
-                                        <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
+                            {% for d in [1,2,3,4,5] %}
+                            <div>
+                                <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
                                         <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string, '') }}">
-                                    </div>
-                                    {% endfor %}
-                                </div>
                             </div>
-                            <div class="form-group">
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-group">
                                 <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule %}{% if rule.combo_bonus_enabled %}checked{% endif %}{% else %}{% if defaults.get('combo_bonus_enabled', true) %}checked{% endif %}{% endif %}> Activer bonus de combo</label>
-                                <div class="grid-2">
-                                    <div>
-                                        <label for="combo_step" class="small">Taille du palier</label>
+                        <div class="grid-2">
+                            <div>
+                                <label for="combo_step" class="small">Taille du palier</label>
                                         <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule else defaults.get('combo_step', 3) }}">
-                                    </div>
-                                    <div>
-                                        <label for="combo_bonus_points" class="small">Points par palier</label>
-                                        <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule else defaults.get('combo_bonus_points', 5) }}">
-                                    </div>
-                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="perfect_quiz_bonus">Bonus perfect</label>
+                            <div>
+                                <label for="combo_bonus_points" class="small">Points par palier</label>
+                                        <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule else defaults.get('combo_bonus_points', 5) }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="perfect_quiz_bonus">Bonus perfect</label>
                                 <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else defaults.get('perfect_quiz_bonus', 50) }}">
                             </div>
                             <div class="form-group">
@@ -275,10 +293,10 @@
 
                 <div class="tab-panel" data-tab="messages">
                     <div class="form-column">
-                        <fieldset class="fieldset">
-                            <legend>Messages</legend>
-                            <div class="form-group">
-                                <label for="intro_message">Message d'introduction</label>
+                <fieldset class="fieldset">
+                    <legend>Messages</legend>
+                    <div class="form-group">
+                        <label for="intro_message">Message d'introduction</label>
                                 <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else defaults.get('intro_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
@@ -313,9 +331,9 @@
                                     <img id="intro-image-thumb" src="{% if rule and rule.intro_image %}/uploads/{{ rule.intro_image.filename }}{% endif %}" alt="Aperçu">
                                 </div>
                                 <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
-                            </div>
-                            <div class="form-group">
-                                <label for="success_message">Message de réussite</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="success_message">Message de réussite</label>
                                 <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else defaults.get('success_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
@@ -568,6 +586,42 @@ function showToast(message, type) {
         }
     }, 3000);
 }
+// Fonctions pour gérer les pays
+function toggleCountryCheckboxes(checkbox) {
+    const countryCheckboxes = document.querySelectorAll('input[name="allowed_country_ids"]');
+
+    if (checkbox.checked) {
+        // Si on coche "Tous les pays", on coche tous les pays individuels
+        countryCheckboxes.forEach(cb => {
+            cb.checked = true;
+        });
+    } else {
+        // Si on décoche "Tous les pays", on décoche tous les pays individuels
+        // pour forcer l'utilisateur à sélectionner explicitement ceux qu'il veut
+        countryCheckboxes.forEach(cb => {
+            cb.checked = false;
+        });
+    }
+
+    updateQuestionCount();
+    loadQuestionsForSelection();
+}
+
+function updateUseAllCountries() {
+    const useAllCheckbox = document.getElementById('use_all_countries');
+    const countryCheckboxes = document.querySelectorAll('input[name="allowed_country_ids"]');
+    const checkedBoxes = document.querySelectorAll('input[name="allowed_country_ids"]:checked');
+
+    // Si tous les pays sont cochés, cocher "Tous les pays"
+    if (checkedBoxes.length === countryCheckboxes.length) {
+        useAllCheckbox.checked = true;
+    } else {
+        useAllCheckbox.checked = false;
+    }
+    updateQuestionCount();
+    loadQuestionsForSelection();
+}
+
 let autoGeneratedSlug = '{{ rule.slug if rule and rule.slug else "" }}'; // Slug initial ou généré automatiquement
 
 function slugify(text) {
@@ -640,6 +694,11 @@ function handleSlugInput(input) {
 }
 
 function updateQuestionCount() {
+    // Récupérer les pays cochés (si "Tous les pays" n'est pas coché)
+    const useAllCountries = document.getElementById('use_all_countries').checked;
+    const selectedCountries = useAllCountries ? [] : Array.from(document.querySelectorAll('input[name="allowed_country_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
     // Récupérer les sous-thèmes cochés
     const selectedSpecificThemes = Array.from(document.querySelectorAll('input[name="allowed_specific_theme_ids"]:checked'))
         .map(cb => parseInt(cb.value));
@@ -659,6 +718,13 @@ function updateQuestionCount() {
 
     // Construire les paramètres pour la requête
     const params = new URLSearchParams();
+    if (!useAllCountries) {
+        // Quand "Tous les pays" n'est pas coché, on passe toujours country_ids[],
+        // même si vide (ce qui signifie "aucun pays sélectionné = 0 questions")
+        selectedCountries.forEach(id => params.append('country_ids[]', id));
+        // Ajouter un paramètre pour indiquer qu'on veut filtrer par pays
+        params.append('filter_by_countries', '1');
+    }
     selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
     selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
 
@@ -1060,6 +1126,11 @@ function initThemeCheckboxes() {
 
 // Charger les questions disponibles pour la sélection
 function loadQuestionsForSelection() {
+    // Récupérer les pays cochés (si "Tous les pays" n'est pas coché)
+    const useAllCountries = document.getElementById('use_all_countries').checked;
+    const selectedCountries = useAllCountries ? [] : Array.from(document.querySelectorAll('input[name="allowed_country_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
     // Récupérer les sous-thèmes cochés
     const selectedSpecificThemes = Array.from(document.querySelectorAll('input[name="allowed_specific_theme_ids"]:checked'))
         .map(cb => parseInt(cb.value));
@@ -1069,7 +1140,7 @@ function loadQuestionsForSelection() {
         .map(cb => parseInt(cb.value));
 
     const tableBody = document.getElementById('questions-table-body');
-    
+
     if (selectedSpecificThemes.length === 0 || selectedDifficulties.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Veuillez sélectionner au moins un sous-thème et une difficulté dans les onglets précédents.</td></tr>';
         updateSelectedQuestionsCount();
@@ -1078,6 +1149,13 @@ function loadQuestionsForSelection() {
 
     // Construire les paramètres pour la requête
     const params = new URLSearchParams();
+    if (!useAllCountries) {
+        // Quand "Tous les pays" n'est pas coché, on passe toujours country_ids[],
+        // même si vide (ce qui signifie "aucun pays sélectionné = 0 questions")
+        selectedCountries.forEach(id => params.append('country_ids[]', id));
+        // Ajouter un paramètre pour indiquer qu'on veut filtrer par pays
+        params.append('filter_by_countries', '1');
+    }
     selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
     selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
 

@@ -526,6 +526,13 @@ quiz_rule_set_questions = db.Table(
     db.Column('question_id', db.Integer, db.ForeignKey('questions.id'), primary_key=True)
 )
 
+# Table d'association pour lier un set de règles à des pays
+quiz_rule_set_countries = db.Table(
+    'quiz_rule_set_countries',
+    db.Column('rule_set_id', db.Integer, db.ForeignKey('quiz_rule_sets.id'), primary_key=True),
+    db.Column('country_id', db.Integer, db.ForeignKey('countries.id'), primary_key=True)
+)
+
 
 class QuizRuleSet(db.Model):
     __tablename__ = 'quiz_rule_sets'
@@ -558,6 +565,14 @@ class QuizRuleSet(db.Model):
     # 'auto' = sélection automatique par thèmes/difficultés (mode par défaut)
     # 'manual' = sélection manuelle d'une liste de questions spécifiques
     question_selection_mode = db.Column(db.String(20), nullable=False, default='auto')
+
+    # Pays utilisés (tous ou sélection) - utilisé uniquement en mode 'auto'
+    use_all_countries = db.Column(db.Boolean, nullable=False, default=True)
+    allowed_countries = db.relationship(
+        'Country',
+        secondary=quiz_rule_set_countries,
+        lazy='subquery'
+    )
 
     # Thèmes utilisés (tous ou sélection) - utilisé uniquement en mode 'auto'
     use_all_broad_themes = db.Column(db.Boolean, nullable=False, default=True)

@@ -2143,7 +2143,7 @@ def next_quiz_question():
         rule_set = None
         if rule_set_slug:
             rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
-        
+
         # Mode playlist: construire/charger la playlist en session (clé par utilisateur)
         playlist_session_key = None
         playlist_index_key = None
@@ -2241,23 +2241,24 @@ def next_quiz_question():
             query = _apply_quiz_filters(query, params)
             if history_ids:
                 query = query.filter(~Question.id.in_(history_ids))
-            question = query.options(
-                db.joinedload(Question.images),
-                db.joinedload(Question.detailed_answer_image),
-                db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
-            ).order_by(db.func.random()).first()
-            # Si on sort du mode set (pas de rule_set), marquer toute session in_progress comme abandonnée
-            if getattr(g, 'current_user', None):
-                try:
-                    # Abandonner toutes sessions en cours (tous sets) si l'utilisateur a quitté le set
-                    in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
-                    for s in in_prog:
-                        s.status = 'abandoned'
-                        s.updated_at = datetime.utcnow()
-                    if in_prog:
-                        db.session.commit()
-                except Exception:
-                    db.session.rollback()
+        question = query.options(
+            db.joinedload(Question.images),
+            db.joinedload(Question.detailed_answer_image),
+            db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
+        ).order_by(db.func.random()).first()
+
+        # Si on sort du mode set (pas de rule_set), marquer toute session in_progress comme abandonnée
+        if getattr(g, 'current_user', None):
+            try:
+                # Abandonner toutes sessions en cours (tous sets) si l'utilisateur a quitté le set
+                in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
+                for s in in_prog:
+                    s.status = 'abandoned'
+                    s.updated_at = datetime.utcnow()
+                if in_prog:
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()
 
         # Debug logging
         print(f"[QUIZ NEXT] Rule set: {rule_set_slug}, History: {history_raw}")
@@ -2750,13 +2751,14 @@ def new_quiz_rule():
         return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.title).all()
     
     # Charger les valeurs par défaut
     defaults = _load_quiz_rule_defaults()
     print(f"Defaults chargés pour création: {defaults}")
     
-    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, images=images, defaults=defaults)
+    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, countries=countries, images=images, defaults=defaults)
 
 
 @app.route('/quiz-rule/<int:rule_id>/edit')
@@ -2772,8 +2774,9 @@ def edit_quiz_rule(rule_id: int):
         return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.title).all()
-    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, images=images, defaults={})
+    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, countries=countries, images=images, defaults={})
 
 
 @app.route('/api/quiz-rule', methods=['POST'])
@@ -2800,6 +2803,7 @@ def create_quiz_rule():
             is_active=(data.get('is_active') == 'on'),
             created_by_user_id=created_by_user_id,
             timer_seconds=int(data.get('timer_seconds') or 30),
+            use_all_countries=(data.get('use_all_countries') == 'on'),
             use_all_broad_themes=(data.get('use_all_broad_themes') == 'on'),
             use_all_specific_themes=(data.get('use_all_specific_themes') == 'on'),
             scoring_base_points=int(data.get('scoring_base_points') or 1),
@@ -2839,6 +2843,12 @@ def create_quiz_rule():
                 except Exception:
                     pass
         rule.set_difficulty_bonus_map(bonus_map)
+
+        # Pays autorisés (si non tous)
+        if not rule.use_all_countries:
+            ids = [int(x) for x in data.getlist('allowed_country_ids') if (x or '').isdigit()]
+            if ids:
+                rule.allowed_countries = Country.query.filter(Country.id.in_(ids)).all()
 
         # Thèmes autorisés (si non tous)
         if not rule.use_all_broad_themes:
@@ -2921,6 +2931,7 @@ def update_quiz_rule(rule_id: int):
             rule.created_by_user_id = int(data.get('created_by_user_id'))
 
         rule.timer_seconds = int(data.get('timer_seconds') or rule.timer_seconds or 30)
+        rule.use_all_countries = (data.get('use_all_countries') == 'on')
         rule.use_all_broad_themes = (data.get('use_all_broad_themes') == 'on')
         rule.use_all_specific_themes = (data.get('use_all_specific_themes') == 'on')
         rule.scoring_base_points = int(data.get('scoring_base_points') or rule.scoring_base_points or 1)
@@ -2959,6 +2970,13 @@ def update_quiz_rule(rule_id: int):
                 except Exception:
                     pass
         rule.set_difficulty_bonus_map(bonus_map)
+
+        # Pays autorisés (si non tous)
+        if rule.use_all_countries:
+            rule.allowed_countries = []
+        else:
+            ids = [int(x) for x in data.getlist('allowed_country_ids') if (x or '').isdigit()]
+            rule.allowed_countries = Country.query.filter(Country.id.in_(ids)).all() if ids else []
 
         # Thèmes autorisés (si non tous)
         if rule.use_all_broad_themes:
@@ -3085,6 +3103,8 @@ def check_quiz_rule_slug():
 @app.route('/api/quiz-rule/count-questions', methods=['GET'])
 def count_questions_for_rule():
     """Compter le nombre de questions disponibles selon les critères sélectionnés"""
+    country_ids = request.args.getlist('country_ids[]', type=int)
+    filter_by_countries = request.args.get('filter_by_countries') == '1'
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
 
@@ -3097,6 +3117,16 @@ def count_questions_for_rule():
             Question.specific_theme_id.in_(specific_theme_ids),
             Question.difficulty_level.in_(difficulty_levels)
         )
+
+        # Filtrer par pays si demandé
+        if filter_by_countries:
+            # Si filter_by_countries est présent, on filtre selon les pays sélectionnés
+            if country_ids:
+                # Questions qui ont au moins un des pays sélectionnés (évite les doublons)
+                query = query.filter(Question.countries.any(Country.id.in_(country_ids)))
+            else:
+                # Aucun pays sélectionné = seulement les questions générales (sans pays)
+                query = query.filter(~Question.countries.any())
 
         count = query.count()
 
@@ -3117,6 +3147,8 @@ def count_questions_for_rule():
 @app.route('/api/quiz-rule/get-questions', methods=['GET'])
 def get_questions_for_selection():
     """Récupérer les questions disponibles pour la sélection manuelle"""
+    country_ids = request.args.getlist('country_ids[]', type=int)
+    filter_by_countries = request.args.get('filter_by_countries') == '1'
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
 
@@ -3125,10 +3157,22 @@ def get_questions_for_selection():
 
     try:
         # Récupérer les questions qui correspondent aux critères
-        questions = Question.query.filter(
+        query = Question.query.filter(
             Question.specific_theme_id.in_(specific_theme_ids),
             Question.difficulty_level.in_(difficulty_levels)
-        ).order_by(Question.specific_theme_id, Question.difficulty_level, Question.id).all()
+        )
+
+        # Filtrer par pays si demandé
+        if filter_by_countries:
+            # Si filter_by_countries est présent, on filtre selon les pays sélectionnés
+            if country_ids:
+                # Questions qui ont au moins un des pays sélectionnés (évite les doublons)
+                query = query.filter(Question.countries.any(Country.id.in_(country_ids)))
+            else:
+                # Aucun pays sélectionné = seulement les questions générales (sans pays)
+                query = query.filter(~Question.countries.any())
+
+        questions = query.order_by(Question.specific_theme_id, Question.difficulty_level, Question.id).all()
 
         questions_data = []
         for q in questions:

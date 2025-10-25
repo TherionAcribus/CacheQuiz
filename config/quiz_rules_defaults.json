@@ -2,6 +2,8 @@
   "defaults": {
     "is_active": true,
     "timer_seconds": 30,
+    "use_all_countries": true,
+    "check_all_countries": true,
     "use_all_broad_themes": true,
     "use_all_specific_themes": true,
     "check_all_broad_themes": true,
