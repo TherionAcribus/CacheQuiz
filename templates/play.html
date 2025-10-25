@@ -145,6 +145,37 @@
         <div class="rule-set-card">
             <div class="card-header">
                 <h4>{{ rule_set_item.name }}</h4>
+                <div class="info-tooltip">
+                    <span class="info-icon">ℹ️</span>
+                    <div class="tooltip-content">
+                        <div class="tooltip-title">Détails techniques</div>
+                        <div class="tooltip-info">
+                            <div><strong>⏱️ Timer:</strong> {{ rule_set_item.timer_seconds }} secondes</div>
+                            <div><strong>⚙️ Points de base:</strong> {{ rule_set_item.scoring_base_points }} points</div>
+                            {% if rule_set_item.scoring_difficulty_bonus_type == 'add' %}
+                            <div><strong>🎯 Bonus difficulté:</strong> +{{ rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
+                            {% elif rule_set_item.scoring_difficulty_bonus_type == 'mult' %}
+                            <div><strong>🎯 Multiplicateur difficulté:</strong> ×{{ rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
+                            {% endif %}
+                            {% if rule_set_item.combo_bonus_enabled %}
+                            <div><strong>🔥 Combo:</strong> +{{ rule_set_item.combo_bonus_points }} points tous les {{ rule_set_item.combo_step }} bonnes réponses</div>
+                            {% endif %}
+                            {% if rule_set_item.perfect_quiz_bonus %}
+                            <div><strong>🏆 Quiz parfait:</strong> +{{ rule_set_item.perfect_quiz_bonus }} points</div>
+                            {% endif %}
+                            {% set diffs = rule_set_item.get_allowed_difficulties() %}
+                            {% if diffs %}
+                            <div><strong>📊 Difficultés:</strong> {{ diffs|join(', ') }}</div>
+                            {% else %}
+                            <div><strong>📊 Difficultés:</strong> toutes</div>
+                            {% endif %}
+                            {% set qmap = rule_set_item.get_questions_per_difficulty() %}
+                            {% if qmap %}
+                            <div><strong>📋 Questions par difficulté:</strong> {{ qmap|tojson }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
             {% if rule_set_item.intro_image %}
             <div class="card-image">
@@ -336,15 +367,82 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            min-height: 350px;
+            min-height: 380px;
         }
         .rule-set-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .card-header { margin-bottom: 1rem; }
-        .card-header h4 { margin: 0 0 0.5rem 0; color: var(--primary-color); font-size: 1.25rem; }
+        .card-header {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .card-header h4 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            flex-grow: 1;
+        }
+
+        .info-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .info-icon {
+            font-size: 1rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .info-tooltip:hover .info-icon {
+            opacity: 1;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 250px;
+            max-width: 300px;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .info-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .tooltip-info div {
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .tooltip-info div:last-child {
+            margin-bottom: 0;
+        }
 
         .card-image {
             margin-bottom: 1rem;
