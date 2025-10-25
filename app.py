@@ -2241,11 +2241,11 @@ def next_quiz_question():
             query = _apply_quiz_filters(query, params)
             if history_ids:
                 query = query.filter(~Question.id.in_(history_ids))
-        question = query.options(
-            db.joinedload(Question.images),
-            db.joinedload(Question.detailed_answer_image),
-            db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
-        ).order_by(db.func.random()).first()
+            question = query.options(
+                db.joinedload(Question.images),
+                db.joinedload(Question.detailed_answer_image),
+                db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
+            ).order_by(db.func.random()).first()
 
         # Si on sort du mode set (pas de rule_set), marquer toute session in_progress comme abandonnée
         if getattr(g, 'current_user', None):
