@@ -410,16 +410,21 @@ function submitEmbeddedImageForm(formEl){
     formData.set('embedded','1');
     // select_id transmis depuis champ hidden
     var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+    console.log('[submitEmbeddedImageForm] submitting to:', url, 'with selectId:', selectId);
     fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' }})
       .then(function(r){
+          console.log('[submitEmbeddedImageForm] response status:', r.status);
           if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
           return r.json();
       })
       .then(function(json){
+          console.log('[submitEmbeddedImageForm] received JSON:', json);
           if (json && json.created_image){
+              console.log('[submitEmbeddedImageForm] calling onEmbeddedImageCreated with:', json.created_image, json.select_id || selectId);
               if (window.onEmbeddedImageCreated){
                   window.onEmbeddedImageCreated(json.created_image, json.select_id || selectId);
               }
+              // Fermer la modale - retiré car déjà fait dans onEmbeddedImageCreated
           }
       })
       .catch(function(err){
@@ -456,11 +461,17 @@ function closeEmbeddedImageModal() {
 
 // Callback appelé par le formulaire d'image embarqué après création
 window.onEmbeddedImageCreated = function(createdImage, selectId){
+    console.log('[onEmbeddedImageCreated] called with:', createdImage, 'selectId:', selectId);
     try {
         var sel = document.getElementById(selectId);
-        if (!sel) return;
+        console.log('[onEmbeddedImageCreated] found select element:', sel);
+        if (!sel) {
+            console.error('[onEmbeddedImageCreated] Select element not found for id:', selectId);
+            return;
+        }
         // Ajouter l'option si absente
         var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdImage.id); });
+        console.log('[onEmbeddedImageCreated] image already exists:', existing);
         if (!existing) {
             var opt = document.createElement('option');
             opt.value = String(createdImage.id);
@@ -468,15 +479,19 @@ window.onEmbeddedImageCreated = function(createdImage, selectId){
             opt.setAttribute('data-filename', createdImage.filename || '');
             opt.setAttribute('data-alt', createdImage.alt_text || createdImage.title || '');
             sel.appendChild(opt);
+            console.log('[onEmbeddedImageCreated] option added');
         }
         // Sélectionner la nouvelle image
         sel.value = String(createdImage.id);
+        console.log('[onEmbeddedImageCreated] selected value set to:', sel.value);
         // Déclencher l'événement change pour rafraîchir l'aperçu
         var event = new Event('change', { bubbles: true });
         sel.dispatchEvent(event);
+        console.log('[onEmbeddedImageCreated] change event dispatched');
         // Fermer la modale embarquée
         closeEmbeddedImageModal();
     } catch (e) {
+        console.error('[onEmbeddedImageCreated] error:', e);
         closeEmbeddedImageModal();
     }
 }

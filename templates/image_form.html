@@ -1,7 +1,7 @@
 <div class="form-wrapper">
     <div class="form-header">
         <h2>{% if image %}Éditer l'image{% else %}Nouvelle image{% endif %}</h2>
-        <button class="btn-close" type="button" onclick="document.getElementById('image-form-container').classList.add('hidden')">✕</button>
+        <button class="btn-close" type="button" onclick="{% if embedded %}closeEmbeddedImageModal(){% else %}document.getElementById('image-form-container').classList.add('hidden'){% endif %}">✕</button>
     </div>
 
     <form action="{% if image %}/api/image/{{ image.id }}{% else %}/api/image{% endif %}"
@@ -63,7 +63,69 @@
 </style>
 
 {% if embedded %}
-<!-- Mode embarqué: le traitement est géré via hx-on::after-request sur le formulaire -->
+<!-- Mode embarqué: le traitement est géré via JavaScript -->
+<script>
+// Vérifier que les fonctions nécessaires sont disponibles
+console.log('[image_form embedded] submitEmbeddedImageForm available:', typeof window.submitEmbeddedImageForm);
+console.log('[image_form embedded] onEmbeddedImageCreated available:', typeof window.onEmbeddedImageCreated);
+
+// Fonction appelée après création réussie d'une image en mode embarqué
+function handleEmbeddedImageSuccess(data) {
+    console.log('[handleEmbeddedImageSuccess] called with:', data);
+    if (window.onEmbeddedImageCreated && data && data.created_image) {
+        window.onEmbeddedImageCreated(data.created_image, data.select_id || '');
+    }
+    // Fermer la modale
+    closeEmbeddedImageModal();
+}
+
+// Fonction pour fermer la modale embarquée
+function closeEmbeddedImageModal() {
+    console.log('[closeEmbeddedImageModal] closing modal');
+    var modal = document.querySelector('.modal-overlay');
+    if (modal) {
+        modal.style.display = 'none';
+        // Supprimer la modale du DOM
+        modal.remove();
+    }
+}
+
+// Fonction de fallback si submitEmbeddedImageForm n'est pas disponible
+function fallbackSubmitEmbeddedImageForm(formEl) {
+    console.log('[fallbackSubmitEmbeddedImageForm] called');
+    var url = formEl.getAttribute('action');
+    var formData = new FormData(formEl);
+    formData.set('embedded','1');
+    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+    console.log('[fallback] submitting to:', url, 'with selectId:', selectId);
+
+    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' }})
+      .then(function(r){
+          console.log('[fallback] response status:', r.status);
+          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+          return r.json();
+      })
+      .then(function(json){
+          console.log('[fallback] received JSON:', json);
+          if (json && json.created_image){
+              handleEmbeddedImageSuccess(json);
+          }
+      })
+      .catch(function(err){
+          console.error('[fallback] error:', err);
+          alert('Erreur lors de la création de l\'image: ' + err.message);
+      });
+    return false;
+}
+
+// Remplacer submitEmbeddedImageForm par fallback si nécessaire
+if (typeof window.submitEmbeddedImageForm === 'undefined') {
+    console.log('[image_form] submitEmbeddedImageForm not found, using fallback');
+    window.submitEmbeddedImageForm = fallbackSubmitEmbeddedImageForm;
+} else {
+    console.log('[image_form] submitEmbeddedImageForm found');
+}
+</script>
 {% endif %}
 
 
