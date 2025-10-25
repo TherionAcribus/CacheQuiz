@@ -1778,6 +1778,19 @@ def _interleave_round_robin(lists_by_difficulty):
     return result
 
 
+def _quiz_session_keys(rule_set_slug: str):
+    """Construit des clés de session isolées par utilisateur et par set.
+    Retourne (playlist_key, index_key, score_key, correct_key, user_id_str)
+    """
+    user_id_str = str(g.current_user.id) if getattr(g, 'current_user', None) else 'anon'
+    prefix = f"{user_id_str}:{rule_set_slug}"
+    playlist_key = f"quiz_playlist:{prefix}"
+    index_key = f"quiz_playlist_index:{prefix}"
+    score_key = f"quiz_score:{prefix}"
+    correct_key = f"quiz_correct_answers:{prefix}"
+    return playlist_key, index_key, score_key, correct_key, user_id_str
+
+
 def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) -> list[int]:
     """Génère la playlist (liste d'IDs de questions) pour un quiz à longueur fixe.
     - En mode 'manual': réordonne la liste sélectionnée en mettant d'abord les non-vues.
@@ -1884,20 +1897,28 @@ def next_quiz_question():
         if rule_set_slug:
             rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
         
-        # Mode playlist: construire/charger la playlist en session
-        playlist_session_key = f"quiz_playlist:{rule_set.slug}" if rule_set else None
-        playlist_index_key = f"quiz_playlist_index:{rule_set.slug}" if rule_set else None
+        # Mode playlist: construire/charger la playlist en session (clé par utilisateur)
+        playlist_session_key = None
+        playlist_index_key = None
+        score_session_key = None
+        correct_answers_session_key = None
+        if rule_set:
+            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
 
         question = None
         total_questions = 0
         if rule_set:
             # Si pas encore de playlist, la générer
             playlist: list[int] = session.get(playlist_session_key) or []
-            if not playlist:
+            # Si démarrage d'une nouvelle partie (history vide) OU playlist absente, régénérer
+            if (not history_raw) or (not playlist):
                 playlist = _generate_quiz_playlist(rule_set, g.current_user.id if getattr(g, 'current_user', None) else None)
                 session[playlist_session_key] = playlist
                 session[playlist_index_key] = 0
-                print(f"[QUIZ PLAYLIST] Générée pour '{rule_set.slug}' (len={len(playlist)}): {playlist}")
+                # Reset score/correct pour ce namespace utilisateur+set
+                session[score_session_key] = 0
+                session[correct_answers_session_key] = 0
+                print(f"[QUIZ PLAYLIST] Générée (reset={not bool(history_raw)}) pour user={user_ns} set='{rule_set.slug}' (len={len(playlist)}): {playlist}")
 
             total_questions = len(playlist)
             index = int(session.get(playlist_index_key, 0) or 0)
@@ -1905,10 +1926,8 @@ def next_quiz_question():
             # Si terminé: fin du quiz
             if index >= total_questions:
                 # Récupérer le nombre de bonnes réponses depuis la session
-                correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
                 total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
-
-                total_score = int(session.get(f"quiz_score:{rule_set.slug}", 0) or 0)
+                total_score = int(session.get(score_session_key, 0) or 0)
                 return render_template(
                     'quiz_final.html',
                     rule_set=rule_set,
@@ -1948,16 +1967,13 @@ def next_quiz_question():
 
         if rule_set:
             # Gestion du score en session (reset en début de session)
-            score_session_key = f"quiz_score:{rule_set.slug}"
-            correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
             if not history_raw:
-                session[score_session_key] = 0
-                session[correct_answers_session_key] = 0
+                # Note: la playlist réinitialise déjà score/correct au moment de la génération
+                session[score_session_key] = session.get(score_session_key, 0) or 0
+                session[correct_answers_session_key] = session.get(correct_answers_session_key, 0) or 0
             total_score = int(session.get(score_session_key, 0) or 0)
 
             # Progression basée sur la playlist
-            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
-            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
             playlist = session.get(playlist_session_key) or []
             index = int(session.get(playlist_index_key, 0) or 0)
             # Affichage utilisateur: index courant (1-based)
@@ -2177,25 +2193,23 @@ def submit_quiz_answer():
 
         db.session.commit()
 
-        # Mettre à jour le score total et le nombre de bonnes réponses en session
+        # Mettre à jour le score total et le nombre de bonnes réponses en session (namespace user)
         if rule_set:
-            score_session_key = f"quiz_score:{rule_set.slug}"
+            _, _, score_session_key, correct_answers_session_key, _ = _quiz_session_keys(rule_set.slug)
             total_score_session = int(session.get(score_session_key, 0) or 0)
             if is_correct and score:
                 total_score_session += int(score)
             session[score_session_key] = total_score_session
 
             # Compter les bonnes réponses
-            correct_answers_session_key = f"quiz_correct_answers:{rule_set.slug}"
             total_correct_answers_session = int(session.get(correct_answers_session_key, 0) or 0)
             if is_correct:
                 total_correct_answers_session += 1
             session[correct_answers_session_key] = total_correct_answers_session
 
-        # Mettre à jour la progression de playlist (si set de règles)
+        # Mettre à jour la progression de playlist (si set de règles, namespace user)
         if rule_set:
-            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
-            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
+            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
             index = int(session.get(playlist_index_key, 0) or 0)
             playlist = session.get(playlist_session_key) or []
             # Avancer l'index si la question correspond à l'élément courant
@@ -2220,15 +2234,14 @@ def submit_quiz_answer():
 
         if rule_set:
             # Progression basée sur la playlist
-            playlist_index_key = f"quiz_playlist_index:{rule_set.slug}"
-            playlist_session_key = f"quiz_playlist:{rule_set.slug}"
+            playlist_session_key, playlist_index_key, score_session_key, correct_answers_session_key, user_ns = _quiz_session_keys(rule_set.slug)
             index = int(session.get(playlist_index_key, 0) or 0)
             playlist = session.get(playlist_session_key) or []
             total_questions = len(playlist)
             current_question_num = min(index, total_questions)
 
             # Score total depuis la session
-            score_session_key = f"quiz_score:{rule_set.slug}"
+            score_session_key = score_session_key
             total_score = int(session.get(score_session_key, 0) or 0)
 
         return render_template(
