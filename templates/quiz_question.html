@@ -467,6 +467,14 @@
             var radios = formEl.querySelectorAll('input[type="radio"][name="selected_answer"]');
             radios.forEach(function(r){ r.removeAttribute('required'); });
         }
+
+        // Récupérer la réponse sélectionnée si elle existe
+        var selectedAnswer = '';
+        var checkedRadio = formEl ? formEl.querySelector('input[type="radio"][name="selected_answer"]:checked') : null;
+        if (checkedRadio) {
+            selectedAnswer = checkedRadio.value;
+        }
+
         htmx.ajax('POST', '/api/quiz/answer', {
             target: '#quiz-stage',
             swap: 'innerHTML',
@@ -474,7 +482,7 @@
                 question_id: '{{ question.id }}',
                 history: '{{ history or '' }}',
                 {% if rule_set %}rule_set: '{{ rule_set.slug }}',{% endif %}
-                selected_answer: '',
+                selected_answer: selectedAnswer,
                 timeout: '1'
             }
         });
