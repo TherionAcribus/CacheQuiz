@@ -43,6 +43,7 @@
                 
                 <div class="form-group">
                     <label for="question_image_id">Image complémentaire de la question (optionnel)</label>
+                    <div class="input-with-action">
                     <select id="question_image_id" name="question_image_id" class="answer-image-select"
                             onchange="(function(sel){
                                 var opt = sel.options[sel.selectedIndex];
@@ -68,6 +69,8 @@
                         </option>
                         {% endfor %}
                     </select>
+                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                    </div>
                     <div id="question-image-preview" class="image-preview" style="{% if question and question.images %}display: inline-block;{% else %}display: none;{% endif %}">
                         <img id="question-image-thumb" src="{% if question and question.images %}/uploads/{{ question.images[0].filename }}{% endif %}" alt="Aperçu">
                     </div>
@@ -135,6 +138,7 @@
 
                 <div class="form-group">
                     <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
+                    <div class="input-with-action">
                     <select id="detailed_answer_image_id" name="detailed_answer_image_id" class="answer-image-select"
                             onchange="(function(sel){
                                 var opt = sel.options[sel.selectedIndex];
@@ -160,10 +164,13 @@
                         </option>
                         {% endfor %}
                     </select>
+                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                    </div>
                     <div id="detailed-answer-image-preview" class="image-preview" style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
                         <img id="detailed-answer-image-thumb" src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}" alt="Aperçu">
                     </div>
                     <small>Image illustrative pour accompagner l'explication détaillée</small>
+                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
                 
                 <div class="form-group">
@@ -332,6 +339,79 @@ function updateSpecificThemes(broadThemeId) {
             console.error('Erreur lors de la récupération des sous-thèmes:', error);
             specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
         });
+}
+
+// Fonction pour rafraîchir tous les selects d'images de la page
+function refreshImageSelects() {
+    // Faire un appel à une API JSON pour obtenir les données des images
+    fetch('/api/images/json', { headers: { 'HX-Request': 'true' } })
+        .then(function(r) {
+            if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(images) {
+            // Mettre à jour tous les selects d'images
+            var imageSelects = document.querySelectorAll('select.answer-image-select');
+            imageSelects.forEach(function(sel) {
+                var currentValue = sel.value;
+
+                // Garder seulement l'option "Pas d'image"
+                var noImageOption = sel.querySelector('option[value=""]');
+                sel.innerHTML = '';
+                if (noImageOption) {
+                    sel.appendChild(noImageOption.cloneNode(true));
+                } else {
+                    var defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Pas d\'image --';
+                    sel.appendChild(defaultOption);
+                }
+
+                // Ajouter toutes les options d'images
+                images.forEach(function(img) {
+                    var opt = document.createElement('option');
+                    opt.value = img.id;
+                    opt.textContent = img.title + ' (' + img.filename + ')';
+                    opt.setAttribute('data-filename', img.filename);
+                    opt.setAttribute('data-alt', img.alt_text || img.title);
+                    sel.appendChild(opt);
+                });
+
+                // Restaurer la sélection précédente si elle existe encore
+                if (currentValue && sel.querySelector('option[value="' + currentValue + '"]')) {
+                    sel.value = currentValue;
+                }
+
+                // Déclencher l'événement change pour rafraîchir l'aperçu
+                var event = new Event('change', { bubbles: true });
+                sel.dispatchEvent(event);
+            });
+
+            // Message de confirmation
+            showToast('Liste des images mise à jour', 'success');
+        })
+        .catch(function(err) {
+            console.error('Erreur lors du rafraîchissement des images:', err);
+            showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+        });
+}
+
+// Fonction utilitaire pour afficher des messages toast
+function showToast(message, type) {
+    // Créer un élément toast temporaire
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' +
+        (type === 'success' ? '#10b981' : '#ef4444') +
+        '; color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 14px; max-width: 300px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Supprimer automatiquement après 3 secondes
+    setTimeout(function() {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
 }
 
 // Initialiser les sous-thèmes au chargement si un thème est déjà sélectionné

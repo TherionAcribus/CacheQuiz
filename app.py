@@ -459,12 +459,33 @@ def list_images_api():
     return render_template('images_list.html', images=images)
 
 
+@app.route('/api/images/json')
+def list_images_json():
+    """Retourne la liste des images au format JSON pour les selects"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    search = request.args.get('search', '').strip()
+    query = ImageAsset.query
+    if search:
+        query = query.filter(ImageAsset.title.like(f'%{search}%'))
+    images = query.order_by(ImageAsset.title).all()
+    return [{
+        'id': img.id,
+        'title': img.title,
+        'filename': img.filename,
+        'alt_text': img.alt_text
+    } for img in images]
+
+
 @app.route('/image/new')
 def new_image():
     resp = _ensure_admin_page_redirect()
     if resp:
         return resp
-    return render_template('image_form.html', image=None)
+    embedded = request.args.get('embedded') in ('1', 'true', 'yes')
+    select_id = request.args.get('select_id') or ''
+    return render_template('image_form.html', image=None, embedded=embedded, select_id=select_id)
 
 
 @app.route('/image/<int:image_id>/edit')
@@ -473,7 +494,9 @@ def edit_image(image_id: int):
     if resp:
         return resp
     image = ImageAsset.query.get_or_404(image_id)
-    return render_template('image_form.html', image=image)
+    embedded = request.args.get('embedded') in ('1', 'true', 'yes')
+    select_id = request.args.get('select_id') or ''
+    return render_template('image_form.html', image=image, embedded=embedded, select_id=select_id)
 
 
 def _secure_filename(original_name: str) -> str:
@@ -504,10 +527,22 @@ def create_image():
         filename = _secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-        # Déduire l'unicité en cas de collision
+        # Déduire l'unicité en cas de collision physique
         if os.path.exists(filepath):
             name, ext = os.path.splitext(filename)
             filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        # Vérifier l'unicité du nom de fichier dans la base de données
+        base_filename = filename
+        counter = 1
+        while ImageAsset.query.filter_by(filename=filename).first() is not None:
+            name, ext = os.path.splitext(base_filename)
+            filename = f"{name}_{counter}{ext}"
+            counter += 1
+
+        # Mettre à jour le filepath si le nom a changé
+        if filename != base_filename:
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
         file.save(filepath)
@@ -517,6 +552,18 @@ def create_image():
         image = ImageAsset(title=title, filename=filename, mime_type=mime_type, size_bytes=size_bytes, alt_text=alt_text)
         db.session.add(image)
         db.session.commit()
+
+        # Si formulaire embarqué (modale au-dessus d'une autre modale): renvoyer JSON
+        if request.form.get('embedded') in ('1', 'true', 'yes') or request.args.get('embedded') in ('1', 'true', 'yes'):
+            return {
+                'created_image': {
+                    'id': image.id,
+                    'title': image.title,
+                    'filename': image.filename,
+                    'alt_text': image.alt_text
+                },
+                'select_id': request.form.get('select_id') or request.args.get('select_id') or ''
+            }
 
         images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
         return render_template('images_list.html', images=images)

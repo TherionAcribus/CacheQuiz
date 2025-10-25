@@ -283,6 +283,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="intro_image_id">Image du message d'introduction (optionnel)</label>
+                                <div class="input-with-action">
                                 <select id="intro_image_id" name="intro_image_id" class="answer-image-select"
                                         onchange="(function(sel){
                                             var opt = sel.options[sel.selectedIndex];
@@ -305,6 +306,9 @@
                                     </option>
                                     {% endfor %}
                                 </select>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('intro_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                </div>
                                 <div id="intro-image-preview" class="image-preview" style="{% if rule and rule.intro_image %}display: inline-block;{% else %}display: none;{% endif %}">
                                     <img id="intro-image-thumb" src="{% if rule and rule.intro_image %}/uploads/{{ rule.intro_image.filename }}{% endif %}" alt="Aperçu">
                                 </div>
@@ -316,6 +320,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="success_image_id">Image du message de réussite (optionnel)</label>
+                                <div class="input-with-action">
                                 <select id="success_image_id" name="success_image_id" class="answer-image-select"
                                         onchange="(function(sel){
                                             var opt = sel.options[sel.selectedIndex];
@@ -338,6 +343,9 @@
                                     </option>
                                     {% endfor %}
                                 </select>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('success_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                </div>
                                 <div id="success-image-preview" class="image-preview" style="{% if rule and rule.success_image %}display: inline-block;{% else %}display: none;{% endif %}">
                                     <img id="success-image-thumb" src="{% if rule and rule.success_image %}/uploads/{{ rule.success_image.filename }}{% endif %}" alt="Aperçu">
                                 </div>
@@ -349,6 +357,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="failure_image_id">Image du message d'échec (optionnel)</label>
+                                <div class="input-with-action">
                                 <select id="failure_image_id" name="failure_image_id" class="answer-image-select"
                                         onchange="(function(sel){
                                             var opt = sel.options[sel.selectedIndex];
@@ -371,6 +380,9 @@
                                     </option>
                                     {% endfor %}
                                 </select>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('failure_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                </div>
                                 <div id="failure-image-preview" class="image-preview" style="{% if rule and rule.failure_image %}display: inline-block;{% else %}display: none;{% endif %}">
                                     <img id="failure-image-thumb" src="{% if rule and rule.failure_image %}/uploads/{{ rule.failure_image.filename }}{% endif %}" alt="Aperçu">
                                 </div>
@@ -391,6 +403,156 @@
 </div>
 
 <script>
+// Soumission manuelle du formulaire embarqué pour éviter TOUT rafraîchissement
+function submitEmbeddedImageForm(formEl){
+    var url = formEl.getAttribute('action');
+    var formData = new FormData(formEl);
+    formData.set('embedded','1');
+    // select_id transmis depuis champ hidden
+    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' }})
+      .then(function(r){
+          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+          return r.json();
+      })
+      .then(function(json){
+          if (json && json.created_image){
+              if (window.onEmbeddedImageCreated){
+                  window.onEmbeddedImageCreated(json.created_image, json.select_id || selectId);
+              }
+          }
+      })
+      .catch(function(err){
+          console.error('Erreur lors de la création d\'image:', err);
+          alert('Erreur lors de la création de l\'image: ' + err.message);
+      });
+    return false; // Empêcher la soumission par défaut du formulaire
+}
+// Ouvrir une modale embarquée pour créer une image, au-dessus de la modale des règles
+function openEmbeddedImageModal(selectId) {
+    // Créer un conteneur overlay si absent
+    var overlay = document.getElementById('embedded-image-modal');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'embedded-image-modal';
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = '<div class="modal-content"><div id="embedded-image-form-wrapper"></div></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    // Charger le formulaire d'image en mode embarqué
+    fetch('/image/new?embedded=1&select_id=' + encodeURIComponent(selectId), { headers: { 'HX-Request': 'true' }})
+      .then(function(r){return r.text()})
+      .then(function(html){
+        var wrap = document.getElementById('embedded-image-form-wrapper');
+        wrap.innerHTML = html;
+      });
+}
+
+function closeEmbeddedImageModal() {
+    var overlay = document.getElementById('embedded-image-modal');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Callback appelé par le formulaire d'image embarqué après création
+window.onEmbeddedImageCreated = function(createdImage, selectId){
+    try {
+        var sel = document.getElementById(selectId);
+        if (!sel) return;
+        // Ajouter l'option si absente
+        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdImage.id); });
+        if (!existing) {
+            var opt = document.createElement('option');
+            opt.value = String(createdImage.id);
+            opt.textContent = createdImage.title + ' (' + createdImage.filename + ')';
+            opt.setAttribute('data-filename', createdImage.filename || '');
+            opt.setAttribute('data-alt', createdImage.alt_text || createdImage.title || '');
+            sel.appendChild(opt);
+        }
+        // Sélectionner la nouvelle image
+        sel.value = String(createdImage.id);
+        // Déclencher l'événement change pour rafraîchir l'aperçu
+        var event = new Event('change', { bubbles: true });
+        sel.dispatchEvent(event);
+        // Fermer la modale embarquée
+        closeEmbeddedImageModal();
+    } catch (e) {
+        closeEmbeddedImageModal();
+    }
+}
+
+// Fonction pour rafraîchir tous les selects d'images de la page
+function refreshImageSelects() {
+    // Faire un appel à une API JSON pour obtenir les données des images
+    fetch('/api/images/json', { headers: { 'HX-Request': 'true' } })
+        .then(function(r) {
+            if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(images) {
+            // Mettre à jour tous les selects d'images
+            var imageSelects = document.querySelectorAll('select.answer-image-select');
+            imageSelects.forEach(function(sel) {
+                var currentValue = sel.value;
+
+                // Garder seulement l'option "Pas d'image"
+                var noImageOption = sel.querySelector('option[value=""]');
+                sel.innerHTML = '';
+                if (noImageOption) {
+                    sel.appendChild(noImageOption.cloneNode(true));
+                } else {
+                    var defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Pas d\'image --';
+                    sel.appendChild(defaultOption);
+                }
+
+                // Ajouter toutes les options d'images
+                images.forEach(function(img) {
+                    var opt = document.createElement('option');
+                    opt.value = img.id;
+                    opt.textContent = img.title + ' (' + img.filename + ')';
+                    opt.setAttribute('data-filename', img.filename);
+                    opt.setAttribute('data-alt', img.alt_text || img.title);
+                    sel.appendChild(opt);
+                });
+
+                // Restaurer la sélection précédente si elle existe encore
+                if (currentValue && sel.querySelector('option[value="' + currentValue + '"]')) {
+                    sel.value = currentValue;
+                }
+
+                // Déclencher l'événement change pour rafraîchir l'aperçu
+                var event = new Event('change', { bubbles: true });
+                sel.dispatchEvent(event);
+            });
+
+            // Message de confirmation
+            showToast('Liste des images mise à jour', 'success');
+        })
+        .catch(function(err) {
+            console.error('Erreur lors du rafraîchissement des images:', err);
+            showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+        });
+}
+
+// Fonction utilitaire pour afficher des messages toast
+function showToast(message, type) {
+    // Créer un élément toast temporaire
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' +
+        (type === 'success' ? '#10b981' : '#ef4444') +
+        '; color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 14px; max-width: 300px;';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Supprimer automatiquement après 3 secondes
+    setTimeout(function() {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
 let autoGeneratedSlug = '{{ rule.slug if rule and rule.slug else "" }}'; // Slug initial ou généré automatiquement
 
 function slugify(text) {
