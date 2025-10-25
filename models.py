@@ -674,3 +674,33 @@ class UserQuestionStat(db.Model):
 
     def __repr__(self):
         return f"<UserQuestionStat u={self.user_id} q={self.question_id} times={self.times_answered} success={self.success_count}>"
+
+
+# ===================== Sessions de quiz par utilisateur =====================
+
+class UserQuizSession(db.Model):
+    __tablename__ = 'user_quiz_sessions'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates (non utilisées pour des stats temporelles, mais utiles pour l'audit)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Liens
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    rule_set_id = db.Column(db.Integer, db.ForeignKey('quiz_rule_sets.id'), nullable=True)
+
+    # Statut et compteurs
+    status = db.Column(db.String(20), nullable=False, default='in_progress')  # in_progress|completed|abandoned
+    total_questions = db.Column(db.Integer, nullable=False, default=0)
+    answered_count = db.Column(db.Integer, nullable=False, default=0)
+    correct_count = db.Column(db.Integer, nullable=False, default=0)
+    total_score = db.Column(db.Integer, nullable=False, default=0)
+
+    # Relations
+    user = db.relationship('User', backref=db.backref('quiz_sessions', lazy='dynamic'))
+    rule_set = db.relationship('QuizRuleSet', foreign_keys=[rule_set_id])
+
+    def __repr__(self):
+        return f"<UserQuizSession id={self.id} user={self.user_id} set={self.rule_set_id} status={self.status} answered={self.answered_count}/{self.total_questions} correct={self.correct_count} score={self.total_score}>"

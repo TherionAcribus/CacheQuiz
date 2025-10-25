@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, Profile
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, Profile
 from datetime import datetime
 import random
 import os
@@ -421,7 +421,92 @@ def me_page():
                .one())
     total_answers = totals[0] or 0
     total_success = totals[1] or 0
-    return render_template('me.html', stats=stats, total_answers=total_answers, total_success=total_success)
+    # Agrégats par thème large
+    agg_broad_rows = (db.session.query(
+                        Question.broad_theme_id,
+                        BroadTheme.name,
+                        func.coalesce(func.sum(UserQuestionStat.times_answered), 0),
+                        func.coalesce(func.sum(UserQuestionStat.success_count), 0)
+                      )
+                      .join(Question, Question.id == UserQuestionStat.question_id)
+                      .outerjoin(BroadTheme, BroadTheme.id == Question.broad_theme_id)
+                      .filter(UserQuestionStat.user_id == g.current_user.id)
+                      .group_by(Question.broad_theme_id, BroadTheme.name)
+                      .order_by(func.coalesce(func.sum(UserQuestionStat.times_answered), 0).desc())
+                      .all())
+    agg_by_broad = [
+        {
+            'theme_id': row[0],
+            'theme_name': row[1] or 'Sans thème',
+            'answered': int(row[2] or 0),
+            'success': int(row[3] or 0),
+            'rate': (float(row[3]) / float(row[2]) * 100.0) if (row[2] or 0) > 0 else 0.0,
+        }
+        for row in agg_broad_rows
+    ]
+    # Agrégats par thème spécifique
+    agg_spec_rows = (db.session.query(
+                        Question.specific_theme_id,
+                        SpecificTheme.name,
+                        func.coalesce(func.sum(UserQuestionStat.times_answered), 0),
+                        func.coalesce(func.sum(UserQuestionStat.success_count), 0)
+                      )
+                      .join(Question, Question.id == UserQuestionStat.question_id)
+                      .outerjoin(SpecificTheme, SpecificTheme.id == Question.specific_theme_id)
+                      .filter(UserQuestionStat.user_id == g.current_user.id)
+                      .group_by(Question.specific_theme_id, SpecificTheme.name)
+                      .order_by(func.coalesce(func.sum(UserQuestionStat.times_answered), 0).desc())
+                      .all())
+    agg_by_specific = [
+        {
+            'specific_theme_id': row[0],
+            'specific_theme_name': row[1] or 'Sans sous-thème',
+            'answered': int(row[2] or 0),
+            'success': int(row[3] or 0),
+            'rate': (float(row[3]) / float(row[2]) * 100.0) if (row[2] or 0) > 0 else 0.0,
+        }
+        for row in agg_spec_rows
+    ]
+    # Agrégats par difficulté
+    agg_diff_rows = (db.session.query(
+                        Question.difficulty_level,
+                        func.coalesce(func.sum(UserQuestionStat.times_answered), 0),
+                        func.coalesce(func.sum(UserQuestionStat.success_count), 0)
+                      )
+                      .join(Question, Question.id == UserQuestionStat.question_id)
+                      .filter(UserQuestionStat.user_id == g.current_user.id)
+                      .group_by(Question.difficulty_level)
+                      .order_by(Question.difficulty_level)
+                      .all())
+    agg_by_difficulty = [
+        {
+            'difficulty': row[0],
+            'answered': int(row[1] or 0),
+            'success': int(row[2] or 0),
+            'rate': (float(row[2]) / float(row[1]) * 100.0) if (row[1] or 0) > 0 else 0.0,
+        }
+        for row in agg_diff_rows
+    ]
+    # Compteurs de sessions
+    sessions_completed = 0
+    sessions_abandoned = 0
+    if getattr(g, 'current_user', None):
+        sessions_completed = (UserQuizSession.query
+                              .filter_by(user_id=g.current_user.id, status='completed')
+                              .count())
+        sessions_abandoned = (UserQuizSession.query
+                              .filter_by(user_id=g.current_user.id, status='abandoned')
+                              .count())
+
+    return render_template('me.html',
+                           stats=stats,
+                           total_answers=total_answers,
+                           total_success=total_success,
+                           agg_by_broad=agg_by_broad,
+                           agg_by_specific=agg_by_specific,
+                           agg_by_difficulty=agg_by_difficulty,
+                           sessions_completed=sessions_completed,
+                           sessions_abandoned=sessions_abandoned)
 # ================== Fichiers uploadés (serveur) ==================
 
 @app.route('/uploads/<path:filename>')
@@ -1918,6 +2003,18 @@ def play_quiz():
     rule_set_slug = request.args.get('rule_set', '').strip()
     if rule_set_slug:
         rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+    else:
+        # Si on arrive sans set explicite et qu'il existait une session en cours, l'abandonner
+        if getattr(g, 'current_user', None):
+            try:
+                in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
+                for s in in_prog:
+                    s.status = 'abandoned'
+                    s.updated_at = datetime.utcnow()
+                if in_prog:
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     # Récupérer tous les sets de règles actifs
     rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
@@ -1968,6 +2065,34 @@ def next_quiz_question():
                 session[correct_answers_session_key] = 0
                 print(f"[QUIZ PLAYLIST] Générée (reset={not bool(history_raw)}) pour user={user_ns} set='{rule_set.slug}' (len={len(playlist)}): {playlist}")
 
+                # Démarrer une UserQuizSession si utilisateur connecté
+                if getattr(g, 'current_user', None):
+                    try:
+                        # Clore toute session précédente en cours pour ce set
+                        prev = (UserQuizSession.query
+                                .filter_by(user_id=g.current_user.id, rule_set_id=rule_set.id, status='in_progress')
+                                .all())
+                        for s in prev:
+                            s.status = 'abandoned'
+                            s.updated_at = datetime.utcnow()
+                        # Créer une nouvelle session
+                        new_session = UserQuizSession(
+                            user_id=g.current_user.id,
+                            rule_set_id=rule_set.id,
+                            status='in_progress',
+                            total_questions=len(playlist),
+                            answered_count=0,
+                            correct_count=0,
+                            total_score=0
+                        )
+                        db.session.add(new_session)
+                        db.session.commit()
+                        # Stocker l'ID de session dans la session Flask pour ce namespace utilisateur+set
+                        session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
+                        session[session_key_session_id] = new_session.id
+                    except Exception:
+                        db.session.rollback()
+
             total_questions = len(playlist)
             index = int(session.get(playlist_index_key, 0) or 0)
 
@@ -1976,6 +2101,22 @@ def next_quiz_question():
                 # Récupérer le nombre de bonnes réponses depuis la session
                 total_correct_answers = int(session.get(correct_answers_session_key, 0) or 0)
                 total_score = int(session.get(score_session_key, 0) or 0)
+                # Clore la UserQuizSession comme completed si présente
+                if getattr(g, 'current_user', None):
+                    try:
+                        session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
+                        sess_id = session.get(session_key_session_id)
+                        if sess_id:
+                            s = UserQuizSession.query.get(sess_id)
+                            if s and s.status == 'in_progress':
+                                s.status = 'completed'
+                                s.answered_count = s.total_questions
+                                s.correct_count = total_correct_answers
+                                s.total_score = total_score
+                                s.updated_at = datetime.utcnow()
+                                db.session.commit()
+                    except Exception:
+                        db.session.rollback()
                 return render_template(
                     'quiz_final.html',
                     rule_set=rule_set,
@@ -2003,6 +2144,18 @@ def next_quiz_question():
                 db.joinedload(Question.detailed_answer_image),
                 db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
             ).order_by(db.func.random()).first()
+            # Si on sort du mode set (pas de rule_set), marquer toute session in_progress comme abandonnée
+            if getattr(g, 'current_user', None):
+                try:
+                    # Abandonner toutes sessions en cours (tous sets) si l'utilisateur a quitté le set
+                    in_prog = UserQuizSession.query.filter_by(user_id=g.current_user.id, status='in_progress').all()
+                    for s in in_prog:
+                        s.status = 'abandoned'
+                        s.updated_at = datetime.utcnow()
+                    if in_prog:
+                        db.session.commit()
+                except Exception:
+                    db.session.rollback()
 
         # Debug logging
         print(f"[QUIZ NEXT] Rule set: {rule_set_slug}, History: {history_raw}")
@@ -2037,6 +2190,34 @@ def next_quiz_question():
                              total_score=total_score)
     except Exception as e:
         return f"Erreur: {str(e)}", 400
+
+
+@app.route('/api/quiz/cancel', methods=['POST'])
+def cancel_quiz_session():
+    """Marque la session de quiz en cours comme abandonnée pour l'utilisateur connecté et le set fourni."""
+    try:
+        if not getattr(g, 'current_user', None):
+            return "Non connecté", 401
+        rule_set_slug = (request.form.get('rule_set') or '').strip()
+        if not rule_set_slug:
+            return "Paramètre 'rule_set' manquant", 400
+        rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+        if not rule_set:
+            return "Set inconnu", 404
+        _, _, _, _, user_ns = _quiz_session_keys(rule_set.slug)
+        session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
+        sess_id = session.get(session_key_session_id)
+        if not sess_id:
+            return "Aucune session en cours", 200
+        s = UserQuizSession.query.get(sess_id)
+        if s and s.status == 'in_progress':
+            s.status = 'abandoned'
+            s.updated_at = datetime.utcnow()
+            db.session.commit()
+        return "OK", 200
+    except Exception as e:
+        db.session.rollback()
+        return { 'error': str(e) }, 400
 
 
 def _calculate_score(rule_set, question, is_correct, history_questions):
@@ -2263,6 +2444,25 @@ def submit_quiz_answer():
             # Avancer l'index si la question correspond à l'élément courant
             if index < len(playlist) and playlist[index] == question.id:
                 session[playlist_index_key] = index + 1
+
+            # Mettre à jour la UserQuizSession si présente
+            if getattr(g, 'current_user', None):
+                try:
+                    session_key_session_id = f"quiz_session_id:{user_ns}:{rule_set.slug}"
+                    sess_id = session.get(session_key_session_id)
+                    if sess_id:
+                        s = UserQuizSession.query.get(sess_id)
+                        if s and s.status == 'in_progress':
+                            s.answered_count = min((s.answered_count or 0) + 1, s.total_questions or 0)
+                            if is_correct:
+                                s.correct_count = (s.correct_count or 0) + 1
+                            # total_score est déjà mis à jour en session; l'appliquer si on a un score crédité
+                            if is_correct and score:
+                                s.total_score = (s.total_score or 0) + int(score)
+                            s.updated_at = datetime.utcnow()
+                            db.session.commit()
+                except Exception:
+                    db.session.rollback()
 
         # Mettre à jour l'historique côté client (ajouter la question actuelle)
         history_ids = []

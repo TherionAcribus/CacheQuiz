@@ -7,7 +7,75 @@
     <div class="card"><div class="label">Total réponses</div><div class="value">{{ total_answers }}</div></div>
     <div class="card"><div class="label">Total réussites</div><div class="value">{{ total_success }}</div></div>
     <div class="card"><div class="label">Taux global</div><div class="value">{% if total_answers %}{{ ((total_success/total_answers)*100)|round(1) }}%{% else %}0%{% endif %}</div></div>
+    <div class="card"><div class="label">Sessions complétées</div><div class="value">{{ sessions_completed or 0 }}</div></div>
+    <div class="card"><div class="label">Abandons</div><div class="value">{{ sessions_abandoned or 0 }}</div></div>
   </div>
+
+  <h3>Par thématique large</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Thème</th>
+        <th>Réponses</th>
+        <th>Réussites</th>
+        <th>Taux</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in agg_by_broad %}
+      <tr>
+        <td>{{ row.theme_name }}</td>
+        <td>{{ row.answered }}</td>
+        <td>{{ row.success }}</td>
+        <td>{{ row.rate|round(1) }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Par thématique spécifique</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Sous-thème</th>
+        <th>Réponses</th>
+        <th>Réussites</th>
+        <th>Taux</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in agg_by_specific %}
+      <tr>
+        <td>{{ row.specific_theme_name }}</td>
+        <td>{{ row.answered }}</td>
+        <td>{{ row.success }}</td>
+        <td>{{ row.rate|round(1) }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3>Par difficulté</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Difficulté</th>
+        <th>Réponses</th>
+        <th>Réussites</th>
+        <th>Taux</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in agg_by_difficulty %}
+      <tr>
+        <td>{{ row.difficulty if row.difficulty is not none else 'N/A' }}</td>
+        <td>{{ row.answered }}</td>
+        <td>{{ row.success }}</td>
+        <td>{{ row.rate|round(1) }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
   <h3>Dernières questions</h3>
   <table class="table">
@@ -37,6 +105,7 @@
 .summary-cards .card{border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--card-bg)}
 .summary-cards .label{color:var(--muted-color);font-size:.9rem}
 .summary-cards .value{font-size:1.25rem;font-weight:700}
+.me-page h3{margin-top:1rem}
 .table{width:100%;border-collapse:collapse}
 .table th,.table td{border-bottom:1px solid var(--border-color);padding:.5rem;text-align:left}
 </style>
