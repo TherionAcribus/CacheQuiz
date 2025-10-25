@@ -11,9 +11,9 @@
         <div class="tabs" hx-on:click="var btn=event.target.closest('.tab, .tab-next'); if(!btn) return; var wrap=event.currentTarget; var nav=wrap.querySelector('.tabs-nav'); var key=btn.classList.contains('tab')?btn.getAttribute('data-tab'):btn.getAttribute('data-next-tab'); if(key){nav.querySelectorAll('.tab').forEach(function(b){var on=b.getAttribute('data-tab')===key; b.classList.toggle('active',on); b.setAttribute('aria-selected',on?'true':'false')}); wrap.querySelectorAll('.tabs-panels .tab-panel').forEach(function(p){p.classList.toggle('active', p.getAttribute('data-tab')===key)});}">
             <div class="tabs-nav" role="tablist" aria-label="Règles - onglets">
                 <button type="button" class="tab active" data-tab="general" aria-selected="true">Général</button>
-                <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
                 <button type="button" class="tab" data-tab="themes" aria-selected="false">Thèmes</button>
                 <button type="button" class="tab" data-tab="questions" aria-selected="false">Sélection de questions</button>
+                <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
                 <button type="button" class="tab" data-tab="scoring" aria-selected="false">Scoring</button>
                 <button type="button" class="tab" data-tab="messages" aria-selected="false">Messages</button>
             </div>
@@ -49,44 +49,6 @@
                         <div class="form-group">
                             <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule %}{% if rule.is_active %}checked{% endif %}{% else %}{% if defaults.get('is_active', true) %}checked{% endif %}{% endif %}> Actif</label>
                         </div>
-                    </div>
-
-                    <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="timing">Suivant →</button>
-                    </div>
-                </div>
-
-                <div class="tab-panel" data-tab="timing">
-                    <div class="form-column">
-                        <fieldset class="fieldset">
-                            <legend>Timer</legend>
-                            <div class="form-group">
-                                <label for="timer_seconds">Durée par question (secondes)</label>
-                                <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else defaults.get('timer_seconds', 30) }}">
-                            </div>
-                        </fieldset>
-
-                        <fieldset class="fieldset">
-                            <legend>Difficultés utilisées</legend>
-                            <div class="checkboxes-inline">
-                                {% set selected = rule.get_allowed_difficulties() if rule else defaults.get('allowed_difficulties', [1,2,3,4,5]) %}
-                                {% for d in [1,2,3,4,5] %}
-                                <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
-                                {% endfor %}
-                            </div>
-                            <div class="form-group">
-                                <label>Nombre de questions par difficulté</label>
-                                <div class="grid-5">
-                                    {% for d in [1,2,3,4,5] %}
-                                    <div>
-                                        <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
-                                        {% set qmap = rule.get_questions_per_difficulty() if rule else defaults.get('questions_per_difficulty', {}) %}
-                                        <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string, '') }}">
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </fieldset>
                     </div>
 
                     <div class="tab-actions">
@@ -187,7 +149,7 @@
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="scoring">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="timing">Suivant →</button>
                     </div>
                 </div>
 
@@ -202,6 +164,44 @@
                         <div class="question-modal-body" id="question-detail-body">
                             <div class="loading-message">Chargement...</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" data-tab="timing">
+                    <div class="form-column">
+                        <fieldset class="fieldset">
+                            <legend>Timer</legend>
+                            <div class="form-group">
+                                <label for="timer_seconds">Durée par question (secondes)</label>
+                                <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else defaults.get('timer_seconds', 30) }}">
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="fieldset">
+                            <legend>Difficultés utilisées</legend>
+                            <div class="checkboxes-inline">
+                                {% set selected = rule.get_allowed_difficulties() if rule else defaults.get('allowed_difficulties', [1,2,3,4,5]) %}
+                                {% for d in [1,2,3,4,5] %}
+                                <label><input type="checkbox" name="allowed_difficulties" value="{{ d }}" {% if d in selected %}checked{% endif %}> {{ d }}</label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre de questions par difficulté</label>
+                                <div class="grid-5">
+                                    {% for d in [1,2,3,4,5] %}
+                                    <div>
+                                        <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
+                                        {% set qmap = rule.get_questions_per_difficulty() if rule else defaults.get('questions_per_difficulty', {}) %}
+                                        <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string, '') }}">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="scoring">Suivant →</button>
                     </div>
                 </div>
 
