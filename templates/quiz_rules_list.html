@@ -37,6 +37,9 @@
             <small>Créé: {{ rule.created_at.strftime('%d/%m/%Y %H:%M') if rule.created_at }} par {{ rule.created_by_user.username if rule.created_by_user else 'N/A' }}</small>
             <small>Modifié: {{ rule.updated_at.strftime('%d/%m/%Y %H:%M') if rule.updated_at }}</small>
             <small>ID: {{ rule.id }}</small>
+            <div class="rule-actions-row">
+                <a href="/quiz-rule/{{ rule.id }}/stats" class="btn btn-outline btn-small">📊 Stats</a>
+            </div>
             {% if rule.slug %}
             <div class="rule-url">
                 <strong>URL du quiz:</strong>

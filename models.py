@@ -704,3 +704,32 @@ class UserQuizSession(db.Model):
 
     def __repr__(self):
         return f"<UserQuizSession id={self.id} user={self.user_id} set={self.rule_set_id} status={self.status} answered={self.answered_count}/{self.total_questions} correct={self.correct_count} score={self.total_score}>"
+
+
+# ===================== Distribution des réponses par question =====================
+
+class QuestionAnswerStat(db.Model):
+    __tablename__ = 'question_answer_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Liens
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    answer_index = db.Column(db.Integer, nullable=False)  # 1..n
+
+    # Compteur
+    selected_count = db.Column(db.Integer, nullable=False, default=0)
+
+    __table_args__ = (
+        db.UniqueConstraint('question_id', 'answer_index', name='uq_question_answer_index_stat'),
+    )
+
+    # Relation
+    question = db.relationship('Question', backref=db.backref('answer_stats', lazy='dynamic'))
+
+    def __repr__(self):
+        return f"<QuestionAnswerStat q={self.question_id} idx={self.answer_index} n={self.selected_count}>"

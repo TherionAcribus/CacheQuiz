@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Statistiques - Set de règles: {{ rule.name }}</h2>
+  <div><small>Slug: {{ rule.slug }} · ID: {{ rule.id }}</small></div>
+  <a href="/quiz-rules" class="btn">← Retour aux sets</a>
+  <hr>
+</div>
+
+<div class="stats-grid">
+  <div class="card"><div class="label">Parties jouées</div><div class="value">{{ total_played }}</div></div>
+  <div class="card"><div class="label">Parties terminées</div><div class="value">{{ total_completed }}</div></div>
+  <div class="card"><div class="label">Abandons</div><div class="value">{{ total_abandoned }}</div></div>
+  <div class="card"><div class="label">Score moyen</div><div class="value">{{ avg_score|round(1) }}</div></div>
+  <div class="card"><div class="label">Meilleur score</div><div class="value">{{ best_score }}</div></div>
+  <div class="card"><div class="label">Plus faible score</div><div class="value">{{ worst_score }}</div></div>
+  <div class="card"><div class="label">Bonnes réponses moyennes</div><div class="value">{{ avg_correct|round(1) }}</div></div>
+</div>
+
+<h3>Joueurs</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Joueur</th>
+      <th>Sessions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in players %}
+    <tr>
+      <td>{{ p.user.username if p.user else 'Utilisateur #' ~ p.user.id }}</td>
+      <td>{{ p.count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<style>
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin:1rem 0}
+.card{border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--card-bg)}
+.label{color:var(--muted-color);font-size:.9rem}
+.value{font-size:1.25rem;font-weight:700}
+</style>
+{% endblock %}
+
+

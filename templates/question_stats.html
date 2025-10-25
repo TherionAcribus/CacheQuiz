@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Statistiques - Question #{{ question.id }}</h2>
+  <div><small>Thème: {{ question.theme.name if question.theme else 'Sans thème' }} · Difficulté: {{ question.difficulty_level or 'N/A' }}</small></div>
+  <a href="/admin" class="btn">← Retour aux questions</a>
+  <hr>
+</div>
+
+<div class="question-block">
+  <h3>{{ question.question_text }}</h3>
+  {% if question.images %}
+  <div class="images-row">
+    {% for img in question.images %}
+    <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="stats-grid">
+  <div class="card"><div class="label">Nombre de réponses</div><div class="value">{{ total_answers }}</div></div>
+  <div class="card"><div class="label">Bonnes réponses</div><div class="value">{{ total_success }}</div></div>
+  <div class="card"><div class="label">Taux de réussite</div><div class="value">{{ success_rate|round(1) }}%</div></div>
+</div>
+
+<h3>Répartition des réponses</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Réponse</th>
+      <th>Sélections</th>
+      <th>Proportion</th>
+      <th>Correcte</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in distribution %}
+    <tr>
+      <td>{{ r.index }}</td>
+      <td>{{ r.text }}</td>
+      <td>{{ r.count }}</td>
+      <td>{{ r.percent|round(1) }}%</td>
+      <td>{% if r.is_correct %}✓{% else %}-{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  {% if not distribution %}
+  <tbody>
+    <tr><td colspan="5" class="muted">Aucune donnée de distribution pour cette question.</td></tr>
+  </tbody>
+  {% endif %}
+</table>
+
+<style>
+.question-block{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.5rem;padding:1rem;margin:.5rem 0}
+.images-row{display:flex;gap:.5rem;flex-wrap:wrap}
+.images-row img{max-width:140px;max-height:140px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin:1rem 0}
+.card{border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--card-bg)}
+.label{color:var(--muted-color);font-size:.9rem}
+.value{font-size:1.25rem;font-weight:700}
+.muted{color:var(--muted-color)}
+</style>
+{% endblock %}
+
+

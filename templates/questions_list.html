@@ -116,6 +116,9 @@
             {% if question.times_answered > 0 %}
             <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.success_count }}/{{ question.times_answered }})</small>
             {% endif %}
+                <div class="actions-row">
+                    <a href="/question/{{ question.id }}/stats" class="btn btn-outline btn-small">📊 Stats</a>
+                </div>
         </div>
     </div>
     {% endfor %}

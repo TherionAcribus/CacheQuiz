@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, Profile
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile
 from datetime import datetime
 import random
 import os
@@ -750,6 +750,44 @@ def list_questions():
 
     questions = _apply_sorting(base_query, sort_by, sort_order).all()
     return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
+
+
+@app.route('/question/<int:question_id>/stats')
+def question_stats_page(question_id: int):
+    """Page admin des statistiques d'une question."""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    q = Question.query.get_or_404(question_id)
+
+    # Statistiques globales
+    total_answers = q.times_answered or 0
+    total_success = q.success_count or 0
+    success_rate = (total_success / total_answers * 100.0) if total_answers > 0 else 0.0
+
+    # Répartition des réponses
+    distribution = []
+    if q.possible_answers:
+        answers = q.possible_answers.split('|||')
+        # Précharger stats
+        stats_rows = QuestionAnswerStat.query.filter_by(question_id=q.id).all()
+        idx_to_count = {row.answer_index: (row.selected_count or 0) for row in stats_rows}
+        for i, text in enumerate(answers, start=1):
+            count = int(idx_to_count.get(i, 0))
+            pct = (count / total_answers * 100.0) if total_answers > 0 else 0.0
+            distribution.append({
+                'index': i,
+                'text': text,
+                'count': count,
+                'percent': pct,
+                'is_correct': (str(i) == str(q.correct_answer or ''))
+            })
+
+    return render_template('question_stats.html', question=q,
+                           total_answers=total_answers,
+                           total_success=total_success,
+                           success_rate=success_rate,
+                           distribution=distribution)
 
 
 @app.route('/question/new')
@@ -2420,6 +2458,19 @@ def submit_quiz_answer():
             stat.last_is_correct = is_correct
             stat.last_answered_at = datetime.utcnow()
 
+        # Mettre à jour la distribution des réponses (QuestionAnswerStat)
+        try:
+            if selected_answer and selected_answer.isdigit():
+                idx = int(selected_answer)
+                qa = QuestionAnswerStat.query.filter_by(question_id=question.id, answer_index=idx).first()
+                if not qa:
+                    qa = QuestionAnswerStat(question_id=question.id, answer_index=idx, selected_count=0)
+                    db.session.add(qa)
+                qa.selected_count = (qa.selected_count or 0) + 1
+        except Exception:
+            # Ne pas bloquer la réponse si l'agg échoue
+            db.session.rollback()
+
         db.session.commit()
 
         # Mettre à jour le score total et le nombre de bonnes réponses en session (namespace user)
@@ -2542,6 +2593,54 @@ def list_quiz_rules():
         return denied
     rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
     return render_template('quiz_rules_list.html', rules=rules)
+
+
+@app.route('/quiz-rule/<int:rule_id>/stats')
+def quiz_rule_stats_page(rule_id: int):
+    """Page admin des statistiques d'un set de règles."""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+
+    # Sessions liées à ce set
+    q_sessions = UserQuizSession.query.filter_by(rule_set_id=rule.id).all()
+    total_played = len(q_sessions)
+    completed_sessions = [s for s in q_sessions if s.status == 'completed']
+    abandoned_sessions = [s for s in q_sessions if s.status == 'abandoned']
+    total_completed = len(completed_sessions)
+
+    # Scores
+    scores = [s.total_score or 0 for s in completed_sessions]
+    avg_score = (sum(scores) / len(scores)) if scores else 0.0
+    best_score = max(scores) if scores else 0
+    worst_score = min(scores) if scores else 0
+
+    # Bonnes réponses moyennes
+    corrects = [s.correct_count or 0 for s in completed_sessions]
+    avg_correct = (sum(corrects) / len(corrects)) if corrects else 0.0
+
+    # Joueurs et nombre de sessions jouées
+    from collections import Counter
+    user_counts = Counter([s.user_id for s in q_sessions if s.user_id])
+    players = []
+    if user_counts:
+        users = User.query.filter(User.id.in_(list(user_counts.keys()))).all()
+        id_to_user = {u.id: u for u in users}
+        players = [{'user': id_to_user.get(uid), 'count': cnt} for uid, cnt in user_counts.items()]
+        # Trier par nombre décroissant
+        players.sort(key=lambda x: x['count'], reverse=True)
+
+    return render_template('quiz_rule_stats.html',
+                           rule=rule,
+                           total_played=total_played,
+                           total_completed=total_completed,
+                           total_abandoned=len(abandoned_sessions),
+                           avg_score=avg_score,
+                           best_score=best_score,
+                           worst_score=worst_score,
+                           avg_correct=avg_correct,
+                           players=players)
 
 
 def _load_quiz_rule_defaults():
