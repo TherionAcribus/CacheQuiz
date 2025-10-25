@@ -2,65 +2,6 @@
 
 {% block content %}
 
-{% if current_user and not current_user.password_hash %}
-<!-- Zone pour inciter à créer un compte -->
-<div class="account-upgrade-banner">
-    <div class="banner-content">
-        <div class="banner-icon">🔒</div>
-        <div class="banner-text">
-            <h4>Protégez votre compte {{ current_user.username }} !</h4>
-            <p>Ajoutez un email et un mot de passe pour bénéficier de :</p>
-            <ul>
-                <li>🛡️ Protection de votre pseudo contre les usurpations</li>
-                <li>📊 Accès à vos statistiques détaillées</li>
-                <li>🎯 Suivi de votre progression</li>
-                <li>🏆 Conservation de vos scores personnels</li>
-            </ul>
-        </div>
-        <div class="banner-actions">
-            <button class="btn btn-primary btn-banner"
-                    onclick="showUpgradeModal()">
-                Créer mon compte sécurisé
-            </button>
-            <button class="btn btn-outline btn-small"
-                    onclick="this.parentElement.parentElement.parentElement.style.display='none'">
-                Plus tard
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal pour upgrade du compte -->
-<div id="upgrade-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Créer votre compte sécurisé</h3>
-            <button class="btn-close" onclick="hideUpgradeModal()">&times;</button>
-        </div>
-        <form id="upgrade-form" hx-post="/auth/upgrade-account" hx-target="#upgrade-form" hx-swap="outerHTML">
-            <div class="form-group">
-                <label for="email">Email (optionnel)</label>
-                <input type="email" id="email" name="email" placeholder="votre.email@exemple.com">
-                <small>Pour récupérer votre compte si nécessaire</small>
-            </div>
-            <div class="form-group">
-                <label for="password">Mot de passe *</label>
-                <input type="password" id="password" name="password" required placeholder="Choisissez un mot de passe">
-                <small>Minimum 6 caractères</small>
-            </div>
-            <div class="form-group">
-                <label for="password_confirm">Confirmer le mot de passe *</label>
-                <input type="password" id="password_confirm" name="password_confirm" required placeholder="Retapez le mot de passe">
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Créer mon compte</button>
-                <button type="button" class="btn btn-secondary" onclick="hideUpgradeModal()">Annuler</button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endif %}
-
 {% if rule_set %}
 <!-- Mode avec set de règles prédéfini -->
 <div id="quiz-setup" class="rule-set-mode">
@@ -123,6 +64,65 @@
 </div>
 {% else %}
 <!-- Sélection des sets de règles -->
+{% if current_user and not current_user.password_hash %}
+<!-- Zone pour inciter à créer un compte -->
+<div class="account-upgrade-banner">
+    <div class="banner-content">
+        <div class="banner-icon">🔒</div>
+        <div class="banner-text">
+            <h4>Protégez votre compte {{ current_user.username }} !</h4>
+            <p>Ajoutez un email et un mot de passe pour bénéficier de :</p>
+            <ul>
+                <li>🛡️ Protection de votre pseudo contre les usurpations</li>
+                <li>📊 Accès à vos statistiques détaillées</li>
+                <li>🎯 Suivi de votre progression</li>
+                <li>🏆 Conservation de vos scores personnels</li>
+            </ul>
+        </div>
+        <div class="banner-actions">
+            <button class="btn btn-primary btn-banner"
+                    onclick="showUpgradeModal()">
+                Créer mon compte sécurisé
+            </button>
+            <button class="btn btn-outline btn-small"
+                    onclick="this.parentElement.parentElement.parentElement.style.display='none'">
+                Plus tard
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour upgrade du compte -->
+<div id="upgrade-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Créer votre compte sécurisé</h3>
+            <button class="btn-close" onclick="hideUpgradeModal()">&times;</button>
+        </div>
+        <form id="upgrade-form" hx-post="/auth/upgrade-account" hx-target="#upgrade-form" hx-swap="outerHTML">
+            <div class="form-group">
+                <label for="email">Email (optionnel)</label>
+                <input type="email" id="email" name="email" placeholder="votre.email@exemple.com">
+                <small>Pour récupérer votre compte si nécessaire</small>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe *</label>
+                <input type="password" id="password" name="password" required placeholder="Choisissez un mot de passe">
+                <small>Minimum 6 caractères</small>
+            </div>
+            <div class="form-group">
+                <label for="password_confirm">Confirmer le mot de passe *</label>
+                <input type="password" id="password_confirm" name="password_confirm" required placeholder="Retapez le mot de passe">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Créer mon compte</button>
+                <button type="button" class="btn btn-secondary" onclick="hideUpgradeModal()">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <div id="quiz-setup" class="rule-sets-selection">
     <h3>Choisissez votre mode de jeu</h3>
     <div class="rule-sets-grid">
