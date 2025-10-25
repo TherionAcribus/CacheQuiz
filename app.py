@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response
+from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile
 from datetime import datetime
 import random
@@ -507,6 +507,70 @@ def me_page():
                            agg_by_difficulty=agg_by_difficulty,
                            sessions_completed=sessions_completed,
                            sessions_abandoned=sessions_abandoned)
+
+
+@app.route('/preferences', methods=['GET', 'POST'])
+def preferences():
+    if not g.current_user:
+        return redirect(url_for('play_quiz'))
+
+    # Seuls les utilisateurs avec mot de passe peuvent accéder aux préférences
+    if not g.current_user.password_hash:
+        flash("Cette page n'est accessible qu'aux utilisateurs enregistrés.", "warning")
+        return redirect(url_for('play_quiz'))
+
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+
+        # Validation basique de l'email
+        if email and not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+            flash("Adresse email invalide.", "danger")
+            return render_template('preferences.html', user=g.current_user)
+
+        # Mettre à jour l'email
+        g.current_user.email = email
+        db.session.commit()
+        flash("Préférences mises à jour avec succès.", "success")
+        return redirect(url_for('preferences'))
+
+    return render_template('preferences.html', user=g.current_user)
+
+
+@app.route('/delete-account', methods=['POST'])
+def delete_account():
+    """Supprime définitivement le compte utilisateur et toutes ses données."""
+    if not g.current_user:
+        return redirect(url_for('play_quiz'))
+
+    # Seuls les utilisateurs avec mot de passe peuvent supprimer leur compte
+    if not g.current_user.password_hash:
+        flash("Cette action n'est disponible que pour les utilisateurs enregistrés.", "warning")
+        return redirect(url_for('preferences'))
+
+    user_id = g.current_user.id
+    username = g.current_user.username
+
+    try:
+        # Supprimer explicitement les données liées pour s'assurer qu'elles sont supprimées
+        UserQuestionStat.query.filter_by(user_id=user_id).delete()
+        UserQuizSession.query.filter_by(user_id=user_id).delete()
+
+        # Supprimer l'utilisateur (les foreign keys avec cascade s'occuperont du reste)
+        db.session.delete(g.current_user)
+        db.session.commit()
+
+        # Nettoyer la session
+        session.clear()
+
+        flash(f"Le compte de {username} a été supprimé définitivement.", "success")
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash("Une erreur est survenue lors de la suppression du compte. Veuillez réessayer.", "danger")
+        return redirect(url_for('preferences'))
+
+
 # ================== Fichiers uploadés (serveur) ==================
 
 @app.route('/uploads/<path:filename>')

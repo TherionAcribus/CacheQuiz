@@ -5,6 +5,7 @@
   <a href="/admin" class="btn btn-outline admin-btn">⚙️ Administration</a>
   {% endif %}
   {% if current_user.password_hash %}
+  <a class="btn btn-link" href="/preferences">Préférences</a>
   <a class="btn btn-link" href="/me">Mes stats</a>
   {% endif %}
   <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline" hx-headers='{"HX-Redirect":"/"}'>
