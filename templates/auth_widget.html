@@ -12,6 +12,10 @@
 {% else %}
 <div id="auth-widget" class="auth-widget">
   {% if show_password_form %}
+  <!-- Afficher le message d'erreur si présent -->
+  {% if error_message %}
+  <div class="alert alert-danger">{{ error_message }}</div>
+  {% endif %}
   <!-- Formulaire de connexion avec mot de passe -->
   <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"/play"}'>
     <div class="login-fields">
@@ -49,6 +53,8 @@
 .btn-link:hover{text-decoration:none}
 .admin-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.85rem;text-decoration:none}
 .admin-btn:hover{background:rgba(255,255,255,0.1);border-color:white}
+.alert{margin-bottom:0.5rem;padding:0.5rem 0.75rem;border-radius:0.25rem;font-size:0.9rem}
+.alert-danger{background-color:#f8d7da;border:1px solid #f5c6cb;color:#721c24}
 </style>
 
 <script>

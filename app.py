@@ -242,11 +242,11 @@ def widget_login():
     password = (request.form.get('password') or '').strip()
 
     if not username or not password:
-        return "<div class='alert alert-danger'>Pseudo et mot de passe requis</div>"
+        return render_template('auth_widget.html', login_username=username, show_password_form=True, error_message="Pseudo et mot de passe requis")
 
     user = User.query.filter_by(username=username).first()
     if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
-        return "<div class='alert alert-danger'>Identifiants invalides</div>"
+        return render_template('auth_widget.html', login_username=username, show_password_form=True, error_message="Identifiants invalides")
 
     session['user_id'] = user.id
     # Assurer que le widget reflète l'état connecté dans cette même réponse
