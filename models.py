@@ -594,6 +594,15 @@ class QuizRuleSet(db.Model):
     success_message = db.Column(db.Text)
     failure_message = db.Column(db.Text)
 
+    # Images optionnelles pour les messages
+    intro_image_id = db.Column(db.Integer, db.ForeignKey('images.id'), nullable=True)
+    success_image_id = db.Column(db.Integer, db.ForeignKey('images.id'), nullable=True)
+    failure_image_id = db.Column(db.Integer, db.ForeignKey('images.id'), nullable=True)
+
+    intro_image = db.relationship('ImageAsset', foreign_keys=[intro_image_id], lazy='subquery')
+    success_image = db.relationship('ImageAsset', foreign_keys=[success_image_id], lazy='subquery')
+    failure_image = db.relationship('ImageAsset', foreign_keys=[failure_image_id], lazy='subquery')
+
     # Utilitaires de sérialisation/lecture
     def get_questions_per_difficulty(self):
         try:

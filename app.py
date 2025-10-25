@@ -630,6 +630,7 @@ def new_question():
         return _deny_access("Permission 'can_create_question' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    images = ImageAsset.query.order_by(ImageAsset.title).all()
     users = User.query.filter_by(is_active=True).order_by(User.username).all()
     countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
@@ -2339,12 +2340,13 @@ def new_quiz_rule():
         return _deny_access("Permission 'can_create_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
+    images = ImageAsset.query.order_by(ImageAsset.title).all()
     
     # Charger les valeurs par défaut
     defaults = _load_quiz_rule_defaults()
     print(f"Defaults chargés pour création: {defaults}")
     
-    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, defaults=defaults)
+    return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, images=images, defaults=defaults)
 
 
 @app.route('/quiz-rule/<int:rule_id>/edit')
@@ -2360,7 +2362,8 @@ def edit_quiz_rule(rule_id: int):
         return _deny_access("Permission 'can_update_delete_own_rule' ou 'can_update_delete_any_rule' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, defaults={})
+    images = ImageAsset.query.order_by(ImageAsset.title).all()
+    return render_template('quiz_rule_form.html', rule=rule, themes=themes, specific_themes=specific_themes, images=images, defaults={})
 
 
 @app.route('/api/quiz-rule', methods=['POST'])
@@ -2399,6 +2402,9 @@ def create_quiz_rule():
             intro_message=(data.get('intro_message') or '').strip() or None,
             success_message=(data.get('success_message') or '').strip() or None,
             failure_message=(data.get('failure_message') or '').strip() or None,
+            intro_image_id=(int(data.get('intro_image_id')) if (data.get('intro_image_id') or '').isdigit() else None),
+            success_image_id=(int(data.get('success_image_id')) if (data.get('success_image_id') or '').isdigit() else None),
+            failure_image_id=(int(data.get('failure_image_id')) if (data.get('failure_image_id') or '').isdigit() else None),
         )
 
         # Difficultés autorisées
@@ -2517,6 +2523,9 @@ def update_quiz_rule(rule_id: int):
         rule.intro_message = (data.get('intro_message') or '').strip() or None
         rule.success_message = (data.get('success_message') or '').strip() or None
         rule.failure_message = (data.get('failure_message') or '').strip() or None
+        rule.intro_image_id = (int(data.get('intro_image_id')) if (data.get('intro_image_id') or '').isdigit() else None)
+        rule.success_image_id = (int(data.get('success_image_id')) if (data.get('success_image_id') or '').isdigit() else None)
+        rule.failure_image_id = (int(data.get('failure_image_id')) if (data.get('failure_image_id') or '').isdigit() else None)
 
         # Difficultés autorisées
         difficulties = [int(x) for x in data.getlist('allowed_difficulties') if (x or '').isdigit()]

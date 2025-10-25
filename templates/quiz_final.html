@@ -10,10 +10,16 @@
         <div class="result-message">
             {% if total_correct_answers >= rule_set.min_correct_answers_to_win %}
                 <div class="success-message">
+                    {% if rule_set.success_image %}
+                    <div class="message-image"><img src="/uploads/{{ rule_set.success_image.filename }}" alt="Succès"></div>
+                    {% endif %}
                     <h3>{{ rule_set.success_message or "Bravo ! Quiz réussi !" }}</h3>
                 </div>
             {% else %}
                 <div class="failure-message">
+                    {% if rule_set.failure_image %}
+                    <div class="message-image"><img src="/uploads/{{ rule_set.failure_image.filename }}" alt="Échec"></div>
+                    {% endif %}
                     <h3>{{ rule_set.failure_message or "Dommage ! Quiz échoué." }}</h3>
                 </div>
             {% endif %}
@@ -74,6 +80,8 @@
         .result-message { margin-bottom: 1.5rem; }
         .success-message h3 { color: #22c55e; margin: 0; }
         .failure-message h3 { color: #ef4444; margin: 0; }
+        .message-image { margin-bottom: 0.75rem; }
+        .message-image img { max-width: 100%; height: auto; border-radius: .5rem; border: 1px solid var(--border-color); }
         .score-block {
             display: grid; gap: .75rem; margin: 1rem 0 2rem 0;
         }

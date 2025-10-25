@@ -282,12 +282,99 @@
                                 <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else defaults.get('intro_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
+                                <label for="intro_image_id">Image du message d'introduction (optionnel)</label>
+                                <select id="intro_image_id" name="intro_image_id" class="answer-image-select"
+                                        onchange="(function(sel){
+                                            var opt = sel.options[sel.selectedIndex];
+                                            var prev = document.getElementById('intro-image-preview');
+                                            var img = document.getElementById('intro-image-thumb');
+                                            var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
+                                            if (hasImg) {
+                                                img.src = '/uploads/' + opt.dataset.filename;
+                                                img.alt = opt.dataset.alt || '';
+                                                prev.style.display = 'inline-block';
+                                            } else {
+                                                prev.style.display = 'none';
+                                            }
+                                        })(this)">
+                                    <option value="">-- Pas d'image --</option>
+                                    {% for img in images %}
+                                    <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
+                                        {% if rule and rule.intro_image_id == img.id %}selected{% endif %}>
+                                        {{ img.title }} ({{ img.filename }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="intro-image-preview" class="image-preview" style="{% if rule and rule.intro_image %}display: inline-block;{% else %}display: none;{% endif %}">
+                                    <img id="intro-image-thumb" src="{% if rule and rule.intro_image %}/uploads/{{ rule.intro_image.filename }}{% endif %}" alt="Aperçu">
+                                </div>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                            </div>
+                            <div class="form-group">
                                 <label for="success_message">Message de réussite</label>
                                 <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else defaults.get('success_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
+                                <label for="success_image_id">Image du message de réussite (optionnel)</label>
+                                <select id="success_image_id" name="success_image_id" class="answer-image-select"
+                                        onchange="(function(sel){
+                                            var opt = sel.options[sel.selectedIndex];
+                                            var prev = document.getElementById('success-image-preview');
+                                            var img = document.getElementById('success-image-thumb');
+                                            var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
+                                            if (hasImg) {
+                                                img.src = '/uploads/' + opt.dataset.filename;
+                                                img.alt = opt.dataset.alt || '';
+                                                prev.style.display = 'inline-block';
+                                            } else {
+                                                prev.style.display = 'none';
+                                            }
+                                        })(this)">
+                                    <option value="">-- Pas d'image --</option>
+                                    {% for img in images %}
+                                    <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
+                                        {% if rule and rule.success_image_id == img.id %}selected{% endif %}>
+                                        {{ img.title }} ({{ img.filename }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="success-image-preview" class="image-preview" style="{% if rule and rule.success_image %}display: inline-block;{% else %}display: none;{% endif %}">
+                                    <img id="success-image-thumb" src="{% if rule and rule.success_image %}/uploads/{{ rule.success_image.filename }}{% endif %}" alt="Aperçu">
+                                </div>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                            </div>
+                            <div class="form-group">
                                 <label for="failure_message">Message d'échec</label>
                                 <textarea id="failure_message" name="failure_message" rows="2">{{ rule.failure_message if rule else defaults.get('failure_message', '') }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="failure_image_id">Image du message d'échec (optionnel)</label>
+                                <select id="failure_image_id" name="failure_image_id" class="answer-image-select"
+                                        onchange="(function(sel){
+                                            var opt = sel.options[sel.selectedIndex];
+                                            var prev = document.getElementById('failure-image-preview');
+                                            var img = document.getElementById('failure-image-thumb');
+                                            var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
+                                            if (hasImg) {
+                                                img.src = '/uploads/' + opt.dataset.filename;
+                                                img.alt = opt.dataset.alt || '';
+                                                prev.style.display = 'inline-block';
+                                            } else {
+                                                prev.style.display = 'none';
+                                            }
+                                        })(this)">
+                                    <option value="">-- Pas d'image --</option>
+                                    {% for img in images %}
+                                    <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
+                                        {% if rule and rule.failure_image_id == img.id %}selected{% endif %}>
+                                        {{ img.title }} ({{ img.filename }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="failure-image-preview" class="image-preview" style="{% if rule and rule.failure_image %}display: inline-block;{% else %}display: none;{% endif %}">
+                                    <img id="failure-image-thumb" src="{% if rule and rule.failure_image %}/uploads/{{ rule.failure_image.filename }}{% endif %}" alt="Aperçu">
+                                </div>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                             </div>
                         </fieldset>
                     </div>

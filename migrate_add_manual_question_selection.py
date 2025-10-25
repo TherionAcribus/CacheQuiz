@@ -62,6 +62,27 @@ def migrate():
                     db.session.rollback()
                 else:
                     raise
+
+            # 4. Ajouter les colonnes d'images optionnelles pour les messages
+            print("[ETAPE 1d] Ajout des colonnes d'images (intro_image_id, success_image_id, failure_image_id) a 'quiz_rule_sets'...")
+            for col in [
+                ("intro_image_id", "INTEGER"),
+                ("success_image_id", "INTEGER"),
+                ("failure_image_id", "INTEGER"),
+            ]:
+                col_name, col_type = col
+                try:
+                    db.session.execute(text(
+                        f"ALTER TABLE quiz_rule_sets ADD COLUMN {col_name} {col_type}"
+                    ))
+                    db.session.commit()
+                    print(f"[OK] Colonne '{col_name}' ajoutee avec succes")
+                except Exception as e:
+                    if "duplicate column name" in str(e).lower() or "already exists" in str(e).lower():
+                        print(f"[INFO] La colonne '{col_name}' existe deja")
+                        db.session.rollback()
+                    else:
+                        raise
             
             # 2. Créer la table d'association quiz_rule_set_questions
             print("[ETAPE 2] Creation de la table 'quiz_rule_set_questions'...")
@@ -94,6 +115,7 @@ def migrate():
             print("  - Colonne 'question_selection_mode' ajoutee a 'quiz_rule_sets' (defaut: 'auto')")
             print("  - Colonne 'min_correct_answers_to_win' ajoutee a 'quiz_rule_sets' (defaut: 0)")
             print("  - Colonne 'failure_message' ajoutee a 'quiz_rule_sets'")
+            print("  - Colonnes d'images (intro_image_id, success_image_id, failure_image_id) ajoutees")
             print("  - Table 'quiz_rule_set_questions' creee")
             print(f"  - {count} regles existantes conservees avec le mode 'auto' par defaut")
             
