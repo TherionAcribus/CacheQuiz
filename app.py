@@ -147,36 +147,6 @@ def inject_current_user():
     return { 'current_user': getattr(g, 'current_user', None) }
 
 
-@app.route('/api/messages/unread-count')
-def api_unread_count():
-    user = getattr(g, 'current_user', None)
-    if not user or not user.password_hash:
-        return { 'unread_count': 0 }
-    try:
-        unread = 0
-        parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
-        print(f"[API_UNREAD] User {user.username} has {len(parts)} conversation participations")
-        for p in parts:
-            # Pour les nouveaux participants (last_read_at=None), compter tous les messages sauf ceux de l'utilisateur
-            if p.last_read_at is None:
-                count = ConversationMessage.query.filter(
-                    ConversationMessage.conversation_id == p.conversation_id,
-                    or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
-                ).count()
-                print(f"[API_UNREAD] Conversation {p.conversation_id}: NEW participant, messages={count}")
-            else:
-                count = ConversationMessage.query.filter(
-                    ConversationMessage.conversation_id == p.conversation_id,
-                    ConversationMessage.created_at > p.last_read_at,
-                    or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
-                ).count()
-                print(f"[API_UNREAD] Conversation {p.conversation_id}: last_read={p.last_read_at}, messages={count}")
-            unread += count
-        print(f"[API_UNREAD] Total unread for {user.username}: {unread}")
-        return { 'unread_count': unread }
-    except Exception as e:
-        print(f"[API_UNREAD] Error: {e}")
-        return { 'unread_count': 0 }
 
 
 # ================== Helpers Permissions ==================
