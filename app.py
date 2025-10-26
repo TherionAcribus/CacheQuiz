@@ -10,11 +10,13 @@ from sqlalchemy import func, text, or_
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from unidecode import unidecode
 from email_utils import send_email_optional
+from config import config
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///geocaching_quiz.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+
+# Configuration selon l'environnement
+config_name = os.environ.get('FLASK_ENV') or 'development'
+app.config.from_object(config[config_name])
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 app.config['SOUNDS_FOLDER'] = os.path.join(os.getcwd(), 'ressources', 'sounds')

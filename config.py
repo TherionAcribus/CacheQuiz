@@ -17,8 +17,8 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Configuration de production"""
     DEBUG = False
-    # En production, assurez-vous d'utiliser une vraie base de données
-    # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or 'postgresql://user:pass@localhost/dbname'
+    # En production, utiliser une base différente si DATABASE_URI n'est pas défini
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or 'sqlite:///prod_geocaching_quiz.db'
 
 config = {
     'development': DevelopmentConfig,
