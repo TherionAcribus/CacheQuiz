@@ -240,13 +240,70 @@ def reset_database():
         db.session.commit()
         print(f"[OK] {len(sample_specific_themes)} sous-themes crees")
 
+        # Créer les profils utilisateur par défaut
+        print("\n[PROFILS] Creation des profils utilisateur par defaut...")
+        from models import Profile
+        sample_profiles = [
+            {
+                'name': 'Administrateur',
+                'description': "Accès complet à l'administration",
+                'can_access_admin': True,
+                'can_create_question': True,
+                'can_update_delete_own_question': True,
+                'can_update_delete_any_question': True,
+                'can_create_rule': True,
+                'can_update_delete_own_rule': True,
+                'can_update_delete_any_rule': True,
+                'can_manage_users': True,
+                'can_manage_profiles': True,
+            },
+            {
+                'name': 'Éditeur',
+                'description': "Peut gérer ses questions et ses règles",
+                'can_access_admin': True,
+                'can_create_question': True,
+                'can_update_delete_own_question': True,
+                'can_update_delete_any_question': False,
+                'can_create_rule': True,
+                'can_update_delete_own_rule': True,
+                'can_update_delete_any_rule': False,
+                'can_manage_users': False,
+                'can_manage_profiles': False,
+            },
+            {
+                'name': 'Lecteur',
+                'description': "Accès en lecture seule à l'administration",
+                'can_access_admin': False,
+                'can_create_question': False,
+                'can_update_delete_own_question': False,
+                'can_update_delete_any_question': False,
+                'can_create_rule': False,
+                'can_update_delete_own_rule': False,
+                'can_update_delete_any_rule': False,
+                'can_manage_users': False,
+                'can_manage_profiles': False,
+            }
+        ]
+
+        for profile_data in sample_profiles:
+            profile = Profile(**profile_data)
+            db.session.add(profile)
+            print(f"   [CREE] Profil '{profile_data['name']}'")
+
+        db.session.commit()
+        print(f"[OK] {len(sample_profiles)} profils crees")
+
         # Créer les utilisateurs d'exemple
         print("\n[UTILISATEURS] Creation des utilisateurs d'exemple...")
+        from werkzeug.security import generate_password_hash
+
         sample_users = [
             {
                 'username': 'admin',
                 'email': 'admin@geocaching-quiz.com',
+                'password_hash': generate_password_hash('admin123'),
                 'is_active': True
+                # profile_id sera défini après la création des profils
             },
             {
                 'username': 'geocacheur_pro',
@@ -275,6 +332,14 @@ def reset_database():
 
         db.session.commit()
         print(f"[OK] {len(sample_users)} utilisateurs crees")
+
+        # Assigner le profil admin à l'utilisateur admin
+        admin_user = User.query.filter_by(username='admin').first()
+        admin_profile = Profile.query.filter_by(name='Administrateur').first()
+        if admin_user and admin_profile:
+            admin_user.profile_id = admin_profile.id
+            db.session.commit()
+            print(f"[ADMIN] Profil Administrateur assigné à @{admin_user.username}")
 
         # Créer des pays par défaut
         print("\n[PAYS] Creation des pays par defaut...")

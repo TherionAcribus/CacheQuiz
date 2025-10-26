@@ -50,6 +50,11 @@ def show_pythonanywhere_setup():
     print("2. Testez l'accès à votre application")
     print("3. Vérifiez les logs pour d'éventuelles erreurs")
     print()
+    print("IDENTIFIANTS ADMINISTRATEUR PAR DÉFAUT :")
+    print("   Username: admin")
+    print("   Password: admin123")
+    print("   ⚠️  CHANGEZ CE MOT DE PASSE APRÈS LA PREMIÈRE CONNEXION !")
+    print()
 
 if __name__ == '__main__':
     show_pythonanywhere_setup()

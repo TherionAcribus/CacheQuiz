@@ -133,8 +133,28 @@ with app.app_context():
         )
 
         db.session.commit()
-    except Exception:
+
+        # Créer un administrateur par défaut si aucun admin n'existe
+        admin_profile = Profile.query.filter_by(name='Administrateur').first()
+        if admin_profile:
+            admin_count = User.query.filter_by(profile_id=admin_profile.id, is_active=True).count()
+            if admin_count == 0:
+                # Créer l'admin par défaut
+                from werkzeug.security import generate_password_hash
+                default_admin = User(
+                    username='admin',
+                    email='admin@geocaching-quiz.com',
+                    password_hash=generate_password_hash('admin123'),
+                    is_active=True,
+                    profile_id=admin_profile.id
+                )
+                db.session.add(default_admin)
+                db.session.commit()
+                print("[INIT] Administrateur par défaut créé: username='admin', password='admin123'")
+
+    except Exception as e:
         db.session.rollback()
+        print(f"[WARN] Erreur lors de l'initialisation des données: {e}")
 
 # ================== Gestion Session / Utilisateur ==================
 
