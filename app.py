@@ -1133,6 +1133,9 @@ def api_messages_list():
 
         items.append((conv, last_msg, unread_count))
 
+    # Trier par date du dernier message descendant (plus récent en premier)
+    items.sort(key=lambda x: x[1].created_at if x[1] else datetime.min, reverse=True)
+
     return render_template('partials/messages_list.html', items=items)
 
 
