@@ -5,6 +5,19 @@
       <div class="placeholder">Sélectionnez une conversation pour afficher les messages.</div>
     </div>
   </div>
+
+  <!-- Modal pour mobile -->
+  <div id="conversation-modal" class="conversation-modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeConversationModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <button class="modal-close-btn" onclick="closeConversationModal()" aria-label="Fermer">✕</button>
+      </div>
+      <div class="modal-body" id="modal-thread">
+        <div class="placeholder">Sélectionnez une conversation pour afficher les messages.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -23,4 +36,289 @@
 @media (max-width: 768px) {
   .messages-layout { grid-template-columns: 1fr; }
 }
+
+/* Styles pour la modale mobile */
+.conversation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100vh; /* Utiliser vh au lieu de % pour une meilleure gestion du clavier */
+  background: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  animation: slideInFromRight 0.3s ease-out;
+  max-height: 100vh; /* S'assurer que ça ne dépasse pas la hauteur de la fenêtre */
+}
+
+.modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--card-bg);
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+  background-color: var(--border-color);
+}
+
+.modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Améliorations pour mobile */
+@media (max-width: 768px) {
+  .modal-content {
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .modal-body {
+    padding: 0; /* Réduire les marges pour gagner de l'espace */
+  }
+
+  /* Gestion du clavier virtuel */
+  .modal-content:focus-within .thread-messages {
+    flex: 0 1 auto;
+    min-height: 100px;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .modal-content:focus-within .thread-form {
+    flex-shrink: 0;
+  }
+
+  /* S'assurer que le bouton Envoyer reste visible */
+  .modal-content:focus-within .message-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-color);
+    padding: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.5rem;
+  }
+}
+
+/* Masquer la modale sur desktop */
+@media (min-width: 769px) {
+  .conversation-modal {
+    display: none !important;
+  }
+}
 </style>
+
+<script>
+function openConversationModal() {
+  const modal = document.getElementById('conversation-modal');
+  if (modal) {
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Empêcher le scroll du body
+  }
+}
+
+function closeConversationModal() {
+  const modal = document.getElementById('conversation-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // Restaurer le scroll du body
+  }
+}
+
+// Fermer la modale avec la touche Échap
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeConversationModal();
+  }
+});
+
+// Fonction pour vérifier si on est sur mobile
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+// Modifier les attributs HTMX des liens sur mobile
+function adjustLinksForMobile() {
+  if (!isMobile()) return;
+
+  const links = document.querySelectorAll('.conv-link');
+  links.forEach(link => {
+    const href = link.getAttribute('hx-get');
+    if (href) {
+      // Supprimer complètement les attributs HTMX pour éviter les conflits
+      link.removeAttribute('hx-get');
+      link.removeAttribute('hx-target');
+      link.removeAttribute('hx-swap');
+      link.removeAttribute('hx-on::before-request');
+      link.removeAttribute('hx-on::after-request');
+
+      // Ajouter un événement au clic pour ouvrir la modale avec le contenu réel
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        // Faire la requête HTMX manuellement pour charger le vrai contenu
+        htmx.ajax('GET', href, {
+          target: '#modal-thread',
+          swap: 'innerHTML'
+        }).then(() => {
+          adjustHtmxTargetsForModal();
+          openConversationModal();
+        });
+      });
+    }
+  });
+}
+
+// Appeler cette fonction au chargement et au redimensionnement
+document.addEventListener('DOMContentLoaded', adjustLinksForMobile);
+window.addEventListener('resize', adjustLinksForMobile);
+
+// Écouter les événements HTMX pour ajuster les liens après le chargement du contenu
+document.addEventListener('htmx:afterSwap', function(event) {
+  if (event.target.id === 'conversations') {
+    adjustLinksForMobile();
+  }
+});
+
+// Fonction pour ajuster les targets HTMX dans la modale
+function adjustHtmxTargetsForModal() {
+  const modalThread = document.getElementById('modal-thread');
+  if (!modalThread) return;
+
+  // Supprimer l'ID "thread" du contenu chargé pour éviter les conflits
+  const threadDiv = modalThread.querySelector('#thread');
+  if (threadDiv) {
+    threadDiv.removeAttribute('id');
+  }
+
+  // Changer les targets des formulaires de message
+  const forms = modalThread.querySelectorAll('form[hx-target="#thread"]');
+  forms.forEach(form => {
+    form.setAttribute('hx-target', '#modal-thread');
+  });
+
+  // Changer les targets des boutons de suppression
+  const deleteButtons = modalThread.querySelectorAll('button[hx-target="#messages-layout"]');
+  deleteButtons.forEach(button => {
+    button.setAttribute('hx-target', '#modal-thread');
+    // Après suppression, fermer la modale
+    button.setAttribute('hx-on::after-request', 'closeConversationModal()');
+  });
+
+  // Changer les targets des boutons "marquer comme non lu"
+  const unreadButtons = modalThread.querySelectorAll('button[hx-target="#thread"]');
+  unreadButtons.forEach(button => {
+    if (button.getAttribute('hx-post') && button.getAttribute('hx-post').includes('mark-unread')) {
+      button.setAttribute('hx-target', '#modal-thread');
+    }
+  });
+}
+
+// Gestion du clavier virtuel sur mobile
+let originalViewportHeight = window.innerHeight;
+function handleVirtualKeyboard() {
+  const currentHeight = window.innerHeight;
+  const modal = document.getElementById('conversation-modal');
+
+  if (isMobile() && modal && modal.style.display !== 'none') {
+    // Si la hauteur a changé significativement (clavier ouvert)
+    if (Math.abs(currentHeight - originalViewportHeight) > 150) {
+      const modalContent = modal.querySelector('.modal-content');
+      if (modalContent) {
+        // Ajuster la hauteur pour compenser le clavier
+        modalContent.style.height = currentHeight + 'px';
+        modalContent.style.maxHeight = currentHeight + 'px';
+
+        // S'assurer que le bouton Envoyer reste visible
+        const messageActions = modal.querySelector('.message-actions');
+        if (messageActions) {
+          messageActions.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    } else {
+      // Restaurer la hauteur normale
+      const modalContent = modal.querySelector('.modal-content');
+      if (modalContent) {
+        modalContent.style.height = '100vh';
+        modalContent.style.maxHeight = '100vh';
+      }
+    }
+  }
+  originalViewportHeight = currentHeight;
+}
+
+// Écouter les changements de taille de fenêtre (clavier virtuel)
+window.addEventListener('resize', handleVirtualKeyboard);
+
+// Détecter le focus sur les champs de texte dans la modale
+document.addEventListener('focusin', function(event) {
+  if (isMobile() && event.target.matches('#modal-thread textarea')) {
+    // Petit délai pour laisser le clavier s'ouvrir
+    setTimeout(() => {
+      handleVirtualKeyboard();
+    }, 300);
+  }
+});
+
+document.addEventListener('focusout', function(event) {
+  if (isMobile() && event.target.matches('#modal-thread textarea')) {
+    // Petit délai pour laisser le clavier se fermer
+    setTimeout(() => {
+      handleVirtualKeyboard();
+    }, 300);
+  }
+});
+
+// Fermer la modale lors du redimensionnement vers desktop
+window.addEventListener('resize', function() {
+  if (!isMobile()) {
+    closeConversationModal();
+  }
+  adjustLinksForMobile(); // Réajuster les liens après redimensionnement
+});
+</script>
