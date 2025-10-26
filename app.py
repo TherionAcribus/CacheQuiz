@@ -1169,6 +1169,28 @@ def api_messages_thread(conv_id: int):
     return render_template('partials/conversation_thread.html', conversation=conv, messages=messages, me=user)
 
 
+@app.route('/api/messages/mark-unread/<int:conv_id>', methods=['POST'])
+def api_messages_mark_unread(conv_id: int):
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "Unauthorized", 403
+
+    part = ConversationParticipant.query.filter_by(conversation_id=conv_id, user_id=user.id).first()
+    if not part:
+        return "Access denied", 403
+
+    try:
+        print(f"[MARK_UNREAD] User {user.username} marking conversation {conv_id} as unread")
+        part.last_read_at = None  # Remettre à None pour marquer comme non lu
+        db.session.commit()
+        print(f"[MARK_UNREAD] Successfully marked conversation {conv_id} as unread for user {user.username}")
+        return "", 200  # HTMX ne fait rien avec le contenu, juste le statut
+    except Exception as e:
+        db.session.rollback()
+        print(f"[MARK_UNREAD] Error marking as unread: {e}")
+        return "Error", 500
+
+
 @app.route('/api/messages/send', methods=['POST'])
 def api_messages_send():
     user = getattr(g, 'current_user', None)

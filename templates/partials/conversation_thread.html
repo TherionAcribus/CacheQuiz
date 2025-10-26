@@ -1,6 +1,9 @@
 <div class="thread" id="thread">
-  <div class="thread-header" style="padding:1rem;border-bottom:1px solid var(--border-color)">
+  <div class="thread-header" style="padding:1rem;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
     <h3 style="margin:0">{{ conversation.subject or 'Conversation' }}</h3>
+    <button class="btn btn-outline btn-sm" hx-post="/api/messages/mark-unread/{{ conversation.id }}" hx-target="#thread" hx-swap="none" hx-on::after-request="console.log('Marked as unread'); var convItem = document.querySelector('.conv-item.active'); if(convItem){ convItem.classList.remove('read'); convItem.classList.add('unread'); var title = convItem.querySelector('.conv-title span'); if(title && !title.classList.contains('unread-title')){ title.classList.add('unread-title'); } var text = convItem.querySelector('.conv-last'); if(text && !text.classList.contains('unread-text')){ text.classList.add('unread-text'); } var badge = document.createElement('span'); badge.className='badge unread-badge'; badge.textContent='1'; var titleSpan = convItem.querySelector('.conv-title'); if(titleSpan && !titleSpan.querySelector('.unread-badge')){ titleSpan.appendChild(badge); } }" title="Marquer comme non lu">
+      Marquer non lu
+    </button>
   </div>
   <div class="thread-messages" style="padding:1rem;flex:1;overflow-y:auto">
     {% for m in messages %}
