@@ -1115,14 +1115,22 @@ def api_messages_list():
         if not conv:
             continue
         last_msg = ConversationMessage.query.filter_by(conversation_id=conv.id).order_by(ConversationMessage.created_at.desc()).first()
-        unread_count = 0
-        last_read = p.last_read_at or datetime.min
-        if last_msg:
+
+        # Calcul des messages non lus (même logique que le widget)
+        if p.last_read_at is None:
+            # Pour les nouveaux participants, compter tous les messages sauf ceux de l'utilisateur
             unread_count = ConversationMessage.query.filter(
-                ConversationMessage.conversation_id == conv.id,
-                ConversationMessage.created_at > last_read,
-                ConversationMessage.sender_id != user.id
+                ConversationMessage.conversation_id == p.conversation_id,
+                or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
             ).count()
+        else:
+            # Pour les participants existants, compter les messages après last_read_at
+            unread_count = ConversationMessage.query.filter(
+                ConversationMessage.conversation_id == p.conversation_id,
+                ConversationMessage.created_at > p.last_read_at,
+                or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+            ).count()
+
         items.append((conv, last_msg, unread_count))
 
     return render_template('partials/messages_list.html', items=items)
