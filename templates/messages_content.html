@@ -1,0 +1,26 @@
+<div class="messages-page" hx-boost="true">
+  <div class="messages-layout" id="messages-layout">
+    <div class="conversations" id="conversations" hx-get="/api/messages/list" hx-trigger="load" hx-target="#conversations" hx-swap="outerHTML"></div>
+    <div class="thread" id="thread">
+      <div class="placeholder">Sélectionnez une conversation pour afficher les messages.</div>
+    </div>
+  </div>
+</div>
+
+<style>
+.messages-title:first-of-type {
+  display: block;
+}
+.messages-title:not(:first-of-type) {
+  display: none;
+}
+
+.messages-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
+.conversations, .thread { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .5rem; min-height: 400px; }
+.conversations { overflow-y: auto; }
+.thread { padding: 0; display: flex; flex-direction: column; }
+.placeholder { padding: 1rem; color: var(--text-light); }
+@media (max-width: 768px) {
+  .messages-layout { grid-template-columns: 1fr; }
+}
+</style>

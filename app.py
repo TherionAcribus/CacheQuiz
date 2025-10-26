@@ -1191,6 +1191,60 @@ def api_messages_mark_unread(conv_id: int):
         return "Error", 500
 
 
+@app.route('/api/messages/delete/<int:conv_id>', methods=['POST'])
+def api_messages_delete(conv_id: int):
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return redirect(url_for('play_quiz'))
+
+    part = ConversationParticipant.query.filter_by(conversation_id=conv_id, user_id=user.id).first()
+    if not part:
+        # Retourner directement le HTML de la page avec un message d'erreur
+        flash("Accès refusé à cette conversation.", "danger")
+        return render_template('messages_content.html')
+
+    try:
+        print(f"[DELETE_CONV] User {user.username} deleting conversation {conv_id}")
+
+        # Supprimer la participation de l'utilisateur
+        db.session.delete(part)
+
+        # Vérifier s'il reste des participants
+        remaining_parts = ConversationParticipant.query.filter_by(conversation_id=conv_id).count()
+
+        if remaining_parts == 0:
+            # Plus de participants, supprimer complètement la conversation et ses messages
+            print(f"[DELETE_CONV] No more participants, deleting conversation {conv_id} completely")
+
+            # Supprimer les messages
+            ConversationMessage.query.filter_by(conversation_id=conv_id).delete()
+
+            # Supprimer les rapports/questions liés si c'est un signalement
+            conv = Conversation.query.get(conv_id)
+            if conv and conv.context_type == 'question_report' and conv.context_id:
+                QuestionReport.query.filter_by(id=conv.context_id).delete()
+            elif conv and conv.context_type == 'contact_message' and conv.context_id:
+                ContactMessage.query.filter_by(id=conv.context_id).delete()
+
+            # Supprimer la conversation
+            db.session.delete(conv)
+        else:
+            print(f"[DELETE_CONV] {remaining_parts} participants remaining, keeping conversation {conv_id}")
+
+        db.session.commit()
+        print(f"[DELETE_CONV] Successfully deleted conversation {conv_id} for user {user.username}")
+
+        # Retourner directement le HTML de la page messages rechargée avec un message de succès
+        flash("Conversation supprimée de votre boîte de réception.", "success")
+        return render_template('messages_content.html')
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"[DELETE_CONV] Error deleting conversation: {e}")
+        flash("Erreur lors de la suppression de la conversation.", "danger")
+        return render_template('messages_content.html')
+
+
 @app.route('/api/messages/send', methods=['POST'])
 def api_messages_send():
     user = getattr(g, 'current_user', None)
