@@ -51,6 +51,18 @@
         </small>
       </div>
 
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="notify_email_on_message" name="notify_email_on_message" value="1"
+                 {% if user.get_preferences().get('notify_email_on_message', False) %}checked{% endif %}>
+          <span class="checkmark"></span>
+          Recevoir des notifications email lors de nouveaux messages
+        </label>
+        <small class="form-text">
+          N'oubliez pas de renseigner votre adresse email ci-dessus. Les emails ne seront envoyés que si l'option est activée et une configuration SMTP est disponible.
+        </small>
+      </div>
+
       <button type="submit" class="btn btn-primary">Enregistrer les préférences de jeu</button>
     </form>
   </div>

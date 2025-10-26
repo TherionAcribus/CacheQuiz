@@ -5,6 +5,7 @@
   <a href="/admin" class="btn btn-outline admin-btn">⚙️ Administration</a>
   {% endif %}
   {% if current_user.password_hash %}
+  <a class="btn btn-link" href="/messages">Messages{% if unread_count and unread_count > 0 %} (<span id="unread-count">{{ unread_count }}</span>){% endif %}</a>
   <a class="btn btn-link" href="/preferences">Préférences</a>
   <a class="btn btn-link" href="/me">Mes stats</a>
   {% endif %}
@@ -83,6 +84,17 @@ document.addEventListener('htmx:afterSwap', function(evt) {
         focusAuthField();
     }
 });
+
+// Rafraîchissement périodique du compteur de messages non lus
+setInterval(function(){
+  var el = document.getElementById('unread-count');
+  if (!el) return;
+  fetch('/api/messages/unread-count').then(function(r){return r.json()}).then(function(data){
+    if (data && typeof data.unread_count === 'number') {
+      el.textContent = data.unread_count;
+    }
+  }).catch(function(){});
+}, 30000);
 </script>
 
 

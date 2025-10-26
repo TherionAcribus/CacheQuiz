@@ -118,6 +118,14 @@
         {% if rule_set %}
         <button class="btn btn-secondary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Retour au set</button>
         {% endif %}
+        {% if current_user and current_user.password_hash %}
+        <button class="btn btn-outline" type="button"
+                hx-get="/api/report/form?question_id={{ question.id }}{% if rule_set %}&rule_set={{ rule_set.slug }}{% endif %}"
+                hx-target="#modal-root"
+                hx-swap="outerHTML">
+            Signaler un problème
+        </button>
+        {% endif %}
     </div>
 
     <!-- Statistiques -->

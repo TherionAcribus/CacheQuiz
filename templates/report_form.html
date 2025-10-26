@@ -1,0 +1,52 @@
+<div class="modal-content">
+  <div class="modal-header">
+    <h3>Signaler un problème</h3>
+    <button class="btn btn-secondary" onclick="document.getElementById('modal-root').style.display='none'">Fermer</button>
+  </div>
+  <form id="report-form" hx-post="/api/report/submit" hx-target="#modal-root" hx-swap="outerHTML">
+    <input type="hidden" name="question_id" value="{{ question.id }}" />
+    {% if rule_set %}
+    <input type="hidden" name="rule_set" value="{{ rule_set.slug }}" />
+    {% endif %}
+
+    <div class="form-group">
+      <label for="reason">Raison</label>
+      <select id="reason" name="reason" class="form-control" required>
+        <option value="question_incorrect">Erreur ou imprécision sur la question</option>
+        <option value="display_issue">La question ne s'affiche pas ou pas bien</option>
+        <option value="inappropriate">Le contenu n'est pas approprié</option>
+        <option value="other">Autre</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="details">Détails</label>
+      <textarea id="details" name="details" class="form-control" rows="5" placeholder="Décrivez le problème rencontré" required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Destinataires</label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="to_author" value="1" {% if author_user %}checked{% endif %} />
+        <span class="checkmark"></span>
+        Auteur de la question {% if author_user %}({{ author_user.username }}){% endif %}
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="to_rule_creator" value="1" {% if rule_creator %}checked{% endif %} />
+        <span class="checkmark"></span>
+        Créateur du set {% if rule_creator %}({{ rule_creator.username }}){% endif %}
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="to_admins" value="1" checked />
+        <span class="checkmark"></span>
+        Administrateurs du site
+      </label>
+    </div>
+
+    <div class="form-actions" style="display:flex; gap: .5rem; justify-content: flex-end;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-root').style.display='none'">Annuler</button>
+      <button type="submit" class="btn btn-primary">Envoyer</button>
+    </div>
+  </form>
+</div>
+

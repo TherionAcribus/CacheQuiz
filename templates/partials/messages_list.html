@@ -1,0 +1,26 @@
+<div class="conversations" id="conversations">
+  {% if not items %}
+  <div class="placeholder">Aucune conversation pour le moment.</div>
+  {% else %}
+  <ul class="conv-list" style="list-style:none;margin:0;padding:0">
+    {% for conv, last_msg, unread_count in items %}
+    <li class="conv-item" style="border-bottom:1px solid var(--border-color)">
+      <a href="#" class="conv-link" hx-get="/api/messages/thread/{{ conv.id }}" hx-target="#thread" hx-swap="innerHTML" style="display:block;padding:0.75rem 1rem;text-decoration:none;color:inherit">
+        <div class="conv-title" style="display:flex;justify-content:space-between;gap:.5rem;align-items:center">
+          <span>{{ conv.subject or 'Conversation' }}</span>
+          {% if unread_count > 0 %}<span class="badge">{{ unread_count }}</span>{% endif %}
+        </div>
+        <div class="conv-last" style="color:var(--text-light);font-size:.9rem;margin-top:.25rem">
+          {% if last_msg %}
+            {{ last_msg.sender.username if last_msg.sender else '???' }}: {{ (last_msg.content or '')[:80] }}{% if (last_msg.content or '')|length > 80 %}…{% endif %}
+          {% else %}
+            Aucun message
+          {% endif %}
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+

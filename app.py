@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport
 from datetime import datetime
 import random
 import os
@@ -9,6 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from unidecode import unidecode
+from email_utils import send_email_optional
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///geocaching_quiz.db'
@@ -146,6 +147,26 @@ def inject_current_user():
     return { 'current_user': getattr(g, 'current_user', None) }
 
 
+@app.route('/api/messages/unread-count')
+def api_unread_count():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return { 'unread_count': 0 }
+    try:
+        unread = 0
+        parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+        for p in parts:
+            last_read = p.last_read_at or datetime.min
+            unread += ConversationMessage.query.filter(
+                ConversationMessage.conversation_id == p.conversation_id,
+                ConversationMessage.created_at > last_read,
+                ConversationMessage.sender_id != user.id
+            ).count()
+        return { 'unread_count': unread }
+    except Exception:
+        return { 'unread_count': 0 }
+
+
 # ================== Helpers Permissions ==================
 
 def _has_perm(perm_attr: str) -> bool:
@@ -189,7 +210,22 @@ def _deny_access(reason: str):
 
 @app.route('/auth/widget')
 def auth_widget():
-    return render_template('auth_widget.html')
+    # Calculer le nombre de messages non lus pour l'utilisateur connecté
+    unread = 0
+    user = getattr(g, 'current_user', None)
+    if user and user.password_hash:
+        try:
+            parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+            for p in parts:
+                last_read = p.last_read_at or datetime.min
+                unread += ConversationMessage.query.filter(
+                    ConversationMessage.conversation_id == p.conversation_id,
+                    ConversationMessage.created_at > last_read,
+                    ConversationMessage.sender_id != user.id
+                ).count()
+        except Exception:
+            unread = 0
+    return render_template('auth_widget.html', unread_count=unread)
 
 
 @app.route('/auth/quick-login', methods=['POST'])
@@ -530,10 +566,10 @@ def preferences():
         # Mettre à jour l'email
         g.current_user.email = email
 
-        # Traiter les préférences de jeu
+        # Traiter les préférences de jeu et de notification
         prefs = g.current_user.get_preferences()
-        double_click_validation = request.form.get('double_click_validation') == '1'
-        prefs['double_click_validation'] = double_click_validation
+        prefs['double_click_validation'] = (request.form.get('double_click_validation') == '1')
+        prefs['notify_email_on_message'] = (request.form.get('notify_email_on_message') == '1')
         g.current_user.set_preferences(prefs)
 
         db.session.commit()
@@ -796,6 +832,279 @@ def index():
     if getattr(g, 'current_user', None):
         return redirect(url_for('play_quiz'))
     return render_template('home_public.html')
+
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact_page():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        email = (request.form.get('email') or '').strip()
+        message = (request.form.get('message') or '').strip()
+        if not name or not email or not message:
+            flash('Tous les champs sont requis.', 'danger')
+            return render_template('contact.html')
+        # Envoi email aux admins si config SMTP
+        try:
+            admins = User.query.filter_by(is_admin=True, is_active=True).all()
+            for adm in admins:
+                if adm.email:
+                    send_email_optional(
+                        to_email=adm.email,
+                        subject=f"[Contact] Nouveau message de {name}",
+                        body=f"Nom: {name}\nEmail: {email}\n\n{message}"
+                    )
+        except Exception:
+            pass
+        flash('Merci, votre message a été envoyé.', 'success')
+        return redirect(url_for('contact_page'))
+    return render_template('contact.html')
+
+
+# ================== Signalement de problème sur une question ==================
+
+@app.route('/api/report/form')
+def report_form():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "<div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-warning'>Vous devez être connecté avec un compte protégé par mot de passe pour signaler un problème.</div></div>", 200
+
+    qid = (request.args.get('question_id') or '').strip()
+    if not qid.isdigit():
+        return "<div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Identifiant de question invalide.</div></div>", 200
+
+    question = Question.query.get(int(qid))
+    if not question:
+        return "<div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Question introuvable.</div></div>", 200
+
+    rule_set_slug = (request.args.get('rule_set') or '').strip()
+    rule_set = None
+    if rule_set_slug:
+        rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
+    author_user = question.author_user
+    rule_creator = rule_set.created_by_user if rule_set else None
+
+    inner = render_template('report_form.html', question=question, rule_set=rule_set, author_user=author_user, rule_creator=rule_creator)
+    # Remplacer entièrement le conteneur pour l'afficher
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
+@app.route('/api/report/submit', methods=['POST'])
+def report_submit():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "<div id='modal-root' class='modal-overlay' style='display:flex'><div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-warning'>Vous devez être connecté avec un compte protégé par mot de passe.</div></div></div>", 200
+
+    qid = (request.form.get('question_id') or '').strip()
+    reason = (request.form.get('reason') or '').strip()
+    details = (request.form.get('details') or '').strip()
+    rule_set_slug = (request.form.get('rule_set') or '').strip()
+
+    if not qid.isdigit():
+        return "<div id='modal-root' class='modal-overlay' style='display:flex'><div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Identifiant de question invalide.</div></div></div>", 200
+    if not reason or not details:
+        return "<div id='modal-root' class='modal-overlay' style='display:flex'><div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Merci de préciser la raison et les détails.</div></div></div>", 200
+
+    question = Question.query.get(int(qid))
+    if not question:
+        return "<div id='modal-root' class='modal-overlay' style='display:flex'><div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Question introuvable.</div></div></div>", 200
+
+    rule_set = None
+    if rule_set_slug:
+        rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+
+    # Déterminer les destinataires
+    to_author = (request.form.get('to_author') == '1')
+    to_rule_creator = (request.form.get('to_rule_creator') == '1')
+    to_admins = (request.form.get('to_admins') == '1')
+
+    recipient_ids = set()
+    if to_author and question.author_id:
+        recipient_ids.add(int(question.author_id))
+    if to_rule_creator and rule_set and rule_set.created_by_user_id:
+        recipient_ids.add(int(rule_set.created_by_user_id))
+    if to_admins:
+        for adm in User.query.filter_by(is_admin=True, is_active=True).all():
+            recipient_ids.add(adm.id)
+
+    # Exclure l'expéditeur
+    if user.id in recipient_ids:
+        recipient_ids.remove(user.id)
+
+    try:
+        # Créer la conversation
+        subject = f"Signalement Q{question.id}: {question.question_text[:60]}"
+        conv = Conversation(subject=subject, context_type='question_report', context_id=None)
+        db.session.add(conv)
+        db.session.flush()
+
+        # Participants: reporter + destinataires
+        db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=user.id, last_read_at=datetime.utcnow()))
+        for rid in recipient_ids:
+            db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rid, last_read_at=None))
+
+        # Message initial
+        content = f"Raison: {reason}\n\n{details}"
+        msg = ConversationMessage(conversation_id=conv.id, sender_id=user.id, content=content)
+        db.session.add(msg)
+        db.session.flush()
+
+        # Créer le report et relier la conversation
+        report = QuestionReport(
+            question_id=question.id,
+            rule_set_id=(rule_set.id if rule_set else None),
+            reporter_id=user.id,
+            reason=reason,
+            details=details,
+            status='open',
+            conversation_id=conv.id,
+        )
+        db.session.add(report)
+        conv.context_id = report.id
+
+        db.session.commit()
+
+        # Envoi emails (optionnel)
+        # Récupérer préférences des destinataires
+        if recipient_ids:
+            recips = User.query.filter(User.id.in_(list(recipient_ids))).all()
+            for r in recips:
+                prefs = r.get_preferences()
+                if prefs.get('notify_email_on_message') and r.email:
+                    try:
+                        send_email_optional(
+                            to_email=r.email,
+                            subject=f"Nouveau message: {subject}",
+                            body=f"Un nouveau signalement a été créé par {user.username}.\n\n{details}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
+                        )
+                    except Exception:
+                        pass
+
+        html = (
+            "<div id='modal-root' class='modal-overlay' style='display:flex'>"
+            "<div class='modal-content' style='padding:1.5rem'>"
+            "<h3>Merci pour votre signalement</h3>"
+            "<p>Votre message a été envoyé aux destinataires sélectionnés.</p>"
+            "<div style='display:flex; gap:.5rem; justify-content:flex-end'>"
+            "<a class='btn btn-primary' href='/messages'>Ouvrir la messagerie</a>"
+            "<button class='btn btn-secondary' onclick=\"document.getElementById('modal-root').style.display='none'\">Fermer</button>"
+            "</div>"
+            "</div>"
+            "</div>"
+        )
+        return html
+    except Exception as e:
+        db.session.rollback()
+        return f"<div id='modal-root' class='modal-overlay' style='display:flex'><div class='modal-content'><div class='modal-header'><h3>Signaler un problème</h3></div><div class='alert alert-danger'>Erreur lors de l'envoi: {str(e)}</div></div></div>", 200
+
+
+# ================== Messagerie ==================
+
+@app.route('/messages')
+def messages_home():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return redirect(url_for('play_quiz'))
+    return render_template('messages.html')
+
+
+@app.route('/api/messages/list')
+def api_messages_list():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "<div class='alert alert-warning'>Connectez-vous pour voir vos messages.</div>", 200
+
+    parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+    # Récupérer conversations et derniers messages
+    items = []
+    for p in parts:
+        conv = Conversation.query.get(p.conversation_id)
+        if not conv:
+            continue
+        last_msg = ConversationMessage.query.filter_by(conversation_id=conv.id).order_by(ConversationMessage.created_at.desc()).first()
+        unread_count = 0
+        last_read = p.last_read_at or datetime.min
+        if last_msg:
+            unread_count = ConversationMessage.query.filter(
+                ConversationMessage.conversation_id == conv.id,
+                ConversationMessage.created_at > last_read,
+                ConversationMessage.sender_id != user.id
+            ).count()
+        items.append((conv, last_msg, unread_count))
+
+    return render_template('partials/messages_list.html', items=items)
+
+
+@app.route('/api/messages/thread/<int:conv_id>')
+def api_messages_thread(conv_id: int):
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "<div class='alert alert-warning'>Connectez-vous pour voir cette conversation.</div>", 200
+
+    part = ConversationParticipant.query.filter_by(conversation_id=conv_id, user_id=user.id).first()
+    if not part:
+        return "<div class='alert alert-danger'>Accès refusé.</div>", 200
+
+    conv = Conversation.query.get(conv_id)
+    if not conv:
+        return "<div class='alert alert-danger'>Conversation introuvable.</div>", 200
+
+    # Marquer comme lu
+    try:
+        part.last_read_at = datetime.utcnow()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    messages = ConversationMessage.query.filter_by(conversation_id=conv.id).order_by(ConversationMessage.created_at.asc()).all()
+    return render_template('partials/conversation_thread.html', conversation=conv, messages=messages, me=user)
+
+
+@app.route('/api/messages/send', methods=['POST'])
+def api_messages_send():
+    user = getattr(g, 'current_user', None)
+    if not user or not user.password_hash:
+        return "<div class='alert alert-warning'>Connectez-vous pour envoyer un message.</div>", 200
+
+    conv_id_raw = (request.form.get('conversation_id') or '').strip()
+    content = (request.form.get('content') or '').strip()
+    if not conv_id_raw.isdigit() or not content:
+        return "<div class='alert alert-danger'>Données invalides.</div>", 200
+
+    conv_id = int(conv_id_raw)
+    part = ConversationParticipant.query.filter_by(conversation_id=conv_id, user_id=user.id).first()
+    if not part:
+        return "<div class='alert alert-danger'>Accès refusé.</div>", 200
+
+    try:
+        msg = ConversationMessage(conversation_id=conv_id, sender_id=user.id, content=content)
+        db.session.add(msg)
+        db.session.commit()
+
+        # Notifier les autres participants
+        other_parts = ConversationParticipant.query.filter(ConversationParticipant.conversation_id == conv_id, ConversationParticipant.user_id != user.id).all()
+        if other_parts:
+            recipients = User.query.filter(User.id.in_([p.user_id for p in other_parts])).all()
+            conv = Conversation.query.get(conv_id)
+            for r in recipients:
+                prefs = r.get_preferences()
+                if prefs.get('notify_email_on_message') and r.email:
+                    try:
+                        send_email_optional(
+                            to_email=r.email,
+                            subject=f"Nouveau message: {conv.subject or 'Conversation'}",
+                            body=f"{user.username} a envoyé un nouveau message.\n\n{content}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
+                        )
+                    except Exception:
+                        pass
+
+        # Réafficher le fil
+        messages = ConversationMessage.query.filter_by(conversation_id=conv_id).order_by(ConversationMessage.created_at.asc()).all()
+        conv = Conversation.query.get(conv_id)
+        return render_template('partials/conversation_thread.html', conversation=conv, messages=messages, me=user)
+    except Exception as e:
+        db.session.rollback()
+        return f"<div class='alert alert-danger'>Erreur lors de l'envoi: {str(e)}</div>", 200
 
 
 @app.route('/admin')

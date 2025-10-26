@@ -1,0 +1,26 @@
+<div class="thread" id="thread">
+  <div class="thread-header" style="padding:1rem;border-bottom:1px solid var(--border-color)">
+    <h3 style="margin:0">{{ conversation.subject or 'Conversation' }}</h3>
+  </div>
+  <div class="thread-messages" style="padding:1rem;flex:1;overflow-y:auto">
+    {% for m in messages %}
+    <div class="msg" style="margin-bottom:1rem">
+      <div class="msg-meta" style="font-size:.85rem;color:var(--text-light)">
+        <strong>{{ m.sender.username if m.sender else '???' }}</strong>
+        <span>· {{ m.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+      </div>
+      <div class="msg-body" style="white-space:pre-wrap">{{ m.content }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="thread-form" style="padding:1rem;border-top:1px solid var(--border-color)">
+    <form hx-post="/api/messages/send" hx-target="#thread" hx-swap="innerHTML">
+      <input type="hidden" name="conversation_id" value="{{ conversation.id }}" />
+      <textarea name="content" rows="3" class="form-control" placeholder="Votre message..." required></textarea>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem">
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+      </div>
+    </form>
+  </div>
+</div>
+

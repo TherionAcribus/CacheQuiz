@@ -748,3 +748,113 @@ class QuestionAnswerStat(db.Model):
 
     def __repr__(self):
         return f"<QuestionAnswerStat q={self.question_id} idx={self.answer_index} n={self.selected_count}>"
+
+
+# ===================== Messagerie interne =====================
+
+class Conversation(db.Model):
+    __tablename__ = 'conversations'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Métadonnées
+    subject = db.Column(db.Text)
+    context_type = db.Column(db.String(50))  # ex: 'question_report'
+    context_id = db.Column(db.Integer)
+
+    # Relations
+    participants = db.relationship('ConversationParticipant', back_populates='conversation', cascade='all, delete-orphan', lazy='dynamic')
+    messages = db.relationship('ConversationMessage', back_populates='conversation', cascade='all, delete-orphan', lazy='dynamic', order_by='ConversationMessage.created_at')
+
+    def __repr__(self):
+        return f"<Conversation {self.id} subject={self.subject!r} ctx={self.context_type}:{self.context_id}>"
+
+
+class ConversationParticipant(db.Model):
+    __tablename__ = 'conversation_participants'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Liens
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Lecture
+    last_read_at = db.Column(db.DateTime, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('conversation_id', 'user_id', name='uq_conversation_participant'),
+    )
+
+    # Relations
+    conversation = db.relationship('Conversation', back_populates='participants')
+    user = db.relationship('User')
+
+    def __repr__(self):
+        return f"<ConversationParticipant conv={self.conversation_id} user={self.user_id} last_read_at={self.last_read_at}>"
+
+
+class ConversationMessage(db.Model):
+    __tablename__ = 'conversation_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Liens
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Contenu
+    content = db.Column(db.Text, nullable=False)
+
+    # Relations
+    conversation = db.relationship('Conversation', back_populates='messages')
+    sender = db.relationship('User')
+
+    def __repr__(self):
+        return f"<ConversationMessage conv={self.conversation_id} sender={self.sender_id} at={self.created_at}>"
+
+
+# ===================== Signalement des questions =====================
+
+class QuestionReport(db.Model):
+    __tablename__ = 'question_reports'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Contexte
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    rule_set_id = db.Column(db.Integer, db.ForeignKey('quiz_rule_sets.id'), nullable=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Données de report
+    reason = db.Column(db.String(100), nullable=False)
+    details = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='open')  # open|closed
+
+    # Lien éventuel avec une conversation
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=True)
+
+    # Relations
+    question = db.relationship('Question')
+    rule_set = db.relationship('QuizRuleSet')
+    reporter = db.relationship('User')
+    conversation = db.relationship('Conversation')
+
+    def __repr__(self):
+        return f"<QuestionReport id={self.id} q={self.question_id} reporter={self.reporter_id} status={self.status}>"

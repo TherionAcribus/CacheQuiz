@@ -86,6 +86,14 @@
         <!-- Bouton de validation -->
         <div class="validation-frame">
             <button class="btn btn-primary btn-large" type="submit">Valider ma réponse</button>
+            {% if current_user and current_user.password_hash %}
+            <button class="btn btn-outline" type="button"
+                    hx-get="/api/report/form?question_id={{ question.id }}{% if rule_set %}&rule_set={{ rule_set.slug }}{% endif %}"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
+                Signaler un problème
+            </button>
+            {% endif %}
         </div>
     </form>
 
@@ -446,7 +454,7 @@ const doubleClickValidationEnabled = {{ current_user.get_preferences().get('doub
 // Option temporaire pour cette session (prise en compte si définie explicitement)
 const quickDoubleClickEnabled = {{ quick_double_click|tojson }};
 // Le choix temporaire prend le pas sur les préférences utilisateur
-const doubleClickEnabled = quickDoubleClickEnabled;
+const doubleClickEnabled = (window.quickDoubleClickEnabled || false);
 </script>
 
 {% if rule_set and rule_set.timer_seconds %}
