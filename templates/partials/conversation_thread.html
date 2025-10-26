@@ -6,7 +6,7 @@
     {% for m in messages %}
     <div class="msg" style="margin-bottom:1rem">
       <div class="msg-meta" style="font-size:.85rem;color:var(--text-light)">
-        <strong>{{ m.sender.username if m.sender else '???' }}</strong>
+        <strong>{{ m.sender.username if m.sender else 'Système' }}</strong>
         <span>· {{ m.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
       </div>
       <div class="msg-body" style="white-space:pre-wrap">{{ m.content }}</div>

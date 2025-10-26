@@ -813,7 +813,7 @@ class ConversationMessage(db.Model):
 
     # Liens
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # nullable pour messages système
 
     # Contenu
     content = db.Column(db.Text, nullable=False)
@@ -858,3 +858,32 @@ class QuestionReport(db.Model):
 
     def __repr__(self):
         return f"<QuestionReport id={self.id} q={self.question_id} reporter={self.reporter_id} status={self.status}>"
+
+
+# ===================== Messages de contact public =====================
+
+class ContactMessage(db.Model):
+    __tablename__ = 'contact_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Données du visiteur
+    visitor_name = db.Column(db.String(200), nullable=False)
+    visitor_email = db.Column(db.String(200), nullable=False)
+
+    # Message
+    message = db.Column(db.Text, nullable=False)
+
+    # Statut (pour suivi admin)
+    status = db.Column(db.String(20), nullable=False, default='unread')  # unread|read|replied|closed
+
+    # Lien éventuel vers une conversation
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=True)
+    conversation = db.relationship('Conversation')
+
+    def __repr__(self):
+        return f"<ContactMessage id={self.id} from={self.visitor_name} status={self.status}>"

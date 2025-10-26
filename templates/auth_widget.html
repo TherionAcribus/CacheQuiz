@@ -92,9 +92,18 @@ setInterval(function(){
   fetch('/api/messages/unread-count').then(function(r){return r.json()}).then(function(data){
     if (data && typeof data.unread_count === 'number') {
       el.textContent = data.unread_count;
+      // Mettre à jour la visibilité du badge
+      var link = el.closest('a');
+      if (link) {
+        if (data.unread_count > 0) {
+          link.innerHTML = link.innerHTML.replace(/ \(\d+\)|$/, ' (' + data.unread_count + ')');
+        } else {
+          link.innerHTML = link.innerHTML.replace(/ \(\d+\)/, '');
+        }
+      }
     }
   }).catch(function(){});
-}, 30000);
+}, 10000); // Réduire à 10 secondes pour plus de réactivité
 </script>
 
 

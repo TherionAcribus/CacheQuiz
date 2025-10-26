@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage
 from datetime import datetime
 import random
 import os
 import re
 import json
 from werkzeug.security import check_password_hash, generate_password_hash
-from sqlalchemy import func, text
+from sqlalchemy import func, text, or_
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from unidecode import unidecode
 from email_utils import send_email_optional
@@ -155,15 +155,27 @@ def api_unread_count():
     try:
         unread = 0
         parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+        print(f"[API_UNREAD] User {user.username} has {len(parts)} conversation participations")
         for p in parts:
-            last_read = p.last_read_at or datetime.min
-            unread += ConversationMessage.query.filter(
-                ConversationMessage.conversation_id == p.conversation_id,
-                ConversationMessage.created_at > last_read,
-                ConversationMessage.sender_id != user.id
-            ).count()
+            # Pour les nouveaux participants (last_read_at=None), compter tous les messages sauf ceux de l'utilisateur
+            if p.last_read_at is None:
+                count = ConversationMessage.query.filter(
+                    ConversationMessage.conversation_id == p.conversation_id,
+                    or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                ).count()
+                print(f"[API_UNREAD] Conversation {p.conversation_id}: NEW participant, messages={count}")
+            else:
+                count = ConversationMessage.query.filter(
+                    ConversationMessage.conversation_id == p.conversation_id,
+                    ConversationMessage.created_at > p.last_read_at,
+                    or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                ).count()
+                print(f"[API_UNREAD] Conversation {p.conversation_id}: last_read={p.last_read_at}, messages={count}")
+            unread += count
+        print(f"[API_UNREAD] Total unread for {user.username}: {unread}")
         return { 'unread_count': unread }
-    except Exception:
+    except Exception as e:
+        print(f"[API_UNREAD] Error: {e}")
         return { 'unread_count': 0 }
 
 
@@ -216,14 +228,27 @@ def auth_widget():
     if user and user.password_hash:
         try:
             parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+            print(f"[WIDGET] User {user.username} has {len(parts)} conversation participations")
             for p in parts:
                 last_read = p.last_read_at or datetime.min
-                unread += ConversationMessage.query.filter(
-                    ConversationMessage.conversation_id == p.conversation_id,
-                    ConversationMessage.created_at > last_read,
-                    ConversationMessage.sender_id != user.id
-                ).count()
-        except Exception:
+                # Pour les nouveaux participants (last_read_at=None), compter tous les messages sauf ceux de l'utilisateur
+                if p.last_read_at is None:
+                    count = ConversationMessage.query.filter(
+                        ConversationMessage.conversation_id == p.conversation_id,
+                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                    ).count()
+                    print(f"[WIDGET] Conversation {p.conversation_id}: NEW participant, messages={count}")
+                else:
+                    count = ConversationMessage.query.filter(
+                        ConversationMessage.conversation_id == p.conversation_id,
+                        ConversationMessage.created_at > last_read,
+                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                    ).count()
+                    print(f"[WIDGET] Conversation {p.conversation_id}: last_read={p.last_read_at}, messages={count}")
+                unread += count
+            print(f"[WIDGET] Total unread for {user.username}: {unread}")
+        except Exception as e:
+            print(f"[WIDGET] Error calculating unread: {e}")
             unread = 0
     return render_template('auth_widget.html', unread_count=unread)
 
@@ -836,27 +861,95 @@ def index():
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact_page():
+    print(f"[CONTACT] Method: {request.method}")
     if request.method == 'POST':
         name = (request.form.get('name') or '').strip()
         email = (request.form.get('email') or '').strip()
         message = (request.form.get('message') or '').strip()
+        print(f"[CONTACT] Received: name='{name}', email='{email}', message='{message[:50]}...'")
+
         if not name or not email or not message:
+            print(f"[CONTACT] Validation failed: name={bool(name)}, email={bool(email)}, message={bool(message)}")
             flash('Tous les champs sont requis.', 'danger')
             return render_template('contact.html')
-        # Envoi email aux admins si config SMTP
+
         try:
-            admins = User.query.filter_by(is_admin=True, is_active=True).all()
-            for adm in admins:
-                if adm.email:
-                    send_email_optional(
-                        to_email=adm.email,
-                        subject=f"[Contact] Nouveau message de {name}",
-                        body=f"Nom: {name}\nEmail: {email}\n\n{message}"
-                    )
-        except Exception:
-            pass
-        flash('Merci, votre message a été envoyé.', 'success')
-        return redirect(url_for('contact_page'))
+            print("[CONTACT] Creating ContactMessage...")
+            # Créer le message de contact
+            contact_msg = ContactMessage(
+                visitor_name=name,
+                visitor_email=email,
+                message=message
+            )
+            db.session.add(contact_msg)
+            db.session.flush()
+            print(f"[CONTACT] ContactMessage created with id={contact_msg.id}")
+
+            # Trouver les administrateurs (utilisateurs avec profil "Administrateur")
+            print("[CONTACT] Looking for admin profile...")
+            admin_profile = Profile.query.filter_by(name='Administrateur').first()
+            admin_users = []
+            if admin_profile:
+                print(f"[CONTACT] Found admin profile id={admin_profile.id}")
+                admin_users = User.query.filter_by(profile_id=admin_profile.id, is_active=True).all()
+                print(f"[CONTACT] Found {len(admin_users)} active admin users: {[u.username for u in admin_users]}")
+            else:
+                print("[CONTACT] No admin profile found!")
+
+            # Créer une conversation si il y a des admins
+            if admin_users:
+                print("[CONTACT] Creating conversation...")
+                subject = f"Contact: Message de {name}"
+                conv = Conversation(subject=subject, context_type='contact_message', context_id=contact_msg.id)
+                db.session.add(conv)
+                db.session.flush()
+                print(f"[CONTACT] Conversation created with id={conv.id}")
+
+                # Ajouter les participants (admins)
+                for admin in admin_users:
+                    print(f"[CONTACT] Adding participant: {admin.username} (id={admin.id})")
+                    db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=admin.id, last_read_at=None))
+
+                # Message initial
+                content = f"Message de contact de {name} ({email}):\n\n{message}"
+                print("[CONTACT] Creating initial message...")
+                msg = ConversationMessage(conversation_id=conv.id, sender_id=None, content=content)  # sender_id=None pour les messages système
+                db.session.add(msg)
+
+                # Lier la conversation au message de contact
+                contact_msg.conversation_id = conv.id
+
+                # Envoyer emails aux admins ayant activé les notifications
+                for admin in admin_users:
+                    prefs = admin.get_preferences()
+                    notify = prefs.get('notify_email_on_message', False)
+                    has_email = bool(admin.email)
+                    print(f"[CONTACT] Admin {admin.username}: notify={notify}, has_email={has_email}")
+                    if notify and has_email:
+                        try:
+                            send_email_optional(
+                                to_email=admin.email,
+                                subject=f"Nouveau message de contact: {subject}",
+                                body=f"Un nouveau message de contact a été reçu de {name}.\n\n{message}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
+                            )
+                            print(f"[CONTACT] Email sent to {admin.email}")
+                        except Exception as e:
+                            print(f"[CONTACT] Email error for {admin.email}: {e}")
+
+            print("[CONTACT] Committing transaction...")
+            db.session.commit()
+            print("[CONTACT] Transaction committed successfully")
+            flash('Merci, votre message a été envoyé.', 'success')
+            return redirect(url_for('contact_page'))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"[CONTACT] Error during contact message creation: {e}")
+            import traceback
+            traceback.print_exc()
+            flash('Une erreur est survenue lors de l\'envoi de votre message.', 'danger')
+            return render_template('contact.html')
+
     return render_template('contact.html')
 
 
