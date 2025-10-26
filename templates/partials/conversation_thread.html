@@ -21,14 +21,155 @@
     </div>
     {% endfor %}
   </div>
-  <div class="thread-form" style="padding:1rem;border-top:1px solid var(--border-color)">
-    <form hx-post="/api/messages/send" hx-target="#thread" hx-swap="innerHTML">
+  <div class="thread-form">
+    <form hx-post="/api/messages/send" hx-target="#thread" hx-swap="innerHTML" class="message-compose-form">
       <input type="hidden" name="conversation_id" value="{{ conversation.id }}" />
-      <textarea name="content" rows="3" class="form-control" placeholder="Votre message..." required></textarea>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem">
-        <button type="submit" class="btn btn-primary">Envoyer</button>
+      <div class="message-input-container">
+        <textarea name="content" rows="4" class="message-textarea" placeholder="Tapez votre message ici..." required
+                  hx-on:keydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"></textarea>
+        <div class="message-actions">
+          <div class="message-hint">
+            <small>Appuyez sur Entrée pour envoyer, Maj+Entrée pour un retour à la ligne</small>
+          </div>
+          <button type="submit" class="btn btn-primary btn-send">
+            <span class="btn-text">Envoyer</span>
+            <span class="btn-icon">📤</span>
+          </button>
+        </div>
       </div>
     </form>
   </div>
 </div>
+
+<style>
+.thread-form {
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 0;
+}
+
+.message-compose-form {
+  margin: 0;
+  padding: 0;
+}
+
+.message-input-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message-textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 200px;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 0.75rem;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.message-textarea::placeholder {
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+.message-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.message-hint {
+  flex: 1;
+  color: var(--text-light);
+}
+
+.message-hint small {
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.btn-send {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: #02874d;
+  color: white;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+  min-width: 100px;
+  justify-content: center;
+}
+
+.btn-send:hover {
+  background-color: #02693c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-send:active {
+  background-color: #1e7e34;
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.btn-text {
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .message-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .message-hint {
+    text-align: center;
+    order: 2;
+  }
+
+  .btn-send {
+    order: 1;
+    width: 100%;
+  }
+
+  .message-textarea {
+    font-size: 16px; /* Empêche le zoom sur mobile */
+  }
+}
+
+/* Animation pour le focus */
+.message-textarea:focus + .message-actions .message-hint {
+  color: var(--primary-color);
+}
+</style>
 
