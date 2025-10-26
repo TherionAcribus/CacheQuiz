@@ -5,14 +5,14 @@
   <ul class="conv-list" style="list-style:none;margin:0;padding:0">
     {% for conv, last_msg, unread_count in items %}
     <li class="conv-item {% if unread_count > 0 %}unread{% else %}read{% endif %}" style="border-bottom:1px solid var(--border-color)">
-      <a href="#" class="conv-link" hx-get="/api/messages/thread/{{ conv.id }}" hx-target="#thread" hx-swap="innerHTML" hx-on::after-request="console.log('HTMX after-request triggered for conv {{ conv.id }}'); var item = this.closest('.conv-item'); item.classList.remove('unread'); item.classList.add('read'); var title = item.querySelector('.unread-title'); if(title) title.classList.remove('unread-title'); var text = item.querySelector('.unread-text'); if(text) text.classList.remove('unread-text'); var badge = item.querySelector('.unread-badge'); if(badge) badge.style.display='none'; console.log('Classes updated for conv {{ conv.id }}')" style="display:block;padding:0.75rem 1rem;text-decoration:none;color:inherit">
+      <a href="#" class="conv-link" hx-get="/api/messages/thread/{{ conv.id }}" hx-target="#thread" hx-swap="innerHTML" hx-on::before-request="console.log('HTMX before-request for conv {{ conv.id }}'); var allItems = document.querySelectorAll('.conv-item'); allItems.forEach(function(item){ item.classList.remove('active'); }); this.closest('.conv-item').classList.add('active')" hx-on::after-request="console.log('HTMX after-request triggered for conv {{ conv.id }}'); var item = this.closest('.conv-item'); item.classList.remove('unread'); item.classList.add('read'); var title = item.querySelector('.unread-title'); if(title) title.classList.remove('unread-title'); var text = item.querySelector('.unread-text'); if(text) text.classList.remove('unread-text'); var badge = item.querySelector('.unread-badge'); if(badge) badge.style.display='none'; console.log('Classes updated for conv {{ conv.id }}')" style="display:block;padding:0.75rem 1rem;text-decoration:none;color:inherit">
         <div class="conv-title" style="display:flex;justify-content:space-between;gap:.5rem;align-items:center">
           <span class="{% if unread_count > 0 %}unread-title{% endif %}">{{ conv.subject or 'Conversation' }}</span>
           {% if unread_count > 0 %}<span class="badge unread-badge">{{ unread_count }}</span>{% endif %}
         </div>
         <div class="conv-last {% if unread_count > 0 %}unread-text{% endif %}" style="font-size:.9rem;margin-top:.25rem">
           {% if last_msg %}
-            {{ last_msg.sender.username if last_msg.sender else 'Système' }}: {{ (last_msg.content or '')[:80] }}{% if (last_msg.content or '')|length > 80 %}…{% endif %}
+            {{ last_msg.created_at.strftime('%d/%m/%Y %H:%M') }}
           {% else %}
             Aucun message
           {% endif %}
@@ -36,6 +36,12 @@
   border-left: 4px solid transparent !important;
 }
 
+.conv-item.active {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107 !important;
+  box-shadow: 0 2px 8px rgba(255,193,7,0.3) !important;
+}
+
 .unread-title {
   font-weight: bold !important;
   color: #1976d2 !important;
@@ -54,6 +60,16 @@
 .conv-item.read .conv-last {
   color: #9e9e9e !important;
   font-weight: normal !important;
+}
+
+.conv-item.active .conv-title span {
+  color: #856404 !important;
+  font-weight: bold !important;
+}
+
+.conv-item.active .conv-last {
+  color: #856404 !important;
+  font-weight: 500 !important;
 }
 
 .unread-badge {
