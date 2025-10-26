@@ -1153,12 +1153,17 @@ def api_messages_thread(conv_id: int):
     if not conv:
         return "<div class='alert alert-danger'>Conversation introuvable.</div>", 200
 
+    print(f"[THREAD] Loading thread {conv_id} for user {user.username}, last_read_at was: {part.last_read_at}")
+
     # Marquer comme lu
     try:
+        old_last_read = part.last_read_at
         part.last_read_at = datetime.utcnow()
         db.session.commit()
-    except Exception:
+        print(f"[THREAD] Updated last_read_at from {old_last_read} to {part.last_read_at}")
+    except Exception as e:
         db.session.rollback()
+        print(f"[THREAD] Error updating last_read_at: {e}")
 
     messages = ConversationMessage.query.filter_by(conversation_id=conv.id).order_by(ConversationMessage.created_at.asc()).all()
     return render_template('partials/conversation_thread.html', conversation=conv, messages=messages, me=user)

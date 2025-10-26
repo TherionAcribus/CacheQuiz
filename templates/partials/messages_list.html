@@ -5,7 +5,7 @@
   <ul class="conv-list" style="list-style:none;margin:0;padding:0">
     {% for conv, last_msg, unread_count in items %}
     <li class="conv-item {% if unread_count > 0 %}unread{% else %}read{% endif %}" style="border-bottom:1px solid var(--border-color)">
-      <a href="#" class="conv-link" hx-get="/api/messages/thread/{{ conv.id }}" hx-target="#thread" hx-swap="innerHTML" style="display:block;padding:0.75rem 1rem;text-decoration:none;color:inherit">
+      <a href="#" class="conv-link" hx-get="/api/messages/thread/{{ conv.id }}" hx-target="#thread" hx-swap="innerHTML" hx-on::after-request="console.log('HTMX after-request triggered for conv {{ conv.id }}'); var item = this.closest('.conv-item'); item.classList.remove('unread'); item.classList.add('read'); var title = item.querySelector('.unread-title'); if(title) title.classList.remove('unread-title'); var text = item.querySelector('.unread-text'); if(text) text.classList.remove('unread-text'); var badge = item.querySelector('.unread-badge'); if(badge) badge.style.display='none'; console.log('Classes updated for conv {{ conv.id }}')" style="display:block;padding:0.75rem 1rem;text-decoration:none;color:inherit">
         <div class="conv-title" style="display:flex;justify-content:space-between;gap:.5rem;align-items:center">
           <span class="{% if unread_count > 0 %}unread-title{% endif %}">{{ conv.subject or 'Conversation' }}</span>
           {% if unread_count > 0 %}<span class="badge unread-badge">{{ unread_count }}</span>{% endif %}
