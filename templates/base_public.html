@@ -34,13 +34,179 @@
     
     <footer>
         <div class="container">
-            <p>&copy; 2025 Quiz Géocaching</p>
+            <div class="footer-content">
+                <div class="footer-main">
+                    <div class="footer-section">
+                        <h3 class="footer-title">CacheQuiz</h3>
+                        <p class="footer-description">
+                            Application de quiz geocaching pour tester vos connaissances. Utilisable pour le apprendre, pour les géocaches et pour les Events.
+                        </p>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4 class="footer-subtitle">Navigation</h4>
+                        <nav class="footer-nav">
+                            <a href="/" class="footer-link">Accueil</a>
+                            <a href="/contact" class="footer-link">Contact</a>
+                        </nav>
+                    </div>
+
+                    <div class="footer-section">
+                        <h4 class="footer-subtitle">À propos</h4>
+                        <nav class="footer-nav">
+                            <a href="#" class="footer-link">Règles du jeu</a>
+                        </nav>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <p class="footer-copyright">&copy; 2025 CacheQuiz</p>
+                </div>
+            </div>
         </div>
     </footer>
 
     <!-- Conteneur global pour les modales HTMX -->
     <div id="modal-root" class="modal-overlay" style="display:none"></div>
     <style>
+    footer {
+        background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        color: white;
+        margin-top: 3rem;
+        padding: 2rem 0 1rem;
+        border-top: 3px solid var(--primary-color);
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .footer-main {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-section {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .footer-title {
+        color: var(--primary-color);
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.025em;
+    }
+
+    .footer-subtitle {
+        color: #e2e8f0;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .footer-description {
+        color: #a0aec0;
+        line-height: 1.6;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .footer-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .footer-link {
+        color: #cbd5e0;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        padding: 0.25rem 0;
+        transition: all 0.3s ease;
+        border-radius: 0.25rem;
+        position: relative;
+    }
+
+    .footer-link:hover {
+        color: var(--primary-color);
+        transform: translateX(4px);
+        text-decoration: none;
+    }
+
+    .footer-link::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 2px;
+        background: var(--primary-color);
+        transition: width 0.3s ease;
+    }
+
+    .footer-link:hover::before {
+        width: 6px;
+    }
+
+    .footer-bottom {
+        text-align: center;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-copyright {
+        color: #718096;
+        font-size: 0.875rem;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+        footer {
+            padding: 1.5rem 0 1rem;
+        }
+
+        .footer-main {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+        }
+
+        .footer-bottom {
+            padding-top: 1.5rem;
+        }
+
+        .footer-link:hover {
+            transform: none;
+        }
+
+        .footer-link::before {
+            display: none;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .footer-title {
+            font-size: 1.25rem;
+        }
+
+        .footer-description {
+            font-size: 0.85rem;
+        }
+    }
+
     .modal-overlay {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
