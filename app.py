@@ -1357,11 +1357,9 @@ def new_question():
         return _deny_access("Permission 'can_create_question' requise")
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    images = ImageAsset.query.order_by(ImageAsset.title).all()
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
-    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
+    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, countries=countries, images=images)
 
 
 @app.route('/question/<int:question_id>')
@@ -1385,10 +1383,9 @@ def edit_question(question_id):
         return render_template('access_denied.html', reason="Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise", current_user=user), 200
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
     specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
     countries = Country.query.order_by(Country.name).all()
     images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
-    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, users=users, countries=countries, images=images)
+    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, countries=countries, images=images)
 
 
 @app.route('/api/question', methods=['POST'])

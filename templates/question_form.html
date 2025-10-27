@@ -19,21 +19,6 @@
             <!-- Colonne gauche -->
             <div class="form-column">
                 <div class="form-group">
-                    <label for="author_id">Auteur *</label>
-                    <select id="author_id" name="author_id" required>
-                        {% for user in users %}
-                        <option value="{{ user.id }}"
-                                {% if question and question.author_id == user.id %}selected{% endif %}>
-                            {{ user.username }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <small>
-                        <a href="/users" target="_blank" style="color: var(--primary-color)">→ Gérer les utilisateurs</a>
-                    </small>
-                </div>
-                
-                <div class="form-group">
                     <label for="question_text">Question *</label>
                     <textarea id="question_text" 
                               name="question_text" 
