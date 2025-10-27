@@ -2819,6 +2819,32 @@ def next_quiz_question():
             current_question_num = min(index + 1, len(playlist)) if playlist else 1
             total_questions = len(playlist)
 
+        # Mélanger les propositions de réponses pour éviter que la bonne réponse soit toujours à la même position
+        if question and question.possible_answers:
+            original_answers = question.possible_answers.split('|||')
+            # Créer une liste d'indices [0, 1, 2, 3] et la mélanger
+            answer_indices = list(range(len(original_answers)))
+            random.shuffle(answer_indices)
+
+            # Créer les réponses dans l'ordre mélangé
+            shuffled_answers = [original_answers[i] for i in answer_indices]
+
+            # Stocker l'ordre de mélange en session pour cette question (clé par question_id)
+            shuffle_key = f"question_shuffle_{question.id}"
+            session[shuffle_key] = answer_indices
+
+            # Remplacer temporairement les réponses dans l'objet question pour le template
+            question._shuffled_answers = shuffled_answers
+            # Calculer la nouvelle position de la bonne réponse (1-based pour correspondre à correct_answer)
+            original_correct_index = question.correct_answer - 1  # 0-based
+            new_correct_position = answer_indices.index(original_correct_index) + 1  # 1-based
+            question._shuffled_correct_answer = new_correct_position
+
+            # Calculer les indices originaux pour chaque position mélangée (pour les images)
+            # answer_indices[position_mélangée] = indice_original
+            # Donc pour retrouver l'indice original depuis la position mélangée: original_index = answer_indices[position_mélangée - 1]
+            question._original_indices = answer_indices
+
         return render_template('quiz_question.html',
                              question=question,
                              history=history_raw,
@@ -3015,9 +3041,22 @@ def submit_quiz_answer():
             db.joinedload(Question.detailed_answer_image),
             db.joinedload(Question.answer_image_links).joinedload(AnswerImageLink.image)
         ).get_or_404(int(question_id_raw))
+
+        # Vérifier si les réponses ont été mélangées pour cette question
+        shuffle_key = f"question_shuffle_{question.id}"
+        shuffle_order = session.get(shuffle_key)
+
+        if shuffle_order and selected_answer and selected_answer.isdigit():
+            # Convertir l'index sélectionné (dans l'ordre mélangé, 1-based) vers l'index original (1-based)
+            selected_index_mixed = int(selected_answer) - 1  # 0-based
+            original_index = shuffle_order[selected_index_mixed] + 1  # 1-based
+            selected_answer_original = str(original_index)
+        else:
+            selected_answer_original = selected_answer
+
         correct_value = (question.correct_answer or '').strip()
         # Si pas de réponse (timer expiré ou non sélection), considérer comme faux
-        is_correct = bool(selected_answer) and (selected_answer == correct_value)
+        is_correct = bool(selected_answer_original) and (selected_answer_original == correct_value)
 
         # Debug logging
         print(f"[QUIZ ANSWER] Question ID: {question_id_raw}, Selected: '{selected_answer}', Correct: '{correct_value}', Is correct: {is_correct}")
@@ -3055,14 +3094,14 @@ def submit_quiz_answer():
             stat.times_answered = (stat.times_answered or 0) + 1
             if is_correct:
                 stat.success_count = (stat.success_count or 0) + 1
-            stat.last_selected_answer = selected_answer
+            stat.last_selected_answer = selected_answer_original
             stat.last_is_correct = is_correct
             stat.last_answered_at = datetime.utcnow()
 
         # Mettre à jour la distribution des réponses (QuestionAnswerStat)
         try:
-            if selected_answer and selected_answer.isdigit():
-                idx = int(selected_answer)
+            if selected_answer_original and selected_answer_original.isdigit():
+                idx = int(selected_answer_original)
                 qa = QuestionAnswerStat.query.filter_by(question_id=question.id, answer_index=idx).first()
                 if not qa:
                     qa = QuestionAnswerStat(question_id=question.id, answer_index=idx, selected_count=0)
@@ -3148,7 +3187,7 @@ def submit_quiz_answer():
             'quiz_result.html',
             question=question,
             is_correct=is_correct,
-            selected=selected_answer,
+            selected=selected_answer_original,
             history=next_history,
             rule_set=rule_set,
             score=score,
