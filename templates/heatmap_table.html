@@ -1,0 +1,88 @@
+{% set header_title = 'Thèmes' if mode != 'specific' else 'Sous-thèmes' %}
+
+{% if theme_columns and diff_rows %}
+<table class="heatmap-table">
+    <thead>
+        <tr>
+            <th class="sticky-col">Difficulté</th>
+            {% for col in theme_columns %}
+                <th title="{{ col.name }}">{{ col.name }}</th>
+            {% endfor %}
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in diff_rows %}
+        {% set row_total = 0 %}
+        <tr>
+            <th class="sticky-col">{{ d }}</th>
+            {% for col in theme_columns %}
+                {% set val = counts.get(d, {}).get(col.id, 0) %}
+                {% set row_total = row_total + val %}
+                {% set intensity = (val / max_count) if max_count > 0 else 0 %}
+                {% set alpha = 0.08 + intensity * 0.72 %}
+                <td style="background: rgba(47,126,123, {{ '%.3f' % alpha }}); color: {{ 'white' if intensity > 0.55 else '#123' }};">
+                    <span class="cell-count">{{ val }}</span>
+                </td>
+            {% endfor %}
+            <td class="row-total"><strong>{{ row_total }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Total</th>
+            {% set grand_total = 0 %}
+            {% for col in theme_columns %}
+                {% set col_total = 0 %}
+                {% for d in diff_rows %}
+                    {% set col_total = col_total + (counts.get(d, {}).get(col.id, 0)) %}
+                {% endfor %}
+                {% set grand_total = grand_total + col_total %}
+                <th>{{ col_total }}</th>
+            {% endfor %}
+            <th>{{ grand_total }}</th>
+        </tr>
+    </tfoot>
+</table>
+{% else %}
+<div class="empty-state">
+    Aucune donnée pour l’instant.
+    {% if only_published %}
+        <small>(Le filtre « Publié uniquement » est activé.)</small>
+    {% endif %}
+    <div>
+        <small>Conseil: créez des questions avec des difficultés et des thèmes pour alimenter la heatmap.</small>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.heatmap-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 0.75rem;
+}
+.heatmap-table thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    padding: 0.5rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+.sticky-col { position: sticky; left: 0; z-index: 2; background: white; }
+.heatmap-table td, .heatmap-table th { padding: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.heatmap-table tbody tr:last-child td, .heatmap-table tbody tr:last-child th { border-bottom: none; }
+.cell-count { font-weight: 600; }
+.row-total { background: #f8fafc; }
+.empty-state { padding: 1rem; color: #475569; }
+</style>
+
+

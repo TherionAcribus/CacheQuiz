@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Analyse - Heatmap{% endblock %}
+
+{% block content %}
+<section>
+    <h2>📊 Analyse des questions</h2>
+    <p>Visualisez la répartition des questions par <strong>difficulté</strong> et par <strong>thématique</strong> pour identifier les zones sur/sous-représentées.</p>
+
+    <form id="heatmap-filters"
+          hx-get="/api/heatmap"
+          hx-target="#heatmap-container"
+          hx-trigger="load, change from:input">
+        <div class="filters-row">
+            <div class="filter-group">
+                <label class="filter-label">Dimension</label>
+                <div class="segmented">
+                    <label class="seg-item">
+                        <input type="radio" name="mode" value="broad" {% if default_mode == 'broad' %}checked{% endif %}>
+                        <span>Thèmes</span>
+                    </label>
+                    <label class="seg-item">
+                        <input type="radio" name="mode" value="specific" {% if default_mode == 'specific' %}checked{% endif %}>
+                        <span>Sous-thèmes</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label class="checkbox">
+                    <input id="published-only" type="checkbox" name="only_published" value="1">
+                    <span>Publié uniquement</span>
+                </label>
+            </div>
+        </div>
+    </form>
+
+    <div id="heatmap-container" class="heatmap-container">
+        <!-- Table heatmap chargée par HTMX -->
+    </div>
+
+    <details class="legend">
+        <summary>Légende</summary>
+        <div class="legend-row">
+            <span class="legend-box" style="background: rgba(47,126,123, 0.08)"></span>
+            <span>Peu de questions</span>
+            <span class="legend-box" style="background: rgba(47,126,123, 0.80)"></span>
+            <span>Beaucoup de questions</span>
+        </div>
+    </details>
+</section>
+
+<style>
+.filters-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin: 1rem 0 1.5rem 0;
+}
+.filter-group { display: flex; align-items: center; gap: 0.5rem; }
+.filter-label { font-weight: 600; margin-right: 0.5rem; }
+.segmented { display: inline-flex; border: 1px solid var(--border-color, #e5e7eb); border-radius: 0.5rem; overflow: hidden; }
+.seg-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; cursor: pointer; }
+.seg-item input { display: none; }
+.seg-item span { display: inline-block; }
+.seg-item:has(input:checked) { background: var(--primary-50, #e6f4f3); color: var(--primary-700, #2f7e7b); font-weight: 600; }
+.checkbox { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.legend { margin-top: 1rem; }
+.legend-row { display: inline-grid; grid-auto-flow: column; gap: 0.5rem; align-items: center; }
+.legend-box { width: 48px; height: 16px; border-radius: 0.25rem; border: 1px solid rgba(47,126,123, 0.4); }
+.heatmap-container { overflow-x: auto; }
+</style>
+{% endblock %}
+
+
