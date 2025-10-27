@@ -68,6 +68,24 @@
 
     <!-- Conteneur global pour les modales HTMX -->
     <div id="modal-root" class="modal-overlay" style="display:none"></div>
+
+    <!-- Modale de confirmation pour quitter le quiz depuis le header -->
+    <div id="header-quit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Quitter le quiz ?</h3>
+                <button class="btn-close" onclick="hideHeaderQuitModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir quitter ce quiz ?</p>
+                <p>Votre progression sera perdue.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideHeaderQuitModal()">Annuler</button>
+                <button class="btn btn-danger" id="confirm-quit-btn">Quitter définitivement</button>
+            </div>
+        </div>
+    </div>
     <style>
     footer {
         background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
@@ -233,7 +251,167 @@
         padding: 1rem 1.25rem;
         border-bottom: 1px solid var(--border-color);
     }
+
+    /* Styles pour la modale de quitter depuis le header */
+    #header-quit-modal .modal-content {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 0;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    #header-quit-modal .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    #header-quit-modal .modal-header h3 {
+        margin: 0;
+        color: var(--primary-color);
+    }
+
+    #header-quit-modal .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--text-color);
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        transition: background-color 0.2s;
+    }
+
+    #header-quit-modal .btn-close:hover {
+        background: var(--border-color);
+    }
+
+    #header-quit-modal .modal-body {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    #header-quit-modal .modal-body p {
+        margin: 0.5rem 0;
+        color: var(--text-color);
+    }
+
+    #header-quit-modal .modal-footer {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
     </style>
+
+    <script>
+        // Fonctions pour la modale de quitter depuis le header
+        function showHeaderQuitModal(targetUrl) {
+            const modal = document.getElementById('header-quit-modal');
+            const confirmBtn = document.getElementById('confirm-quit-btn');
+
+            // Stocker l'URL cible dans le bouton de confirmation
+            confirmBtn.dataset.targetUrl = targetUrl;
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideHeaderQuitModal() {
+            document.getElementById('header-quit-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Fonction pour vérifier si un quiz est en cours
+        function isQuizInProgress() {
+            const quizStage = document.getElementById('quiz-stage');
+            if (!quizStage) return false;
+
+            // Vérifier si le contenu n'est pas juste un placeholder
+            const content = quizStage.textContent.trim();
+            if (content.includes('Cliquez sur') || content.includes('Sélectionnez')) {
+                return false; // C'est un placeholder, pas un quiz actif
+            }
+
+            // Vérifier s'il y a du contenu de quiz (présence d'éléments spécifiques)
+            return quizStage.querySelector('.quiz-progress-bar') !== null ||
+                   quizStage.querySelector('.answers-grid') !== null ||
+                   quizStage.querySelector('.result-status') !== null;
+        }
+
+        // Intercepter les clics sur les liens du header quand un quiz est en cours
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fermer la modal avec Échap
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('header-quit-modal').style.display === 'flex') {
+                    hideHeaderQuitModal();
+                }
+            });
+
+            // Intercepter les clics sur les liens du header
+            document.addEventListener('click', function(e) {
+                // Vérifier si c'est un lien dans le header
+                const link = e.target.closest('header a, header form button[type="submit"]');
+                if (!link) return;
+
+                // Ne pas intercepter les liens qui restent sur la même page ou les actions HTMX
+                if (link.hasAttribute('hx-get') || link.hasAttribute('hx-post')) return;
+
+                // Vérifier si un quiz est en cours
+                if (isQuizInProgress()) {
+                    e.preventDefault();
+
+                    // Récupérer l'URL cible
+                    let targetUrl;
+                    if (link.tagName === 'A') {
+                        targetUrl = link.href;
+                    } else if (link.tagName === 'BUTTON' && link.type === 'submit') {
+                        // Pour les boutons de formulaire (comme déconnexion)
+                        const form = link.closest('form');
+                        if (form) {
+                            targetUrl = form.action || window.location.href;
+                        }
+                    }
+
+                    if (targetUrl) {
+                        showHeaderQuitModal(targetUrl);
+                    }
+                }
+            });
+
+            // Gérer la confirmation de quitter
+            document.getElementById('confirm-quit-btn').addEventListener('click', function() {
+                const targetUrl = this.dataset.targetUrl;
+                if (targetUrl) {
+                    hideHeaderQuitModal();
+                    window.location.href = targetUrl;
+                }
+            });
+
+            // Fermer la modal en cliquant sur l'overlay
+            document.getElementById('header-quit-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideHeaderQuitModal();
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 
