@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Export des questions{% endblock %}
+
+{% block content %}
+<section>
+    <h2>⬇️ Export des questions</h2>
+    <p>Choisissez les filtres, le format et la pagination pour exporter vos questions afin de les traiter avec un correcteur ou une IA.</p>
+
+    <form id="export-form" class="export-form" method="get" action="/api/export/download">
+        <div class="grid">
+            <div class="field">
+                <label>Recherche</label>
+                <input type="text" name="q" placeholder="Texte, auteur, thème…">
+            </div>
+
+            <div class="field">
+                <label>Thème large</label>
+                <select name="broad_theme_id">
+                    <option value="">Tous</option>
+                    {% for t in themes %}
+                    <option value="{{ t.id }}">{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Sous-thème</label>
+                <select name="specific_theme_id">
+                    <option value="">Tous</option>
+                    {% for st in specific_themes %}
+                    <option value="{{ st.id }}">{{ st.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Difficulté min</label>
+                <input type="number" name="diff_min" min="1" max="5">
+            </div>
+            <div class="field">
+                <label>Difficulté max</label>
+                <input type="number" name="diff_max" min="1" max="5">
+            </div>
+
+            <div class="field">
+                <label>&nbsp;</label>
+                <label class="checkbox">
+                    <input type="checkbox" name="only_published" value="1">
+                    <span>Publié uniquement</span>
+                </label>
+            </div>
+
+            <div class="field">
+                <label>Format</label>
+                <select name="format">
+                    <option value="csv">CSV (tableur)</option>
+                    <option value="json">JSON (lot)</option>
+                    <option value="jsonl">JSONL (ligne par objet)</option>
+                    <option value="md">Markdown (lecture IA)</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Taille du paquet</label>
+                <input type="number" name="page_size" value="200" min="1" max="2000">
+            </div>
+            <div class="field">
+                <label>Page</label>
+                <input type="number" name="page" value="1" min="1">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn">Télécharger</button>
+        </div>
+    </form>
+</section>
+
+<style>
+.export-form .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field label { font-weight: 600; }
+.checkbox { display: inline-flex; align-items: center; gap: 0.5rem; }
+.actions { margin-top: 1rem; }
+@media (max-width: 900px) {
+    .export-form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+    .export-form .grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+
