@@ -2821,29 +2821,53 @@ def next_quiz_question():
 
         # Mélanger les propositions de réponses pour éviter que la bonne réponse soit toujours à la même position
         if question and question.possible_answers:
-            original_answers = question.possible_answers.split('|||')
-            # Créer une liste d'indices [0, 1, 2, 3] et la mélanger
-            answer_indices = list(range(len(original_answers)))
-            random.shuffle(answer_indices)
+            try:
+                original_answers = question.possible_answers.split('|||')
+                num_answers = len(original_answers)
 
-            # Créer les réponses dans l'ordre mélangé
-            shuffled_answers = [original_answers[i] for i in answer_indices]
+                # Vérifications de sécurité
+                if num_answers == 0:
+                    print(f"[QUIZ SHUFFLE] Question {question.id} has no answers, skipping shuffle")
+                    return
 
-            # Stocker l'ordre de mélange en session pour cette question (clé par question_id)
-            shuffle_key = f"question_shuffle_{question.id}"
-            session[shuffle_key] = answer_indices
+                # Convertir correct_answer en int si c'est une chaîne
+                try:
+                    correct_answer_int = int(question.correct_answer)
+                    if correct_answer_int < 1 or correct_answer_int > num_answers:
+                        print(f"[QUIZ SHUFFLE] Question {question.id} has invalid correct_answer: {question.correct_answer} (should be 1-{num_answers}), skipping shuffle")
+                        return
+                    else:
+                        question.correct_answer = correct_answer_int  # Mettre à jour pour être sûr
+                except (ValueError, TypeError):
+                    print(f"[QUIZ SHUFFLE] Question {question.id} has invalid correct_answer type: {type(question.correct_answer)} value: {question.correct_answer}, skipping shuffle")
+                    return
 
-            # Remplacer temporairement les réponses dans l'objet question pour le template
-            question._shuffled_answers = shuffled_answers
-            # Calculer la nouvelle position de la bonne réponse (1-based pour correspondre à correct_answer)
-            original_correct_index = question.correct_answer - 1  # 0-based
-            new_correct_position = answer_indices.index(original_correct_index) + 1  # 1-based
-            question._shuffled_correct_answer = new_correct_position
+                # Créer une liste d'indices [0, 1, 2, ...] et la mélanger
+                answer_indices = list(range(num_answers))
+                random.shuffle(answer_indices)
 
-            # Calculer les indices originaux pour chaque position mélangée (pour les images)
-            # answer_indices[position_mélangée] = indice_original
-            # Donc pour retrouver l'indice original depuis la position mélangée: original_index = answer_indices[position_mélangée - 1]
-            question._original_indices = answer_indices
+                # Créer les réponses dans l'ordre mélangé
+                shuffled_answers = [original_answers[i] for i in answer_indices]
+
+                # Stocker l'ordre de mélange en session pour cette question (clé par question_id)
+                shuffle_key = f"question_shuffle_{question.id}"
+                session[shuffle_key] = answer_indices
+
+                # Remplacer temporairement les réponses dans l'objet question pour le template
+                question._shuffled_answers = shuffled_answers
+
+                # Calculer la nouvelle position de la bonne réponse (1-based pour correspondre à correct_answer)
+                original_correct_index = question.correct_answer - 1  # 0-based
+                new_correct_position = answer_indices.index(original_correct_index) + 1  # 1-based
+                question._shuffled_correct_answer = new_correct_position
+
+                # Calculer les indices originaux pour chaque position mélangée (pour les images)
+                question._original_indices = answer_indices
+
+                print(f"[QUIZ SHUFFLE] Question {question.id}: shuffled {num_answers} answers, correct answer moved from position {question.correct_answer} to {new_correct_position}")
+            except Exception as e:
+                print(f"[QUIZ SHUFFLE] Error shuffling answers for question {question.id}: {str(e)}, skipping shuffle")
+                # En cas d'erreur, on continue sans mélanger
 
         return render_template('quiz_question.html',
                              question=question,
