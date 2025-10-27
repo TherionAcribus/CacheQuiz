@@ -1107,13 +1107,43 @@ function initThemeCheckboxes() {
         }
     });
 
-    // Initialisation : vérifier l'état au chargement
-    // Ne pas modifier si déjà coché par défaut
-    if (useAllBroadThemes && !useAllBroadThemes.checked) {
-        useAllBroadThemes.checked = checkAllBroadThemesChecked();
+    // Initialisation : synchroniser les checkboxes enfants avec leur parent
+    if (useAllBroadThemes) {
+        if (useAllBroadThemes.checked) {
+            // Si le parent est coché, cocher tous les enfants
+            broadThemeCheckboxes.forEach(cb => {
+                cb.checked = true;
+            });
+        } else {
+            // Si le parent n'est pas coché, vérifier si tous les enfants sont cochés
+            useAllBroadThemes.checked = checkAllBroadThemesChecked();
+        }
     }
-    if (useAllSpecificThemes && !useAllSpecificThemes.checked) {
-        useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
+
+    if (useAllSpecificThemes) {
+        if (useAllSpecificThemes.checked) {
+            // Si le parent est coché, cocher tous les enfants
+            specificThemeCheckboxes.forEach(cb => {
+                cb.checked = true;
+            });
+        } else {
+            // Si le parent n'est pas coché, vérifier si tous les enfants sont cochés
+            useAllSpecificThemes.checked = checkAllSpecificThemesChecked();
+        }
+    }
+
+    // Initialisation pour les pays : synchroniser avec le parent
+    const useAllCountries = document.getElementById('use_all_countries');
+    if (useAllCountries) {
+        if (useAllCountries.checked) {
+            // Si le parent est coché, cocher tous les enfants
+            document.querySelectorAll('input[name="allowed_country_ids"]').forEach(cb => {
+                cb.checked = true;
+            });
+        } else {
+            // Si le parent n'est pas coché, vérifier si tous les enfants sont cochés
+            updateUseAllCountries();
+        }
     }
 
     // Calcul initial du nombre de questions
