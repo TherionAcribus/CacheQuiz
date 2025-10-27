@@ -1107,6 +1107,62 @@ function initThemeCheckboxes() {
         }
     });
 
+    // Gestionnaire pour les champs de scoring
+    const scoringFields = [
+        'scoring_base_points',
+        'scoring_difficulty_bonus_type',
+        'combo_step',
+        'combo_bonus_points',
+        'perfect_quiz_bonus',
+        'min_correct_answers_to_win'
+    ];
+
+    scoringFields.forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el) {
+            el.addEventListener('input', function() {
+                console.log('Changement ' + fieldId + ':', this.value);
+                // Recalculer le score maximum
+                computeMaxScore();
+                // Revalider le nombre minimum de bonnes réponses
+                if (fieldId === 'min_correct_answers_to_win') {
+                    validateMinCorrectAnswers();
+                }
+            });
+            el.addEventListener('change', function() {
+                console.log('Changement ' + fieldId + ':', this.value);
+                // Recalculer le score maximum
+                computeMaxScore();
+                // Revalider le nombre minimum de bonnes réponses
+                if (fieldId === 'min_correct_answers_to_win') {
+                    validateMinCorrectAnswers();
+                }
+            });
+        }
+    });
+
+    // Gestionnaire pour les champs bonus par difficulté
+    [1, 2, 3, 4, 5].forEach(d => {
+        const el = document.getElementById(`bonus${d}`);
+        if (el) {
+            el.addEventListener('input', function() {
+                console.log('Changement bonus' + d + ':', this.value);
+                // Recalculer le score maximum
+                computeMaxScore();
+            });
+        }
+    });
+
+    // Gestionnaire pour le checkbox combo bonus
+    const comboEnabledCheckbox = document.querySelector('input[name="combo_bonus_enabled"]');
+    if (comboEnabledCheckbox) {
+        comboEnabledCheckbox.addEventListener('change', function() {
+            console.log('Changement combo_bonus_enabled:', this.checked);
+            // Recalculer le score maximum
+            computeMaxScore();
+        });
+    }
+
     // Initialisation : synchroniser les checkboxes enfants avec leur parent
     if (useAllBroadThemes) {
         if (useAllBroadThemes.checked) {
