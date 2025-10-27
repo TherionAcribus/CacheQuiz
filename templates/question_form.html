@@ -84,6 +84,7 @@
                         <option value="">-- Aucun sous-thème --</option>
                         {% for specific_theme in specific_themes %}
                         <option value="{{ specific_theme.id }}"
+                                data-broad-theme-id="{{ specific_theme.broad_theme_id }}"
                                 {% if question and question.specific_theme_id == specific_theme.id %}selected{% endif %}>
                             {% if specific_theme.icon %}{{ specific_theme.icon }} {% endif %}{{ specific_theme.name }}
                             ({{ specific_theme.broad_theme.name }})
@@ -271,6 +272,35 @@
 <script>
 console.log('[question_form.js] Script loaded');
 
+// Fonction pour mettre à jour automatiquement le thème quand un sous-thème est sélectionné
+function updateBroadThemeFromSpecificTheme() {
+    const specificThemeSelect = document.getElementById('specific_theme_id');
+    const broadThemeSelect = document.getElementById('broad_theme_id');
+
+    if (!specificThemeSelect || !broadThemeSelect) {
+        console.log('[updateBroadThemeFromSpecificTheme] Selects not found');
+        return;
+    }
+
+    const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+        const broadThemeId = selectedOption.getAttribute('data-broad-theme-id');
+        const currentBroadThemeId = broadThemeSelect.value;
+
+        // Mettre à jour le thème large seulement s'il est différent
+        if (broadThemeId && broadThemeId !== currentBroadThemeId) {
+            console.log('[updateBroadThemeFromSpecificTheme] Updating broad theme from', currentBroadThemeId, 'to', broadThemeId);
+            broadThemeSelect.value = broadThemeId;
+
+            // Recharger les sous-thèmes pour ce nouveau thème et restaurer la sélection
+            updateSpecificThemes(broadThemeId, selectedOption.value);
+        }
+    } else {
+        // Si "Aucun sous-thème" est sélectionné, ne rien faire
+        console.log('[updateBroadThemeFromSpecificTheme] No specific theme selected');
+    }
+}
+
 // Fonction pour mettre à jour la coloration de la bonne réponse
 function updateCorrectAnswerHighlight() {
     console.log('[updateCorrectAnswerHighlight] Function called');
@@ -300,7 +330,7 @@ function updateCorrectAnswerHighlight() {
     }
 }
 
-function updateSpecificThemes(broadThemeId) {
+function updateSpecificThemes(broadThemeId, selectedSpecificThemeId = null) {
     const specificThemeSelect = document.getElementById('specific_theme_id');
 
     if (!broadThemeId) {
@@ -314,6 +344,12 @@ function updateSpecificThemes(broadThemeId) {
         .then(response => response.text())
         .then(html => {
             specificThemeSelect.innerHTML = html;
+
+            // Restaurer la sélection si spécifiée
+            if (selectedSpecificThemeId && selectedSpecificThemeId !== '0') {
+                specificThemeSelect.value = selectedSpecificThemeId;
+                console.log('[updateSpecificThemes] Restored specific theme selection to:', selectedSpecificThemeId);
+            }
         })
         .catch(error => {
             console.error('Erreur lors de la récupération des sous-thèmes:', error);
@@ -581,8 +617,28 @@ function addNewAnswer() {
 // Fonction d'initialisation commune
 function initializeForm() {
     console.log('[initializeForm] Initializing form...');
+
+    // Vérifier d'abord la cohérence des sélections existantes
+    const specificThemeSelect = document.getElementById('specific_theme_id');
     const broadThemeSelect = document.getElementById('broad_theme_id');
-    if (broadThemeSelect && broadThemeSelect.value) {
+
+    let needsThemeReload = true;
+
+    if (specificThemeSelect && specificThemeSelect.value && broadThemeSelect) {
+        // Si un sous-thème est sélectionné, vérifier que le thème large correspond
+        const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
+        if (selectedOption) {
+            const expectedBroadThemeId = selectedOption.getAttribute('data-broad-theme-id');
+            if (expectedBroadThemeId === broadThemeSelect.value) {
+                // Les sélections sont cohérentes, pas besoin de recharger
+                needsThemeReload = false;
+                console.log('[initializeForm] Selections are consistent, no reload needed');
+            }
+        }
+    }
+
+    // Recharger les sous-thèmes seulement si nécessaire
+    if (broadThemeSelect && broadThemeSelect.value && needsThemeReload) {
         updateSpecificThemes(broadThemeSelect.value);
     }
 
@@ -597,6 +653,14 @@ function initializeForm() {
         console.log('[initializeForm] Event listeners added to correct_answer input');
     } else {
         console.log('[initializeForm] correct_answer input not found');
+    }
+
+    // Ajouter un écouteur d'événement sur le select des sous-thèmes
+    if (specificThemeSelect) {
+        specificThemeSelect.addEventListener('change', updateBroadThemeFromSpecificTheme);
+        console.log('[initializeForm] Event listener added to specific_theme_id select');
+    } else {
+        console.log('[initializeForm] specific_theme_id select not found');
     }
 }
 

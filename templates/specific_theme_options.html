@@ -1,6 +1,6 @@
 <option value="">-- Aucun sous-thème --</option>
 {% for specific_theme in specific_themes %}
-<option value="{{ specific_theme.id }}">
+<option value="{{ specific_theme.id }}" data-broad-theme-id="{{ specific_theme.broad_theme_id }}">
     {% if specific_theme.icon %}{{ specific_theme.icon }} {% endif %}{{ specific_theme.name }}
 </option>
 {% endfor %}
