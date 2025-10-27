@@ -58,11 +58,12 @@
                     <small>Image illustrative complémentaire pour la question</small>
                     <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
-            </div>
-
+                </div>
+                
             <div class="form-row">
                 <div class="form-group">
                     <label for="broad_theme_id">Thématique large</label>
+                    <div class="input-with-action">
                     <select id="broad_theme_id"
                             name="broad_theme_id"
                             onchange="updateSpecificThemes(this.value)">
@@ -74,12 +75,16 @@
                         </option>
                         {% endfor %}
                     </select>
+                    <button type="button" class="btn btn-small" onclick="openEmbeddedThemeModal('broad_theme_id')">+</button>
+                    <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                    </div>
                     <small>
                         <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
                     </small>
                 </div>
                 <div class="form-group">
                     <label for="specific_theme_id">Sous-thématique</label>
+                    <div class="input-with-action">
                     <select id="specific_theme_id" name="specific_theme_id">
                         <option value="">-- Aucun sous-thème --</option>
                         {% for specific_theme in specific_themes %}
@@ -91,6 +96,9 @@
                         </option>
                         {% endfor %}
                     </select>
+                    <button type="button" class="btn btn-small" onclick="openEmbeddedSpecificThemeModal('specific_theme_id')">+</button>
+                    <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                    </div>
                     <small>
                         <a href="/specific-themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
                     </small>
@@ -105,11 +113,11 @@
                         {% for i in range(1, 5) %}
                         <div class="answer-input-group">
                             <div class="answer-left">
-                                <span class="answer-number">{{ i }}.</span>
-                                <input type="text"
-                                       name="answer_{{ i }}"
-                                       placeholder="Réponse {{ i }}"
-                                       value="{{ answers[i-1] if i <= answers|length else '' }}">
+                            <span class="answer-number">{{ i }}.</span>
+                            <input type="text"
+                                   name="answer_{{ i }}"
+                                   placeholder="Réponse {{ i }}"
+                                   value="{{ answers[i-1] if i <= answers|length else '' }}">
                             </div>
                             <div class="input-with-action answer-image-group">
                                 <select name="answer_image_id_{{ i }}" class="answer-image-select">
@@ -130,8 +138,8 @@
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ Ajouter une réponse</button>
                 </div>
-            </div>
-
+                </div>
+                
             <div class="form-row full-width">
                 <div class="form-group">
                     <label for="correct_answer">Bonne réponse (numéro) *</label>
@@ -141,8 +149,8 @@
                     <label for="hint">Indice</label>
                     <input type="text" id="hint" name="hint" value="{{ question.hint if question else '' }}">
                 </div>
-            </div>
-
+                </div>
+                
             <div class="form-row">
                 <div class="form-group">
                     <label for="detailed_answer">Explication détaillée</label>
@@ -182,7 +190,7 @@
                     <small>Image illustrative pour accompagner l'explication détaillée</small>
                     <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
-            </div>
+                </div>
 
             <div class="form-row">
                 <div class="form-group">
@@ -200,8 +208,8 @@
                         <option value="5" {% if question and question.difficulty_level == 5 %}selected{% endif %}>5 - Très difficile</option>
                     </select>
                 </div>
-            </div>
-
+                </div>
+                
             <div class="form-row">
                 <div class="form-group">
                     <label>Pays concernés</label>
@@ -222,8 +230,8 @@
                     <input type="number" id="translation_id" name="translation_id" placeholder="ID de la question dans une autre langue" value="{{ question.translation_id if question and question.translation_id else '' }}">
                     <small>Utilisé pour lier des questions dans différentes langues</small>
                 </div>
-            </div>
-
+                </div>
+                
             <div class="form-row">
                 <div class="form-group">
                     <label class="checkbox-label">
@@ -238,9 +246,9 @@
                     </label>
                     <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
                 </div>
-            </div>
-
-            {% if question %}
+                </div>
+                
+                {% if question %}
             <div class="form-row full-width">
                 <div class="form-info">
                     <p><strong>Statistiques:</strong></p>
@@ -354,6 +362,66 @@ function updateSpecificThemes(broadThemeId, selectedSpecificThemeId = null) {
         .catch(error => {
             console.error('Erreur lors de la récupération des sous-thèmes:', error);
             specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
+        });
+}
+
+// Fonction pour rafraîchir tous les selects de thèmes de la page
+function refreshThemeSelects() {
+    console.log('[refreshThemeSelects] Refreshing theme selects...');
+    // Faire un appel à une API JSON pour obtenir les données des thèmes
+    fetch('/api/themes/json', { headers: { 'HX-Request': 'true' } })
+        .then(function(r) {
+            if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(themes) {
+            console.log('[refreshThemeSelects] Received themes:', themes.length);
+            // Mettre à jour le select des thèmes larges
+            var broadThemeSelect = document.getElementById('broad_theme_id');
+            if (broadThemeSelect) {
+                var currentValue = broadThemeSelect.value;
+
+                // Garder seulement l'option "Aucun thème"
+                var noThemeOption = broadThemeSelect.querySelector('option[value=""]');
+                broadThemeSelect.innerHTML = '';
+                if (noThemeOption) {
+                    broadThemeSelect.appendChild(noThemeOption.cloneNode(true));
+                } else {
+                    var defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Aucun thème --';
+                    broadThemeSelect.appendChild(defaultOption);
+                }
+
+                // Ajouter toutes les options de thèmes
+                themes.forEach(function(theme) {
+                    var opt = document.createElement('option');
+                    opt.value = theme.id;
+                    opt.textContent = (theme.icon ? theme.icon + ' ' : '') + theme.name + ' (' + theme.language.toUpperCase() + ')';
+                    broadThemeSelect.appendChild(opt);
+                });
+
+                // Restaurer la sélection précédente si elle existe encore
+                if (currentValue && broadThemeSelect.querySelector('option[value="' + currentValue + '"]')) {
+                    broadThemeSelect.value = currentValue;
+                }
+
+                // Déclencher l'événement change pour rafraîchir les sous-thèmes
+                var event = new Event('change', { bubbles: true });
+                broadThemeSelect.dispatchEvent(event);
+            }
+
+            // Mettre à jour le select des sous-thèmes
+            if (broadThemeSelect && broadThemeSelect.value) {
+                updateSpecificThemes(broadThemeSelect.value);
+            }
+
+            // Message de confirmation
+            showToast('Listes des thèmes mises à jour', 'success');
+        })
+        .catch(function(err) {
+            console.error('[refreshThemeSelects] Error:', err);
+            showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
         });
 }
 
@@ -474,6 +542,78 @@ function closeEmbeddedImageModal() {
     if (overlay) overlay.style.display = 'none';
 }
 
+// Ouvrir une modale embarquée pour créer un thème, au-dessus de la modale des questions
+function openEmbeddedThemeModal(selectId) {
+    console.log('[openEmbeddedThemeModal] called with selectId:', selectId);
+    // Créer un conteneur overlay si absent
+    var overlay = document.getElementById('embedded-theme-modal');
+    if (!overlay) {
+        console.log('[openEmbeddedThemeModal] creating overlay');
+        overlay = document.createElement('div');
+        overlay.id = 'embedded-theme-modal';
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-theme-form-wrapper"></div></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    console.log('[openEmbeddedThemeModal] overlay displayed');
+
+    // Charger le formulaire de thème en mode embarqué
+    var url = '/theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+    console.log('[openEmbeddedThemeModal] fetching:', url);
+    fetch(url, { headers: { 'HX-Request': 'true' }})
+      .then(function(r){
+          console.log('[openEmbeddedThemeModal] fetch response status:', r.status);
+          return r.text();
+      })
+      .then(function(html){
+          console.log('[openEmbeddedThemeModal] received HTML, length:', html.length);
+          var wrap = document.getElementById('embedded-theme-form-wrapper');
+          wrap.innerHTML = html;
+          console.log('[openEmbeddedThemeModal] HTML injected');
+      })
+      .catch(function(err){
+          console.error('[openEmbeddedThemeModal] fetch error:', err);
+      });
+}
+
+// Ouvrir une modale embarquée pour créer un sous-thème, au-dessus de la modale des questions
+function openEmbeddedSpecificThemeModal(selectId) {
+    console.log('[openEmbeddedSpecificThemeModal] called with selectId:', selectId);
+    // Créer un conteneur overlay si absent
+    var overlay = document.getElementById('embedded-specific-theme-modal');
+    if (!overlay) {
+        console.log('[openEmbeddedSpecificThemeModal] creating overlay');
+        overlay = document.createElement('div');
+        overlay.id = 'embedded-specific-theme-modal';
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-specific-theme-form-wrapper"></div></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+    console.log('[openEmbeddedSpecificThemeModal] overlay displayed');
+
+    // Charger le formulaire de sous-thème en mode embarqué
+    var url = '/specific-theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+    console.log('[openEmbeddedSpecificThemeModal] fetching:', url);
+    fetch(url, { headers: { 'HX-Request': 'true' }})
+      .then(function(r){
+          console.log('[openEmbeddedSpecificThemeModal] fetch response status:', r.status);
+          return r.text();
+      })
+      .then(function(html){
+          console.log('[openEmbeddedSpecificThemeModal] received HTML, length:', html.length);
+          var wrap = document.getElementById('embedded-specific-theme-form-wrapper');
+          wrap.innerHTML = html;
+          console.log('[openEmbeddedSpecificThemeModal] HTML injected');
+      })
+      .catch(function(err){
+          console.error('[openEmbeddedSpecificThemeModal] fetch error:', err);
+      });
+}
+
 // Callback appelé par le formulaire d'image embarqué après création
 window.onEmbeddedImageCreated = function(createdImage, selectId){
     console.log('[onEmbeddedImageCreated] called with:', createdImage, 'selectId:', selectId);
@@ -507,8 +647,183 @@ window.onEmbeddedImageCreated = function(createdImage, selectId){
     }
 }
 
+// Callback appelé par le formulaire de thème embarqué après création
+window.onEmbeddedThemeCreated = function(createdTheme, selectId){
+    console.log('[onEmbeddedThemeCreated] called with:', createdTheme, 'selectId:', selectId);
+    try {
+        // Chercher d'abord par ID, puis par name si pas trouvé
+        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+        console.log('[onEmbeddedThemeCreated] found select element:', sel);
+        if (!sel) {
+            console.error('[onEmbeddedThemeCreated] Select element not found for id/name:', selectId);
+            return;
+        }
+        // Ajouter l'option si absente
+        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdTheme.id); });
+        if (!existing) {
+            var opt = document.createElement('option');
+            opt.value = String(createdTheme.id);
+            opt.textContent = (createdTheme.icon ? createdTheme.icon + ' ' : '') + createdTheme.name + ' (' + createdTheme.language.toUpperCase() + ')';
+            sel.appendChild(opt);
+        }
+        // Sélectionner le nouveau thème
+        sel.value = String(createdTheme.id);
+        // Déclencher l'événement change pour rafraîchir les sous-thèmes
+        var event = new Event('change', { bubbles: true });
+        sel.dispatchEvent(event);
+    } catch (e) {
+        console.error('[onEmbeddedThemeCreated] Error:', e);
+    }
+}
+
+// Callback appelé par le formulaire de sous-thème embarqué après création
+window.onEmbeddedSpecificThemeCreated = function(createdSpecificTheme, selectId){
+    console.log('[onEmbeddedSpecificThemeCreated] called with:', createdSpecificTheme, 'selectId:', selectId);
+    try {
+        // Chercher d'abord par ID, puis par name si pas trouvé
+        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+        console.log('[onEmbeddedSpecificThemeCreated] found select element:', sel);
+        if (!sel) {
+            console.error('[onEmbeddedSpecificThemeCreated] Select element not found for id/name:', selectId);
+            return;
+        }
+        // Ajouter l'option si absente
+        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdSpecificTheme.id); });
+        if (!existing) {
+            var opt = document.createElement('option');
+            opt.value = String(createdSpecificTheme.id);
+            opt.textContent = (createdSpecificTheme.icon ? createdSpecificTheme.icon + ' ' : '') + createdSpecificTheme.name;
+            opt.setAttribute('data-broad-theme-id', createdSpecificTheme.broad_theme_id);
+            sel.appendChild(opt);
+        }
+        // Sélectionner le nouveau sous-thème
+        sel.value = String(createdSpecificTheme.id);
+        // Mettre à jour le thème large automatiquement
+        updateBroadThemeFromSpecificTheme();
+    } catch (e) {
+        console.error('[onEmbeddedSpecificThemeCreated] Error:', e);
+    }
+}
+
+function closeEmbeddedThemeModal() {
+    var overlay = document.getElementById('embedded-theme-modal');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function closeEmbeddedSpecificThemeModal() {
+    var overlay = document.getElementById('embedded-specific-theme-modal');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Fonction pour soumettre le formulaire embedded de sous-thème
+function submitEmbeddedSpecificThemeForm(formEl){
+    console.log('[submitEmbeddedSpecificThemeForm] Function called with form:', formEl);
+
+    // Empêcher complètement toute soumission normale
+    if (typeof event !== 'undefined' && event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+    var url = formEl.getAttribute('action') || '/api/specific-theme';
+    var formData = new FormData(formEl);
+    formData.set('embedded','1');
+    // select_id transmis depuis champ hidden
+    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+    console.log('[submitEmbeddedSpecificThemeForm] submitting to:', url, 'with selectId:', selectId);
+
+    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
+      .then(function(r){
+          console.log('[submitEmbeddedSpecificThemeForm] response status:', r.status);
+          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+          return r.json();
+      })
+      .then(function(json){
+          console.log('[submitEmbeddedSpecificThemeForm] received JSON:', json);
+          if (json && json.created_specific_theme){
+              console.log('[submitEmbeddedSpecificThemeForm] Success! Closing modal and calling callback');
+              // Fermer d'abord la modale embedded
+              closeEmbeddedSpecificThemeModal();
+              // Puis appeler le callback parent
+              if (window.parent && window.parent.onEmbeddedSpecificThemeCreated){
+                  window.parent.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
+              } else if (window.onEmbeddedSpecificThemeCreated){
+                  window.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
+              } else {
+                  console.error('[submitEmbeddedSpecificThemeForm] No callback function found!');
+              }
+          }
+      })
+      .catch(function(err){
+          console.error('Erreur lors de la création du sous-thème:', err);
+          alert('Erreur lors de la création du sous-thème: ' + err.message);
+      });
+
+    // Empêcher toute soumission de formulaire
+    return false;
+}
+
+// Fonction pour soumettre le formulaire embedded de thème
+function submitEmbeddedThemeForm(formEl){
+    console.log('[submitEmbeddedThemeForm] Function called with form:', formEl);
+
+    // Empêcher complètement toute soumission normale
+    if (typeof event !== 'undefined' && event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+    var url = formEl.getAttribute('action') || '/api/theme';
+    var formData = new FormData(formEl);
+    formData.set('embedded','1');
+    // select_id transmis depuis champ hidden
+    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+    console.log('[submitEmbeddedThemeForm] submitting to:', url, 'with selectId:', selectId);
+
+    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
+      .then(function(r){
+          console.log('[submitEmbeddedThemeForm] response status:', r.status);
+          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+          return r.json();
+      })
+      .then(function(json){
+          console.log('[submitEmbeddedThemeForm] received JSON:', json);
+          if (json && json.created_theme){
+              console.log('[submitEmbeddedThemeForm] Success! Closing modal and calling callback');
+              // Fermer d'abord la modale embedded
+              closeEmbeddedThemeModal();
+              // Puis appeler le callback parent
+              if (window.parent && window.parent.onEmbeddedThemeCreated){
+                  window.parent.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
+              } else if (window.onEmbeddedThemeCreated){
+                  window.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
+              } else {
+                  console.error('[submitEmbeddedThemeForm] No callback function found!');
+              }
+          }
+      })
+      .catch(function(err){
+          console.error('Erreur lors de la création du thème:', err);
+          alert('Erreur lors de la création du thème: ' + err.message);
+      });
+
+    // Empêcher toute soumission de formulaire
+    return false;
+}
+
 // Soumission manuelle du formulaire embarqué pour éviter TOUT rafraîchissement
 function submitEmbeddedImageForm(formEl){
+    console.log('[submitEmbeddedImageForm] Function called with form:', formEl);
+
+    // Empêcher complètement toute soumission normale
+    if (typeof event !== 'undefined' && event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
     var url = formEl.getAttribute('action');
     var formData = new FormData(formEl);
     formData.set('embedded','1');

@@ -1,20 +1,25 @@
 <div class="form-wrapper">
     <div class="form-header">
         <h2>{% if theme %}Éditer le thème{% else %}Nouveau thème{% endif %}</h2>
-        <button class="btn-close" 
+        <button class="btn-close"
                 type="button"
-                onclick="document.getElementById('theme-form-container').classList.add('hidden')">✕</button>
+                onclick="{% if embedded %}closeEmbeddedThemeModal(){% else %}document.getElementById('theme-form-container').classList.add('hidden'){% endif %}">✕</button>
     </div>
     
-    <form {% if theme %}
+    <form {% if not embedded %}{% if theme %}
           hx-post="/api/theme/{{ theme.id }}"
           {% else %}
           hx-post="/api/theme"
           {% endif %}
           hx-target="#themes-list"
           hx-swap="innerHTML"
-          hx-on::after-request="document.getElementById('theme-form-container').classList.add('hidden')">
-        
+          hx-on::after-request="document.getElementById('theme-form-container').classList.add('hidden')"{% endif %}>
+
+        {% if embedded %}
+        <input type="hidden" name="embedded" value="1">
+        <input type="hidden" name="select_id" value="{{ select_id }}">
+        {% endif %}
+
         <div class="form-grid">
             <!-- Colonne gauche -->
             <div class="form-column">
@@ -94,17 +99,18 @@
         </div>
         
         <div class="form-actions">
-            <button type="button" 
+            <button type="button"
                     class="btn btn-secondary"
-                    onclick="document.getElementById('theme-form-container').classList.add('hidden')">
+                    onclick="{% if embedded %}closeEmbeddedThemeModal(){% else %}document.getElementById('theme-form-container').classList.add('hidden'){% endif %}">
                 Annuler
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="{% if embedded %}button" onclick="submitEmbeddedThemeForm(this.form){% else %}submit{% endif %}" class="btn btn-primary">
                 {% if theme %}Mettre à jour{% else %}Créer{% endif %}
             </button>
         </div>
     </form>
 </div>
+
 
 <style>
     input[type="color"] {
@@ -114,7 +120,7 @@
         border-radius: 0.5rem;
         cursor: pointer;
     }
-    
+
     input[type="color"]:focus {
         outline: none;
         border-color: var(--primary-color);

@@ -6,7 +6,6 @@
 
     <form action="{% if image %}/api/image/{{ image.id }}{% else %}/api/image{% endif %}"
           method="post"
-          {% if embedded %}onsubmit="return submitEmbeddedImageForm(this)"{% endif %}
           {% if not embedded %}hx-post="{% if image %}/api/image/{{ image.id }}{% else %}/api/image{% endif %}" hx-target="#images-list" hx-swap="innerHTML" hx-on::after-request="document.getElementById('image-form-container').classList.add('hidden')"{% endif %}
           enctype="multipart/form-data">
 
@@ -52,7 +51,7 @@
             {% else %}
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('image-form-container').classList.add('hidden')">Annuler</button>
             {% endif %}
-            <button type="submit" class="btn btn-primary">{% if image %}Mettre à jour{% else %}Créer{% endif %}</button>
+            <button type="{% if embedded %}button" onclick="submitEmbeddedImageForm(this.form){% else %}submit{% endif %}" class="btn btn-primary">{% if image %}Mettre à jour{% else %}Créer{% endif %}</button>
         </div>
     </form>
 </div>

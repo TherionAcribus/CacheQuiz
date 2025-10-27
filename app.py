@@ -1758,13 +1758,30 @@ def list_themes():
     return render_template('themes_list.html', themes=themes)
 
 
+@app.route('/api/themes/json')
+def list_themes_json():
+    """Retourner la liste des thèmes en JSON (pour les selects)"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return [{
+        'id': theme.id,
+        'name': theme.name,
+        'language': theme.language,
+        'icon': theme.icon
+    } for theme in themes]
+
+
 @app.route('/theme/new')
 def new_theme():
     """Formulaire pour créer un nouveau thème"""
     resp = _ensure_admin_page_redirect()
     if resp:
         return resp
-    return render_template('theme_form.html', theme=None)
+    embedded = request.args.get('embedded') in ('1', 'true', 'yes')
+    select_id = request.args.get('select_id') or ''
+    return render_template('theme_form.html', theme=None, embedded=embedded, select_id=select_id)
 
 
 @app.route('/theme/<int:theme_id>/edit')
@@ -1797,7 +1814,19 @@ def create_theme():
         
         db.session.add(theme)
         db.session.commit()
-        
+
+        # Si formulaire embarqué (modale au-dessus d'une autre modale): renvoyer JSON
+        if request.form.get('embedded') in ('1', 'true', 'yes'):
+            return {
+                'created_theme': {
+                    'id': theme.id,
+                    'name': theme.name,
+                    'language': theme.language,
+                    'icon': theme.icon
+                },
+                'select_id': request.form.get('select_id')
+            }
+
         # Retourner la liste mise à jour
         themes = BroadTheme.query.order_by(BroadTheme.name).all()
         return render_template('themes_list.html', themes=themes)
@@ -1887,8 +1916,10 @@ def new_specific_theme():
     resp = _ensure_admin_page_redirect()
     if resp:
         return resp
+    embedded = request.args.get('embedded') in ('1', 'true', 'yes')
+    select_id = request.args.get('select_id') or ''
     broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes)
+    return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes, embedded=embedded, select_id=select_id)
 
 
 @app.route('/specific-theme/<int:specific_theme_id>/edit')
@@ -1923,6 +1954,19 @@ def create_specific_theme():
 
         db.session.add(specific_theme)
         db.session.commit()
+
+        # Si formulaire embarqué (modale au-dessus d'une autre modale): renvoyer JSON
+        if request.form.get('embedded') in ('1', 'true', 'yes'):
+            return {
+                'created_specific_theme': {
+                    'id': specific_theme.id,
+                    'name': specific_theme.name,
+                    'broad_theme_id': specific_theme.broad_theme_id,
+                    'language': specific_theme.language,
+                    'icon': specific_theme.icon
+                },
+                'select_id': request.form.get('select_id')
+            }
 
         # Retourner la liste mise à jour
         specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
