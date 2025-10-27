@@ -1280,7 +1280,12 @@ function updateSelectedQuestionsCount() {
 function initSelectAllQuestions() {
     const selectAllCheckbox = document.getElementById('select-all-questions');
     if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
+        // Supprimer les anciens event listeners pour éviter les doublons
+        const newCheckbox = selectAllCheckbox.cloneNode(true);
+        selectAllCheckbox.parentNode.replaceChild(newCheckbox, selectAllCheckbox);
+
+        // Ajouter le nouvel event listener
+        newCheckbox.addEventListener('change', function() {
             const questionCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]');
             questionCheckboxes.forEach(cb => {
                 cb.checked = this.checked;
@@ -1433,8 +1438,11 @@ document.addEventListener('click', function(e) {
     const tab = e.target.closest('.tab[data-tab="questions"]');
     if (tab) {
         setTimeout(loadQuestionsForSelection, 100);
-            // Recalculer le score quand on navigue ici (au cas où)
-            setTimeout(computeMaxScore, 150);
+        // Initialiser la checkbox "Tout sélectionner" après le chargement des questions
+        setTimeout(function() {
+            initSelectAllQuestions();
+            computeMaxScore();
+        }, 150);
     }
 });
 

@@ -223,6 +223,7 @@
 {% endif %}
 
 <div id="quiz-stage" class="quiz-stage">
+    {{ rule_set }}
     {% if rule_set %}
     <div class="placeholder">Cliquez sur "🚀 Démarrer le quiz" pour commencer avec le set de règles "{{ rule_set.name }}".</div>
     <div class="placeholder small">Le scoring et les quotas seront appliqués automatiquement.</div>

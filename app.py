@@ -3355,8 +3355,7 @@ def new_quiz_rule():
     
     # Charger les valeurs par défaut
     defaults = _load_quiz_rule_defaults()
-    print(f"Defaults chargés pour création: {defaults}")
-    
+
     return render_template('quiz_rule_form.html', rule=None, themes=themes, specific_themes=specific_themes, countries=countries, images=images, defaults=defaults)
 
 
