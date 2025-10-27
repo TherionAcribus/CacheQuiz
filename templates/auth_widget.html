@@ -2,12 +2,12 @@
 <div id="auth-widget" class="auth-widget">
   <span>Connecté: <strong>{{ current_user.username }}</strong></span>
   {% if current_user.has_any_admin_perm() %}
-  <a href="/admin" class="btn btn-outline admin-btn">⚙️ Administration</a>
+  <a href="/admin" class="btn btn-outline admin-btn">⚙️</a>
   {% endif %}
   {% if current_user.password_hash %}
-  <a class="btn btn-link" href="/messages">Messages{% if unread_count and unread_count > 0 %} (<span id="unread-count">{{ unread_count }}</span>){% endif %}</a>
-  <a class="btn btn-link" href="/preferences">Préférences</a>
-  <a class="btn btn-link" href="/me">Mes stats</a>
+  <a class="btn btn-secondary" href="/messages">Messages{% if unread_count and unread_count > 0 %} (<span id="unread-count">{{ unread_count }}</span>){% endif %}</a>
+  <a class="btn btn-secondary" href="/preferences">Préférences</a>
+  <a class="btn btn-secondary" href="/me">Mes stats</a>
   {% endif %}
   <form hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline" hx-headers='{"HX-Redirect":"/"}'>
     <button class="btn btn-secondary" type="submit">Se déconnecter</button>
