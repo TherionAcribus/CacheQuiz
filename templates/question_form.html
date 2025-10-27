@@ -15,9 +15,8 @@
           hx-swap="innerHTML"
           hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden')">
         
-        <div class="form-grid">
-            <!-- Colonne gauche -->
-            <div class="form-column">
+        <div class="form-grid-rows">
+            <div class="form-row">
                 <div class="form-group">
                     <label for="question_text">Question *</label>
                     <textarea id="question_text" 
@@ -25,7 +24,6 @@
                               rows="4" 
                               required>{{ question.question_text if question else '' }}</textarea>
                 </div>
-                
                 <div class="form-group">
                     <label for="question_image_id">Image complémentaire de la question (optionnel)</label>
                     <div class="input-with-action">
@@ -35,15 +33,12 @@
                                 var prev = document.getElementById('question-image-preview');
                                 var img = document.getElementById('question-image-thumb');
                                 var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
-                                console.log('[QuestionForm] inline change: value=', opt && opt.value, 'filename=', hasImg ? opt.dataset.filename : null);
                                 if (hasImg) {
                                     img.src = '/uploads/' + opt.dataset.filename;
                                     img.alt = opt.dataset.alt || '';
                                     prev.style.display = 'inline-block';
-                                    console.log('[QuestionForm] inline preview URL:', img.src);
                                 } else {
                                     prev.style.display = 'none';
-                                    console.log('[QuestionForm] inline preview hidden (no selection)');
                                 }
                             })(this)">
                         <option value="">-- Pas d'image --</option>
@@ -54,7 +49,7 @@
                         </option>
                         {% endfor %}
                     </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('question_image_id')">+ Ajouter une image</button>
+                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('question_image_id')">+</button>
                     <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
                     </div>
                     <div id="question-image-preview" class="image-preview" style="{% if question and question.images %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -63,118 +58,9 @@
                     <small>Image illustrative complémentaire pour la question</small>
                     <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
                 </div>
-                
-                <div class="form-group">
-                    <label>Réponses possibles *</label>
-                    <div id="answers-container">
-                        {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
-                        {% for i in range(1, 5) %}
-                        <div class="answer-input-group">
-                            <span class="answer-number">{{ i }}.</span>
-                            <input type="text"
-                                   name="answer_{{ i }}"
-                                   placeholder="Réponse {{ i }}"
-                                   value="{{ answers[i-1] if i <= answers|length else '' }}">
-                            <div class="input-with-action answer-image-group">
-                                <select name="answer_image_id_{{ i }}" class="answer-image-select">
-                                    <option value="">-- Pas d'image --</option>
-                                    {% set link = question.answer_image_links | selectattr('answer_index','equalto', i) | list if question else [] %}
-                                    {% for img in images %}
-                                    <option value="{{ img.id }}"
-                                        {% if link and link[0].image_id == img.id %}selected{% endif %}>
-                                        {{ img.title }} ({{ img.filename }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+ Ajouter une image</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <button type="button"
-                            class="btn btn-secondary"
-                            onclick="addNewAnswer()">
-                        + Ajouter une réponse
-                    </button>
-                </div>
-                
-                <div class="form-group">
-                    <label for="correct_answer">Bonne réponse (numéro) *</label>
-                    <input type="number" 
-                           id="correct_answer" 
-                           name="correct_answer" 
-                           min="1" 
-                           value="{{ question.correct_answer if question else '1' }}"
-                           required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="detailed_answer">Explication détaillée</label>
-                    <textarea id="detailed_answer"
-                              name="detailed_answer"
-                              rows="4">{{ question.detailed_answer if question else '' }}</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
-                    <div class="input-with-action">
-                    <select id="detailed_answer_image_id" name="detailed_answer_image_id" class="answer-image-select"
-                            onchange="(function(sel){
-                                var opt = sel.options[sel.selectedIndex];
-                                var prev = document.getElementById('detailed-answer-image-preview');
-                                var img = document.getElementById('detailed-answer-image-thumb');
-                                var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
-                                console.log('[QuestionForm] detailed inline change: value=', opt && opt.value, 'filename=', hasImg ? opt.dataset.filename : null);
-                                if (hasImg) {
-                                    img.src = '/uploads/' + opt.dataset.filename;
-                                    img.alt = opt.dataset.alt || '';
-                                    prev.style.display = 'inline-block';
-                                    console.log('[QuestionForm] detailed inline preview URL:', img.src);
-                                } else {
-                                    prev.style.display = 'none';
-                                    console.log('[QuestionForm] detailed inline preview hidden (no selection)');
-                                }
-                            })(this)">
-                        <option value="">-- Pas d'image --</option>
-                        {% for img in images %}
-                        <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
-                            {% if question and question.detailed_answer_image_id == img.id %}selected{% endif %}>
-                            {{ img.title }} ({{ img.filename }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('detailed_answer_image_id')">+ Ajouter une image</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
-                    </div>
-                    <div id="detailed-answer-image-preview" class="image-preview" style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
-                        <img id="detailed-answer-image-thumb" src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}" alt="Aperçu">
-                    </div>
-                    <small>Image illustrative pour accompagner l'explication détaillée</small>
-                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="hint">Indice</label>
-                    <input type="text"
-                           id="hint"
-                           name="hint"
-                           value="{{ question.hint if question else '' }}">
-                </div>
-
-                <div class="form-group">
-                    <label for="source">Source (optionnel)</label>
-                    <input type="text"
-                           id="source"
-                           name="source"
-                           placeholder="https://exemple.com/source-officielle"
-                           value="{{ question.source if question else '' }}">
-                    <small>URL ou référence où vérifier la réponse (site officiel, documentation, etc.)</small>
-                </div>
             </div>
-            
-            <!-- Colonne droite -->
-            <div class="form-column">
+
+            <div class="form-row">
                 <div class="form-group">
                     <label for="broad_theme_id">Thématique large</label>
                     <select id="broad_theme_id"
@@ -192,7 +78,6 @@
                         <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
                     </small>
                 </div>
-                
                 <div class="form-group">
                     <label for="specific_theme_id">Sous-thématique</label>
                     <select id="specific_theme_id" name="specific_theme_id">
@@ -209,29 +94,101 @@
                         <a href="/specific-themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
                     </small>
                 </div>
-                
-                <div class="form-group">
-                    <label>Pays concernés</label>
-                    <div class="countries-grid">
-                        {% for country in countries %}
-                        <label class="country-checkbox">
-                            <input type="checkbox"
-                                   name="countries"
-                                   value="{{ country.id }}"
-                                   {% if question and country in question.countries %}checked{% endif %}>
-                            {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}
-                            {% if country.code %}({{ country.code }}){% endif %}
-                        </label>
+            </div>
+
+            <div class="form-row full-width">
+                <div class="form-group full-width">
+                    <label>Réponses possibles *</label>
+                    <div id="answers-container">
+                        {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
+                        {% for i in range(1, 5) %}
+                        <div class="answer-input-group">
+                            <div class="answer-left">
+                                <span class="answer-number">{{ i }}.</span>
+                                <input type="text"
+                                       name="answer_{{ i }}"
+                                       placeholder="Réponse {{ i }}"
+                                       value="{{ answers[i-1] if i <= answers|length else '' }}">
+                            </div>
+                            <div class="input-with-action answer-image-group">
+                                <select name="answer_image_id_{{ i }}" class="answer-image-select">
+                                    <option value="">-- Pas d'image --</option>
+                                    {% set link = question.answer_image_links | selectattr('answer_index','equalto', i) | list if question else [] %}
+                                    {% for img in images %}
+                                    <option value="{{ img.id }}"
+                                        {% if link and link[0].image_id == img.id %}selected{% endif %}>
+                                        {{ img.title }} ({{ img.filename }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                            </div>
+                        </div>
                         {% endfor %}
                     </div>
-                    <small>Sélectionnez tous les pays concernés par cette question</small>
-                    <small>
-                        <a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a>
-                    </small>
+                    <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ Ajouter une réponse</button>
                 </div>
+            </div>
 
-                
-                
+            <div class="form-row full-width">
+                <div class="form-group">
+                    <label for="correct_answer">Bonne réponse (numéro) *</label>
+                    <input type="number" id="correct_answer" name="correct_answer" min="1" value="{{ question.correct_answer if question else '1' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="hint">Indice</label>
+                    <input type="text" id="hint" name="hint" value="{{ question.hint if question else '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="detailed_answer">Explication détaillée</label>
+                    <textarea id="detailed_answer" name="detailed_answer" rows="4">{{ question.detailed_answer if question else '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
+                    <div class="input-with-action">
+                    <select id="detailed_answer_image_id" name="detailed_answer_image_id" class="answer-image-select"
+                            onchange="(function(sel){
+                                var opt = sel.options[sel.selectedIndex];
+                                var prev = document.getElementById('detailed-answer-image-preview');
+                                var img = document.getElementById('detailed-answer-image-thumb');
+                                var hasImg = opt && opt.value && opt.dataset && opt.dataset.filename;
+                                if (hasImg) {
+                                    img.src = '/uploads/' + opt.dataset.filename;
+                                    img.alt = opt.dataset.alt || '';
+                                    prev.style.display = 'inline-block';
+                                } else {
+                                    prev.style.display = 'none';
+                                }
+                            })(this)">
+                        <option value="">-- Pas d'image --</option>
+                        {% for img in images %}
+                        <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
+                            {% if question and question.detailed_answer_image_id == img.id %}selected{% endif %}>
+                            {{ img.title }} ({{ img.filename }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('detailed_answer_image_id')">+</button>
+                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                    </div>
+                    <div id="detailed-answer-image-preview" class="image-preview" style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
+                        <img id="detailed-answer-image-thumb" src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}" alt="Aperçu">
+                    </div>
+                    <small>Image illustrative pour accompagner l'explication détaillée</small>
+                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="source">Source (optionnel)</label>
+                    <input type="text" id="source" name="source" placeholder="https://exemple.com/source-officielle" value="{{ question.source if question else '' }}">
+                    <small>URL ou référence où vérifier la réponse (site officiel, documentation, etc.)</small>
+                </div>
                 <div class="form-group">
                     <label for="difficulty_level">Niveau de difficulté</label>
                     <select id="difficulty_level" name="difficulty_level">
@@ -242,37 +199,48 @@
                         <option value="5" {% if question and question.difficulty_level == 5 %}selected{% endif %}>5 - Très difficile</option>
                     </select>
                 </div>
-                
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Pays concernés</label>
+                    <div class="countries-grid">
+                        {% for country in countries %}
+                        <label class="country-checkbox">
+                            <input type="checkbox" name="countries" value="{{ country.id }}" {% if question and country in question.countries %}checked{% endif %}>
+                            {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}
+                            {% if country.code %}({{ country.code }}){% endif %}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <small>Sélectionnez tous les pays concernés par cette question</small>
+                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a></small>
+                </div>
                 <div class="form-group">
                     <label for="translation_id">ID de traduction (question liée)</label>
-                    <input type="number" 
-                           id="translation_id" 
-                           name="translation_id" 
-                           placeholder="ID de la question dans une autre langue"
-                           value="{{ question.translation_id if question and question.translation_id else '' }}">
+                    <input type="number" id="translation_id" name="translation_id" placeholder="ID de la question dans une autre langue" value="{{ question.translation_id if question and question.translation_id else '' }}">
                     <small>Utilisé pour lier des questions dans différentes langues</small>
                 </div>
-                
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox"
-                               name="is_published"
-                               {% if question and question.is_published %}checked{% endif %}>
+                        <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{% endif %}>
                         Question en ligne (publiée)
                     </label>
                 </div>
-
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox"
-                               name="is_private"
-                               {% if question and question.is_private %}checked{% endif %}>
+                        <input type="checkbox" name="is_private" {% if question and question.is_private %}checked{% endif %}>
                         Question privée (utilisable uniquement par son créateur)
                     </label>
                     <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
                 </div>
-                
-                {% if question %}
+            </div>
+
+            {% if question %}
+            <div class="form-row full-width">
                 <div class="form-info">
                     <p><strong>Statistiques:</strong></p>
                     <p>Réponses: {{ question.times_answered }}</p>
@@ -283,8 +251,8 @@
                     {% endif %}
                     <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
                 </div>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
         
         <div class="form-actions">
@@ -558,7 +526,7 @@ function addNewAnswer() {
     addButton.type = 'button';
     addButton.className = 'btn btn-small';
     addButton.onclick = function() { openEmbeddedImageModal('answer_image_id_' + count); };
-    addButton.textContent = '+ Ajouter une image';
+    addButton.textContent = '+';
     imageGroup.appendChild(addButton);
 
     // Bouton rafraîchir
@@ -586,6 +554,12 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+    .form-grid-rows{display:grid;grid-template-columns:1fr;gap:1rem}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .form-row.full-width{grid-template-columns:1fr}
+    .answer-input-group{display:grid;grid-template-columns:minmax(140px,1fr) 1fr;gap:.75rem;align-items:start;margin-bottom:.5rem}
+    .answer-left{display:flex;align-items:center;gap:.5rem}
+    .answer-left input[type="text"]{flex:1}
     .countries-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
