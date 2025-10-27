@@ -269,6 +269,37 @@
 </div>
 
 <script>
+console.log('[question_form.js] Script loaded');
+
+// Fonction pour mettre à jour la coloration de la bonne réponse
+function updateCorrectAnswerHighlight() {
+    console.log('[updateCorrectAnswerHighlight] Function called');
+    const correctAnswerInput = document.getElementById('correct_answer');
+    if (!correctAnswerInput) {
+        console.log('[updateCorrectAnswerHighlight] correct_answer input not found');
+        return;
+    }
+
+    const correctAnswerNumber = parseInt(correctAnswerInput.value) || 1;
+    console.log('[updateCorrectAnswerHighlight] Correct answer number:', correctAnswerNumber);
+
+    // Supprimer la classe correct-answer de toutes les réponses
+    const answerGroups = document.querySelectorAll('.answer-input-group');
+    console.log('[updateCorrectAnswerHighlight] Found answer groups:', answerGroups.length);
+
+    answerGroups.forEach(group => {
+        group.classList.remove('correct-answer');
+    });
+
+    // Ajouter la classe correct-answer à la réponse sélectionnée
+    if (answerGroups[correctAnswerNumber - 1]) {
+        answerGroups[correctAnswerNumber - 1].classList.add('correct-answer');
+        console.log('[updateCorrectAnswerHighlight] Added correct-answer class to group', correctAnswerNumber - 1);
+    } else {
+        console.log('[updateCorrectAnswerHighlight] No answer group found for index', correctAnswerNumber - 1);
+    }
+}
+
 function updateSpecificThemes(broadThemeId) {
     const specificThemeSelect = document.getElementById('specific_theme_id');
 
@@ -542,15 +573,64 @@ function addNewAnswer() {
 
     // Ajouter au container
     container.appendChild(answerGroup);
+
+    // Mettre à jour la coloration après ajout d'une nouvelle réponse
+    updateCorrectAnswerHighlight();
 }
 
-// Initialiser les sous-thèmes au chargement si un thème est déjà sélectionné
-document.addEventListener('DOMContentLoaded', function() {
+// Fonction d'initialisation commune
+function initializeForm() {
+    console.log('[initializeForm] Initializing form...');
     const broadThemeSelect = document.getElementById('broad_theme_id');
-    if (broadThemeSelect.value) {
+    if (broadThemeSelect && broadThemeSelect.value) {
         updateSpecificThemes(broadThemeSelect.value);
     }
-});
+
+    // Initialiser la coloration de la bonne réponse
+    updateCorrectAnswerHighlight();
+
+    // Ajouter un écouteur d'événement sur le champ bonne réponse
+    const correctAnswerInput = document.getElementById('correct_answer');
+    if (correctAnswerInput) {
+        correctAnswerInput.addEventListener('input', updateCorrectAnswerHighlight);
+        correctAnswerInput.addEventListener('change', updateCorrectAnswerHighlight);
+        console.log('[initializeForm] Event listeners added to correct_answer input');
+    } else {
+        console.log('[initializeForm] correct_answer input not found');
+    }
+}
+
+// Approche simplifiée : essayer d'initialiser immédiatement et régulièrement
+function tryInitializeForm() {
+    const correctAnswerInput = document.getElementById('correct_answer');
+    const answerGroups = document.querySelectorAll('.answer-input-group');
+
+    if (correctAnswerInput && answerGroups.length > 0) {
+        console.log('[tryInitializeForm] Elements found, initializing...');
+        initializeForm();
+        return true; // Initialisation réussie
+    } else {
+        console.log('[tryInitializeForm] Elements not ready yet, retrying...');
+        return false; // Réessayer plus tard
+    }
+}
+
+// Essayer immédiatement
+if (!tryInitializeForm()) {
+    // Si ça ne marche pas, réessayer toutes les 200ms pendant 5 secondes
+    let attempts = 0;
+    const maxAttempts = 25; // 25 * 200ms = 5 secondes
+
+    const retryInterval = setInterval(function() {
+        attempts++;
+        if (tryInitializeForm() || attempts >= maxAttempts) {
+            clearInterval(retryInterval);
+            if (attempts >= maxAttempts) {
+                console.log('[tryInitializeForm] Max attempts reached, giving up');
+            }
+        }
+    }, 200);
+}
 </script>
 
 <style>
@@ -560,6 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .answer-input-group{display:grid;grid-template-columns:minmax(140px,1fr) 1fr;gap:.75rem;align-items:start;margin-bottom:.5rem}
     .answer-left{display:flex;align-items:center;gap:.5rem}
     .answer-left input[type="text"]{flex:1}
+    .answer-input-group.correct-answer{background-color:#e6f7ff;border-color:#1890ff;border-width:2px}
     .countries-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
