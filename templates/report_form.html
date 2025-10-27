@@ -1,9 +1,10 @@
 <div class="modal-content">
   <div class="modal-header">
     <h3>Signaler un problème</h3>
-    <button class="btn btn-secondary" onclick="document.getElementById('modal-root').style.display='none'">Fermer</button>
+    <button class="btn-close" onclick="document.getElementById('modal-root').style.display='none'">&times;</button>
   </div>
-  <form id="report-form" hx-post="/api/report/submit" hx-target="#modal-root" hx-swap="outerHTML">
+  <div class="modal-body">
+    <form id="report-form" hx-post="/api/report/submit" hx-target="#modal-root" hx-swap="outerHTML">
     <input type="hidden" name="question_id" value="{{ question.id }}" />
     {% if rule_set %}
     <input type="hidden" name="rule_set" value="{{ rule_set.slug }}" />
@@ -28,17 +29,14 @@
       <label>Destinataires</label>
       <label class="checkbox-label">
         <input type="checkbox" name="to_author" value="1" {% if author_user %}checked{% endif %} />
-        <span class="checkmark"></span>
         Auteur de la question {% if author_user %}({{ author_user.username }}){% endif %}
       </label>
       <label class="checkbox-label">
         <input type="checkbox" name="to_rule_creator" value="1" {% if rule_creator %}checked{% endif %} />
-        <span class="checkmark"></span>
         Créateur du set {% if rule_creator %}({{ rule_creator.username }}){% endif %}
       </label>
       <label class="checkbox-label">
         <input type="checkbox" name="to_admins" value="1" checked />
-        <span class="checkmark"></span>
         Administrateurs du site
       </label>
     </div>
@@ -47,6 +45,155 @@
       <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-root').style.display='none'">Annuler</button>
       <button type="submit" class="btn btn-primary">Envoyer</button>
     </div>
-  </form>
+    </form>
+  </div>
 </div>
+
+<style>
+  /* Styles pour la modale de signalement */
+  .modal-content {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+  }
+
+  .btn-close:hover {
+    background: var(--border-color);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+  }
+
+  .form-control[readonly] {
+    background: var(--card-bg);
+    cursor: not-allowed;
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-color);
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .modal-content {
+      width: 95%;
+      margin: 1rem;
+    }
+
+    .modal-header {
+      padding: 1rem;
+    }
+
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .form-control {
+      padding: 0.625rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .modal-content {
+      width: 100%;
+      margin: 0;
+      max-height: 100vh;
+      border-radius: 0;
+    }
+
+    .modal-header {
+      padding: 0.875rem;
+    }
+
+    .modal-body {
+      padding: 0.875rem;
+    }
+  }
+</style>
 
