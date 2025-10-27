@@ -10,6 +10,16 @@
     <form id="export-form" class="export-form" method="get" action="/api/export/download">
         <div class="grid">
             <div class="field">
+                <label>Auteur</label>
+                <select name="author_filter">
+                    <option value="mine">Mes questions uniquement</option>
+                    {% if current_user and current_user.has_perm('can_access_admin') %}
+                    <option value="all">Toutes les questions</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="field">
                 <label>Recherche</label>
                 <input type="text" name="q" placeholder="Texte, auteur, thème…">
             </div>
@@ -44,11 +54,21 @@
             </div>
 
             <div class="field">
-                <label>&nbsp;</label>
-                <label class="checkbox">
-                    <input type="checkbox" name="only_published" value="1">
-                    <span>Publié uniquement</span>
-                </label>
+                <label>Statut publication</label>
+                <select name="publication_status">
+                    <option value="">Toutes</option>
+                    <option value="published">Publiées uniquement</option>
+                    <option value="unpublished">Non publiées uniquement</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Date création min</label>
+                <input type="date" name="created_after">
+            </div>
+            <div class="field">
+                <label>Date création max</label>
+                <input type="date" name="created_before">
             </div>
 
             <div class="field">
@@ -80,14 +100,22 @@
 <style>
 .export-form .grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 1rem;
 }
 .field { display: flex; flex-direction: column; gap: 0.25rem; }
 .field label { font-weight: 600; }
-.checkbox { display: inline-flex; align-items: center; gap: 0.5rem; }
 .actions { margin-top: 1rem; }
-@media (max-width: 900px) {
+@media (max-width: 1400px) {
+    .export-form .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 1200px) {
+    .export-form .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 1024px) {
+    .export-form .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
     .export-form .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {

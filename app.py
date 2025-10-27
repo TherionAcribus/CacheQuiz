@@ -1437,9 +1437,21 @@ def _apply_export_filters(query):
             )
         )
 
-    only_published = request.args.get('only_published') in ('1', 'true', 'yes', 'on')
-    if only_published:
+    # Filtre par auteur
+    author_filter = request.args.get('author_filter', 'mine')  # Par défaut: mes questions uniquement
+    if author_filter == 'mine':
+        user = getattr(g, 'current_user', None)
+        if user:
+            query = query.filter(Question.author_id == user.id)
+        else:
+            # Si pas d'utilisateur connecté, ne montrer aucune question
+            query = query.filter(False)
+
+    publication_status = request.args.get('publication_status')
+    if publication_status == 'published':
         query = query.filter(Question.is_published.is_(True))
+    elif publication_status == 'unpublished':
+        query = query.filter(Question.is_published.is_(False))
 
     try:
         diff_min = int(request.args.get('diff_min')) if request.args.get('diff_min') else None
@@ -1458,6 +1470,25 @@ def _apply_export_filters(query):
     specific_theme_id = request.args.get('specific_theme_id')
     if specific_theme_id and specific_theme_id.isdigit():
         query = query.filter(Question.specific_theme_id == int(specific_theme_id))
+
+    # Filtres par date
+    created_after = request.args.get('created_after')
+    if created_after:
+        try:
+            created_after_date = datetime.strptime(created_after, '%Y-%m-%d')
+            query = query.filter(Question.created_at >= created_after_date)
+        except ValueError:
+            pass  # Ignorer si format invalide
+
+    created_before = request.args.get('created_before')
+    if created_before:
+        try:
+            created_before_date = datetime.strptime(created_before, '%Y-%m-%d')
+            # Inclure toute la journée (jusqu'à 23:59:59)
+            created_before_date = created_before_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+            query = query.filter(Question.created_at <= created_before_date)
+        except ValueError:
+            pass  # Ignorer si format invalide
 
     return query
 
