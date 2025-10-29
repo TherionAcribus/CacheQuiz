@@ -68,7 +68,7 @@
             {% set answers = question.possible_answers.split('|||') %}
             {% if answers %}
             <div class="answers-preview">
-                <strong>Réponses possibles:</strong>
+                <strong>Réponses possiblesf:</strong>
                 <ul>
                     {% for answer in answers %}
                     <li {% if loop.index == question.correct_answer|int %}class="correct-answer"{% endif %}>

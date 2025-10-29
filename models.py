@@ -17,6 +17,12 @@ question_images = db.Table('question_images',
     db.Column('image_id', db.Integer, db.ForeignKey('images.id'), primary_key=True)
 )
 
+# Table d'association many-to-many entre Question et Keyword (mots-clés/sujets précis)
+question_keywords = db.Table('question_keywords',
+    db.Column('question_id', db.Integer, db.ForeignKey('questions.id'), primary_key=True),
+    db.Column('keyword_id', db.Integer, db.ForeignKey('keywords.id'), primary_key=True)
+)
+
 
 class BroadTheme(db.Model):
     __tablename__ = 'broad_themes'
@@ -112,6 +118,49 @@ class SpecificTheme(db.Model):
             'color': self.color,
             'broad_theme_id': self.broad_theme_id,
             'broad_theme_name': self.broad_theme.name if self.broad_theme else None,
+            'translation_id': self.translation_id,
+            'question_count': self.questions.count()
+        }
+
+
+class Keyword(db.Model):
+    __tablename__ = 'keywords'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Informations
+    name = db.Column(db.String(100), nullable=False)  # Nom du mot-clé/sujet précis
+    description = db.Column(db.Text)  # Description optionnelle
+    language = db.Column(db.String(10), nullable=False, default='fr')  # Code langue
+
+    # Traduction
+    translation_id = db.Column(db.Integer, db.ForeignKey('keywords.id'), nullable=True)
+
+    # Relations
+    translations = db.relationship('Keyword',
+                                   backref=db.backref('original', remote_side=[id]),
+                                   foreign_keys=[translation_id])
+
+    # Relation inverse avec les questions (many-to-many)
+    questions = db.relationship('Question',
+                                secondary=question_keywords,
+                                back_populates='keywords',
+                                lazy='dynamic')
+
+    def __repr__(self):
+        return f'<Keyword {self.id}: {self.name} ({self.language})>'
+
+    def to_dict(self):
+        """Convertir le mot-clé en dictionnaire pour JSON"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'language': self.language,
             'translation_id': self.translation_id,
             'question_count': self.questions.count()
         }
@@ -314,6 +363,12 @@ class Question(db.Model):
                              back_populates='questions',
                              lazy='subquery')
     
+    # Mots-clés/sujets précis liés à la question (many-to-many)
+    keywords = db.relationship('Keyword',
+                               secondary=question_keywords,
+                               back_populates='questions',
+                               lazy='subquery')
+    
     # Images associées aux réponses (one-to-many via table dédiée)
     answer_image_links = db.relationship('AnswerImageLink',
                                          back_populates='question',
@@ -376,6 +431,7 @@ class Question(db.Model):
             'specific_theme_id': self.specific_theme_id,
             'specific_theme_name': self.specific_theme_obj.name if self.specific_theme_obj else None,
             'countries': [{'id': c.id, 'name': c.name, 'code': c.code, 'flag': c.flag} for c in self.countries],
+            'keywords': [{'id': k.id, 'name': k.name, 'language': k.language} for k in self.keywords],
             'difficulty_level': self.difficulty_level,
             'success_count': self.success_count,
             'success_rate': self.success_rate,
@@ -533,6 +589,13 @@ quiz_rule_set_countries = db.Table(
     db.Column('country_id', db.Integer, db.ForeignKey('countries.id'), primary_key=True)
 )
 
+# Table d'association pour lier un set de règles à des mots-clés
+quiz_rule_set_keywords = db.Table(
+    'quiz_rule_set_keywords',
+    db.Column('rule_set_id', db.Integer, db.ForeignKey('quiz_rule_sets.id'), primary_key=True),
+    db.Column('keyword_id', db.Integer, db.ForeignKey('keywords.id'), primary_key=True)
+)
+
 
 class QuizRuleSet(db.Model):
     __tablename__ = 'quiz_rule_sets'
@@ -585,6 +648,17 @@ class QuizRuleSet(db.Model):
     allowed_specific_themes = db.relationship(
         'SpecificTheme',
         secondary=quiz_rule_set_specific_themes,
+        lazy='subquery'
+    )
+
+    # Mots-clés (sujets précis) - utilisé uniquement en mode 'auto'
+    # Si prevent_duplicate_keywords = True, on s'assure qu'aucun mot-clé n'apparaît deux fois dans le quiz
+    # Si allowed_keywords est spécifié (non vide), on ne sélectionne que les questions avec ces mots-clés
+    prevent_duplicate_keywords = db.Column(db.Boolean, nullable=False, default=True)
+    use_all_keywords = db.Column(db.Boolean, nullable=False, default=True)
+    allowed_keywords = db.relationship(
+        'Keyword',
+        secondary=quiz_rule_set_keywords,
         lazy='subquery'
     )
 

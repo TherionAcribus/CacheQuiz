@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage, Keyword
 from datetime import datetime
 import random
 import os
@@ -1820,6 +1820,12 @@ def create_question():
         else:
             question.images = []
         
+        # Gérer les mots-clés (relation many-to-many)
+        keyword_ids = request.form.getlist('keywords')
+        if keyword_ids:
+            keywords = Keyword.query.filter(Keyword.id.in_([int(kid) for kid in keyword_ids if kid])).all()
+            question.keywords = keywords
+        
         db.session.add(question)
         db.session.flush()
 
@@ -1925,6 +1931,14 @@ def update_question(question_id):
                 pass
         else:
             question.images = []
+        
+        # Gérer les mots-clés (relation many-to-many)
+        keyword_ids = request.form.getlist('keywords')
+        if keyword_ids:
+            keywords = Keyword.query.filter(Keyword.id.in_([int(kid) for kid in keyword_ids if kid])).all()
+            question.keywords = keywords
+        else:
+            question.keywords = []
         
         # Réinitialiser les liens image->réponse
         AnswerImageLink.query.filter_by(question_id=question.id).delete()
@@ -2404,6 +2418,65 @@ def get_specific_themes_for_broad_theme():
     else:
         specific_themes = []
     return render_template('specific_theme_options.html', specific_themes=specific_themes)
+
+
+# ===== Routes pour les mots-clés (Keywords) =====
+
+@app.route('/api/keywords/json')
+def list_keywords_json():
+    """Retourner la liste de tous les mots-clés en JSON (pour l'autocomplétion)"""
+    try:
+        keywords = Keyword.query.order_by(Keyword.name).all()
+        return [kw.to_dict() for kw in keywords]
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+
+@app.route('/api/keyword', methods=['POST'])
+def create_keyword():
+    """Créer un nouveau mot-clé"""
+    try:
+        # Pas besoin de vérifier les permissions ici car c'est appelé depuis le formulaire de question
+        # qui a déjà ses propres contrôles de permissions
+        name = request.form.get('name', '').strip()
+        language = request.form.get('language', 'fr').strip()
+        description = request.form.get('description', '').strip()
+        
+        # Validation
+        if not name:
+            return {'error': 'Le nom du mot-clé est requis'}, 400
+        
+        # Vérifier si le mot-clé existe déjà (normalisation pour éviter doublons)
+        # Normaliser: enlever accents, espaces, traits d'union, mettre en minuscules
+        normalized_name = unidecode(name.lower()).replace('-', '').replace(' ', '').replace('_', '')
+        
+        existing_keywords = Keyword.query.all()
+        for existing in existing_keywords:
+            existing_normalized = unidecode(existing.name.lower()).replace('-', '').replace(' ', '').replace('_', '')
+            if existing_normalized == normalized_name:
+                return {
+                    'error': 'Un mot-clé similaire existe déjà',
+                    'existing_keyword': existing.to_dict()
+                }, 409
+        
+        # Créer le nouveau mot-clé
+        keyword = Keyword(
+            name=name,
+            language=language,
+            description=description if description else None
+        )
+        db.session.add(keyword)
+        db.session.commit()
+        
+        return {
+            'success': True,
+            'keyword': keyword.to_dict(),
+            'message': f'Mot-clé "{name}" créé avec succès'
+        }, 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return {'error': str(e)}, 500
 
 
 # ===== Routes pour les utilisateurs =====

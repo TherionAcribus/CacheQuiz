@@ -108,7 +108,36 @@
 
             <div class="form-row full-width">
                 <div class="form-group full-width">
-                    <label>Réponses possibles *</label>
+                    <label for="keywords-input">Mots-clés / Sujets précis (optionnel)</label>
+                    <div class="keywords-container">
+                        <div id="keywords-tags" class="keywords-tags">
+                            {% if question and question.keywords %}
+                                {% for keyword in question.keywords %}
+                                <span class="keyword-tag" data-keyword-id="{{ keyword.id }}" data-keyword-name="{{ keyword.name }}">
+                                    {{ keyword.name }}
+                                    <button type="button" class="remove-keyword" onclick="removeKeyword({{ keyword.id }})">&times;</button>
+                                    <input type="hidden" name="keywords" value="{{ keyword.id }}">
+                                </span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="keywords-input-wrapper">
+                            <input type="text" 
+                                   id="keywords-input" 
+                                   placeholder="Tapez pour rechercher ou créer un mot-clé..."
+                                   autocomplete="off"
+                                   onkeyup="searchKeywords(this.value)"
+                                   onkeydown="handleKeywordInputKeydown(event)">
+                            <div id="keywords-suggestions" class="keywords-suggestions" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <small>Ajoutez des mots-clés pour identifier les sujets très précis (ex: "première cache", "mingo"). Permet d'éviter les doublons dans les quiz.</small>
+                </div>
+            </div>
+
+            <div class="form-row full-width">
+                <div class="form-group full-width">
+                    <label>Réponses possibless *</label>
                     <div id="answers-container">
                         {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
                         {% for i in range(1, 5) %}
@@ -500,6 +529,250 @@ function showToast(message, type) {
         }
     }, 3000);
 }
+
+// ============ Gestion des mots-clés (Keywords) ============
+
+// Variables globales pour les mots-clés
+window.keywordsSearchTimeout = null;
+window.allKeywords = []; // Cache des mots-clés
+
+// Normaliser une chaîne pour la recherche (insensible aux accents, espaces, traits d'union)
+function normalizeString(str) {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+        .replace(/[-\s_]+/g, ''); // Supprimer espaces, traits d'union, underscores
+}
+
+// Rechercher des mots-clés avec autocomplétion
+function searchKeywords(searchTerm) {
+    console.log('[searchKeywords] called with:', searchTerm);
+    
+    // Annuler le timeout précédent
+    if (window.keywordsSearchTimeout) {
+        clearTimeout(window.keywordsSearchTimeout);
+    }
+    
+    // Si la recherche est vide, cacher les suggestions
+    if (!searchTerm || searchTerm.trim().length === 0) {
+        document.getElementById('keywords-suggestions').style.display = 'none';
+        return;
+    }
+    
+    // Déclencher la recherche après 300ms
+    window.keywordsSearchTimeout = setTimeout(function() {
+        var normalizedSearch = normalizeString(searchTerm);
+        console.log('[searchKeywords] normalized search:', normalizedSearch);
+        
+        // Filtrer les mots-clés existants
+        var matches = window.allKeywords.filter(function(kw) {
+            var normalizedName = normalizeString(kw.name);
+            return normalizedName.includes(normalizedSearch);
+        });
+        
+        // Vérifier si le terme exact existe déjà (pour éviter les doublons)
+        var exactMatch = window.allKeywords.find(function(kw) {
+            return normalizeString(kw.name) === normalizedSearch;
+        });
+        
+        // Afficher les suggestions
+        displayKeywordSuggestions(searchTerm, matches, exactMatch);
+    }, 300);
+}
+
+// Afficher les suggestions de mots-clés
+function displayKeywordSuggestions(searchTerm, matches, exactMatch) {
+    var suggestionsDiv = document.getElementById('keywords-suggestions');
+    suggestionsDiv.innerHTML = '';
+    
+    // Vérifier les mots-clés déjà sélectionnés
+    var selectedKeywordIds = getSelectedKeywordIds();
+    
+    // Filtrer les correspondances pour ne pas afficher les déjà sélectionnés
+    var availableMatches = matches.filter(function(kw) {
+        return selectedKeywordIds.indexOf(kw.id) === -1;
+    });
+    
+    if (availableMatches.length > 0) {
+        // Afficher les correspondances existantes
+        availableMatches.forEach(function(kw) {
+            var item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = kw.name;
+            item.onclick = function() {
+                addKeywordTag(kw.id, kw.name);
+                document.getElementById('keywords-input').value = '';
+                suggestionsDiv.style.display = 'none';
+            };
+            suggestionsDiv.appendChild(item);
+        });
+    }
+    
+    // Si aucune correspondance exacte, proposer de créer
+    if (!exactMatch && searchTerm.trim().length >= 2) {
+        var createItem = document.createElement('div');
+        createItem.className = 'suggestion-item create-new';
+        createItem.innerHTML = '<strong>+ Créer :</strong> "' + searchTerm.trim() + '"';
+        createItem.onclick = function() {
+            createAndAddKeyword(searchTerm.trim());
+        };
+        suggestionsDiv.appendChild(createItem);
+    }
+    
+    // Afficher ou cacher les suggestions
+    if (suggestionsDiv.children.length > 0) {
+        suggestionsDiv.style.display = 'block';
+    } else {
+        suggestionsDiv.style.display = 'none';
+    }
+}
+
+// Obtenir les IDs des mots-clés déjà sélectionnés
+function getSelectedKeywordIds() {
+    var tags = document.querySelectorAll('.keyword-tag');
+    var ids = [];
+    tags.forEach(function(tag) {
+        var id = parseInt(tag.getAttribute('data-keyword-id'));
+        if (!isNaN(id)) {
+            ids.push(id);
+        }
+    });
+    return ids;
+}
+
+// Ajouter un tag de mot-clé sélectionné
+function addKeywordTag(keywordId, keywordName) {
+    console.log('[addKeywordTag] adding:', keywordId, keywordName);
+    
+    // Vérifier si déjà ajouté
+    var existing = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
+    if (existing) {
+        console.log('[addKeywordTag] already exists');
+        return;
+    }
+    
+    var tagsContainer = document.getElementById('keywords-tags');
+    var tag = document.createElement('span');
+    tag.className = 'keyword-tag';
+    tag.setAttribute('data-keyword-id', keywordId);
+    tag.setAttribute('data-keyword-name', keywordName);
+    tag.innerHTML = keywordName + 
+        ' <button type="button" class="remove-keyword" onclick="removeKeyword(' + keywordId + ')">&times;</button>' +
+        '<input type="hidden" name="keywords" value="' + keywordId + '">';
+    
+    tagsContainer.appendChild(tag);
+    console.log('[addKeywordTag] tag added');
+}
+
+// Supprimer un mot-clé sélectionné
+function removeKeyword(keywordId) {
+    console.log('[removeKeyword] removing:', keywordId);
+    var tag = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
+    if (tag) {
+        tag.remove();
+    }
+}
+
+// Créer un nouveau mot-clé et l'ajouter
+function createAndAddKeyword(keywordName) {
+    console.log('[createAndAddKeyword] creating:', keywordName);
+    
+    // Afficher un message de création
+    var input = document.getElementById('keywords-input');
+    input.disabled = true;
+    input.value = 'Création en cours...';
+    
+    // Appel API pour créer le mot-clé
+    var formData = new FormData();
+    formData.append('name', keywordName);
+    formData.append('language', 'fr'); // Par défaut en français
+    
+    fetch('/api/keyword', {
+        method: 'POST',
+        body: formData,
+        headers: { 'HX-Request': 'true' }
+    })
+    .then(function(response) {
+        if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
+        return response.json();
+    })
+    .then(function(data) {
+        console.log('[createAndAddKeyword] created:', data);
+        if (data && data.keyword) {
+            // Ajouter au cache
+            window.allKeywords.push(data.keyword);
+            // Ajouter le tag
+            addKeywordTag(data.keyword.id, data.keyword.name);
+            // Réinitialiser l'input
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+            // Cacher les suggestions
+            document.getElementById('keywords-suggestions').style.display = 'none';
+            showToast('Mot-clé "' + data.keyword.name + '" créé avec succès', 'success');
+        }
+    })
+    .catch(function(error) {
+        console.error('[createAndAddKeyword] error:', error);
+        showToast('Erreur lors de la création du mot-clé', 'error');
+        input.value = '';
+        input.disabled = false;
+    });
+}
+
+// Gérer les touches spéciales dans l'input de mots-clés
+function handleKeywordInputKeydown(event) {
+    // Entrée : sélectionner la première suggestion ou créer
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        var suggestionsDiv = document.getElementById('keywords-suggestions');
+        var firstSuggestion = suggestionsDiv.querySelector('.suggestion-item');
+        if (firstSuggestion) {
+            firstSuggestion.click();
+        }
+        return false;
+    }
+    
+    // Échap : fermer les suggestions
+    if (event.key === 'Escape') {
+        document.getElementById('keywords-suggestions').style.display = 'none';
+        event.target.blur();
+    }
+}
+
+// Charger tous les mots-clés au chargement de la page
+function loadAllKeywords() {
+    console.log('[loadAllKeywords] loading keywords...');
+    fetch('/api/keywords/json', { headers: { 'HX-Request': 'true' } })
+        .then(function(response) {
+            if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
+            return response.json();
+        })
+        .then(function(keywords) {
+            console.log('[loadAllKeywords] loaded:', keywords.length, 'keywords');
+            window.allKeywords = keywords || [];
+        })
+        .catch(function(error) {
+            console.error('[loadAllKeywords] error:', error);
+            window.allKeywords = [];
+        });
+}
+
+// Fermer les suggestions si on clique ailleurs
+document.addEventListener('click', function(event) {
+    var suggestionsDiv = document.getElementById('keywords-suggestions');
+    var input = document.getElementById('keywords-input');
+    if (suggestionsDiv && input) {
+        if (!suggestionsDiv.contains(event.target) && event.target !== input) {
+            suggestionsDiv.style.display = 'none';
+        }
+    }
+});
+
+// Charger les mots-clés au chargement du script
+loadAllKeywords();
 
 // Ouvrir une modale embarquée pour créer une image, au-dessus de la modale des questions
 function openEmbeddedImageModal(selectId) {
@@ -1115,6 +1388,135 @@ if (!tryInitializeForm()) {
     .image-preview{margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border-color);border-radius:0.375rem;background:var(--card-bg);display:inline-block}
     .image-preview img{display:block;max-width:160px;max-height:120px}
     .answer-image-group{flex:1;margin-left:0.5rem}
+    
+    /* Styles pour les mots-clés */
+    .keywords-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .keywords-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-height: 2rem;
+        padding: 0.5rem;
+        border: 2px dashed var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--bg-color);
+    }
+    
+    .keywords-tags:empty::before {
+        content: 'Aucun mot-clé sélectionné';
+        color: #9ca3af;
+        font-style: italic;
+    }
+    
+    .keyword-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s;
+    }
+    
+    .keyword-tag:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-1px);
+    }
+    
+    .keyword-tag .remove-keyword {
+        background: rgba(255,255,255,0.2);
+        border: none;
+        color: white;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        line-height: 1;
+        padding: 0;
+        transition: all 0.2s;
+    }
+    
+    .keyword-tag .remove-keyword:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.1);
+    }
+    
+    .keywords-input-wrapper {
+        position: relative;
+    }
+    
+    #keywords-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+    }
+    
+    #keywords-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .keywords-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 0.25rem;
+        background: white;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+    
+    .suggestion-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.15s;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestion-item:hover {
+        background: #f9fafb;
+    }
+    
+    .suggestion-item.create-new {
+        background: #eff6ff;
+        color: #1e40af;
+        font-weight: 500;
+        border-top: 2px solid #dbeafe;
+    }
+    
+    .suggestion-item.create-new:hover {
+        background: #dbeafe;
+    }
+    
+    .suggestion-item.create-new strong {
+        color: #1e40af;
+    }
 </style>
 
 <script>
