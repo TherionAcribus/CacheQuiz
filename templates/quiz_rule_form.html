@@ -1755,6 +1755,18 @@ function confirmGallerySelection(){
 .themes-grid-select{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem;max-height:200px;overflow:auto;border:1px dashed var(--border-color);border-radius:.5rem;padding:.5rem}
 .chip{display:flex;align-items:center;gap:.35rem;padding:.35rem .5rem;border:1px solid var(--border-color);border-radius:999px;background:#fff;cursor:pointer}
 .small{font-size:.8rem;color:var(--text-light)}
+/* Limiter la largeur des selects d'images et couper le texte des options */
+select.answer-image-select {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+select.answer-image-select option {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 /* Onglets */
 .tabs{display:flex;flex-direction:column;gap:.75rem}
