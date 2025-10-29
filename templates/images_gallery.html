@@ -1,0 +1,62 @@
+{% set current_id = selected_id or 0 %}
+<div class="gallery-wrapper">
+    <div class="gallery-header">
+        <h3>Galerie d'images</h3>
+        <div class="actions">
+            <button class="btn" type="button" onclick="openEmbeddedImageModal('{{ select_id|e }}')">+ Nouvelle image</button>
+        </div>
+    </div>
+    <div class="gallery-search">
+        <input type="text" id="gallery-search-input" placeholder="Rechercher (titre, fichier, alt)"
+               oninput="performGallerySearch(this.value)"
+               onkeyup="console.log('[DEBUG] Search input keyup:', this.value)" />
+    </div>
+    <div id="images-gallery-list">
+        <div class="images-grid">
+        {% for image in images %}
+            <div class="image-card gallery-card{% if image.id == current_id %} selected{% endif %}"
+                 role="button" tabindex="0"
+                 data-image-id="{{ image.id }}"
+                 data-image-title="{{ image.title|e }}"
+                 data-image-filename="{{ image.filename|e }}"
+                 data-image-alt="{{ (image.alt_text or image.title)|e }}"
+                 onclick="event.stopPropagation(); selectImageInGallery({{ image.id }}, this)">
+                <div class="image-preview"><img src="/uploads/{{ image.filename }}" alt="{{ image.alt_text or image.title }}"></div>
+                <div class="image-meta">
+                    <div class="title">{{ image.title }}</div>
+                    <div class="filename">{{ image.filename }}</div>
+                </div>
+                {% if image.id == current_id %}<div class="badge-selected">Sélectionnée</div>{% endif %}
+            </div>
+        {% else %}
+            <div class="no-images">Aucune image.</div>
+        {% endfor %}
+        </div>
+    </div>
+    <div class="gallery-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeImageGalleryModal()">Annuler</button>
+        <button type="button" class="btn btn-primary" onclick="confirmGallerySelection()" id="confirm-btn" disabled>Valider la sélection</button>
+    </div>
+</div>
+
+<style>
+    .gallery-wrapper{max-width:960px;width:94vw}
+    .gallery-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .gallery-search{margin:.5rem 0 1rem}
+    .gallery-search input{width:100%;padding:.5rem .75rem;border:2px solid var(--border-color);border-radius:.5rem}
+    .images-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;max-height:50vh;overflow:auto;border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--bg-color)}
+    .gallery-card{position:relative;background:var(--card-bg);border:1px solid var(--border-color);border-radius:.5rem;padding:.5rem;cursor:pointer}
+    .gallery-card.selected{outline:2px solid var(--primary-color)}
+    .gallery-card.preselected{background-color:var(--primary-color);opacity:0.8}
+    .image-preview{display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed var(--border-color);border-radius:.25rem;aspect-ratio:4/3;overflow:hidden}
+    .image-preview img{max-width:100%;max-height:100%;object-fit:contain}
+    .image-meta{margin-top:.25rem}
+    .image-meta .title{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .image-meta .filename{font-size:.75rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .badge-selected{position:absolute;top:.5rem;right:.5rem;background:var(--primary-color);color:#fff;font-size:.7rem;border-radius:.5rem;padding:.15rem .35rem}
+    .gallery-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-color)}
+</style>
+
+
+
+

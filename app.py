@@ -661,10 +661,25 @@ def list_images_api():
     if denied:
         return denied
     search = request.args.get('search', '').strip()
+    selected_id = request.args.get('selected_id', type=int)
     query = ImageAsset.query
     if search:
-        query = query.filter(ImageAsset.title.like(f'%{search}%'))
+        like = f"%{search}%"
+        try:
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    ImageAsset.title.like(like),
+                    ImageAsset.filename.like(like),
+                    ImageAsset.alt_text.like(like)
+                )
+            )
+        except Exception:
+            # Fallback: filtre sur le titre uniquement
+            query = query.filter(ImageAsset.title.like(like))
     images = query.order_by(ImageAsset.created_at.desc()).all()
+    if selected_id:
+        images.sort(key=lambda img: 0 if img.id == selected_id else 1)
     return render_template('images_list.html', images=images)
 
 
@@ -675,16 +690,67 @@ def list_images_json():
     if denied:
         return denied
     search = request.args.get('search', '').strip()
+    selected_id = request.args.get('selected_id', type=int)
     query = ImageAsset.query
     if search:
-        query = query.filter(ImageAsset.title.like(f'%{search}%'))
+        like = f"%{search}%"
+        try:
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    ImageAsset.title.like(like),
+                    ImageAsset.filename.like(like),
+                    ImageAsset.alt_text.like(like)
+                )
+            )
+        except Exception:
+            query = query.filter(ImageAsset.title.like(like))
     images = query.order_by(ImageAsset.title).all()
+    if selected_id:
+        images.sort(key=lambda img: 0 if img.id == selected_id else 1)
     return [{
         'id': img.id,
         'title': img.title,
         'filename': img.filename,
         'alt_text': img.alt_text
     } for img in images]
+
+@app.route('/api/images/gallery')
+def images_gallery_fragment():
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    search = request.args.get('search', '').strip()
+    selected_id = request.args.get('selected_id', type=int)
+    select_id = request.args.get('select_id', '')
+    partial = request.args.get('partial', '0') == '1'
+    print(f"[DEBUG] /api/images/gallery called with search='{search}', selected_id={selected_id}, select_id='{select_id}', partial={partial}")
+    query = ImageAsset.query
+    if search:
+        like = f"%{search}%"
+        print(f"[DEBUG] Filtering with search pattern: {like}")
+        try:
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    ImageAsset.title.like(like),
+                    ImageAsset.filename.like(like),
+                    ImageAsset.alt_text.like(like)
+                )
+            )
+        except Exception:
+            query = query.filter(ImageAsset.title.like(like))
+    images = query.order_by(ImageAsset.created_at.desc()).all()
+    print(f"[DEBUG] Found {len(images)} images after filtering")
+    if selected_id:
+        images.sort(key=lambda img: 0 if img.id == selected_id else 1)
+
+    if partial:
+        # Retourner seulement la grille d'images pour les mises à jour partielles
+        return render_template('images_gallery_grid.html', images=images, selected_id=selected_id or 0, select_id=select_id)
+    else:
+        # Retourner le HTML complet pour l'ouverture initiale
+        return render_template('images_gallery.html', images=images, selected_id=selected_id or 0, select_id=select_id)
 
 
 @app.route('/image/new')

@@ -1,0 +1,21 @@
+{% set current_id = selected_id or 0 %}
+<div class="images-grid">
+{% for image in images %}
+    <div class="image-card gallery-card{% if image.id == current_id %} selected{% endif %}"
+         role="button" tabindex="0"
+         data-image-id="{{ image.id }}"
+         data-image-title="{{ image.title|e }}"
+         data-image-filename="{{ image.filename|e }}"
+         data-image-alt="{{ (image.alt_text or image.title)|e }}"
+         onclick="event.stopPropagation(); selectImageInGallery({{ image.id }}, this)">
+        <div class="image-preview"><img src="/uploads/{{ image.filename }}" alt="{{ image.alt_text or image.title }}"></div>
+        <div class="image-meta">
+            <div class="title">{{ image.title }}</div>
+            <div class="filename">{{ image.filename }}</div>
+        </div>
+        {% if image.id == current_id %}<div class="badge-selected">Sélectionnée</div>{% endif %}
+    </div>
+{% else %}
+    <div class="no-images">Aucune image trouvée.</div>
+{% endfor %}
+</div>
