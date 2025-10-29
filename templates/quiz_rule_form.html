@@ -325,6 +325,7 @@
                                     {% endfor %}
                                 </select>
                                 <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('intro_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('intro_image_id')" title="Ouvrir la galerie">🖼️</button>
                                 <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
                                 </div>
                                 <div id="intro-image-preview" class="image-preview" style="{% if rule and rule.intro_image %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -362,6 +363,7 @@
                                     {% endfor %}
                                 </select>
                                 <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('success_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('success_image_id')" title="Ouvrir la galerie">🖼️</button>
                                 <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
                                 </div>
                                 <div id="success-image-preview" class="image-preview" style="{% if rule and rule.success_image %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -399,6 +401,7 @@
                                     {% endfor %}
                                 </select>
                                 <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('failure_image_id')">+ Ajouter une image</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('failure_image_id')" title="Ouvrir la galerie">🖼️</button>
                                 <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
                                 </div>
                                 <div id="failure-image-preview" class="image-preview" style="{% if rule and rule.failure_image %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -453,22 +456,40 @@ function submitEmbeddedImageForm(formEl){
 }
 // Ouvrir une modale embarquée pour créer une image, au-dessus de la modale des règles
 function openEmbeddedImageModal(selectId) {
+    console.log('[openEmbeddedImageModal] called with selectId:', selectId);
     // Créer un conteneur overlay si absent
     var overlay = document.getElementById('embedded-image-modal');
     if (!overlay) {
+        console.log('[openEmbeddedImageModal] creating overlay');
         overlay = document.createElement('div');
         overlay.id = 'embedded-image-modal';
         overlay.className = 'modal-overlay';
-        overlay.innerHTML = '<div class="modal-content"><div id="embedded-image-form-wrapper"></div></div>';
+        // Utiliser un z-index plus élevé si on est dans une modale de galerie
+        var zIndex = document.getElementById('embedded-image-gallery-modal') ? '10002' : '10000';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: ' + zIndex + ';';
+        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-form-wrapper"></div></div>';
         document.body.appendChild(overlay);
+    } else {
+        // Ajuster le z-index si nécessaire
+        var galleryModal = document.getElementById('embedded-image-gallery-modal');
+        if (galleryModal && galleryModal.style.display !== 'none') {
+            overlay.style.zIndex = '10002';
+        }
     }
     overlay.style.display = 'flex';
+    console.log('[openEmbeddedImageModal] overlay displayed');
+
     // Charger le formulaire d'image en mode embarqué
-    fetch('/image/new?embedded=1&select_id=' + encodeURIComponent(selectId), { headers: { 'HX-Request': 'true' }})
+    var url = '/image/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+    console.log('[openEmbeddedImageModal] fetching:', url);
+    fetch(url, { headers: { 'HX-Request': 'true' }})
       .then(function(r){return r.text()})
       .then(function(html){
         var wrap = document.getElementById('embedded-image-form-wrapper');
         wrap.innerHTML = html;
+      })
+      .catch(function(err){
+        console.error('[openEmbeddedImageModal] fetch error:', err);
       });
 }
 
@@ -506,6 +527,49 @@ window.onEmbeddedImageCreated = function(createdImage, selectId){
         var event = new Event('change', { bubbles: true });
         sel.dispatchEvent(event);
         console.log('[onEmbeddedImageCreated] change event dispatched');
+
+        // Si la galerie est ouverte, la mettre à jour avec la nouvelle image
+        var galleryModal = document.getElementById('embedded-image-gallery-modal');
+        if (galleryModal && galleryModal.style.display !== 'none') {
+            console.log('[onEmbeddedImageCreated] gallery is open, updating it');
+            // Mettre à jour la galerie en rechargeant avec la nouvelle image sélectionnée
+            var galleryWrapper = document.getElementById('embedded-image-gallery-wrapper');
+            if (galleryWrapper && window.gallerySelectId) {
+                var url = '/api/images/gallery?select_id=' + encodeURIComponent(window.gallerySelectId) +
+                          '&selected_id=' + encodeURIComponent(createdImage.id);
+                fetch(url, { headers: { 'HX-Request': 'true' } })
+                    .then(function(r){ return r.text(); })
+                    .then(function(html){
+                        galleryWrapper.innerHTML = html;
+                        // Mettre à jour les variables globales
+                        window.gallerySelectedId = createdImage.id;
+                        window.currentGallerySelection = createdImage;
+                        // Appliquer la pré-sélection visuelle et activer le bouton
+                        setTimeout(function() {
+                            var imageCard = document.querySelector('.gallery-card[data-image-id="' + createdImage.id + '"]');
+                            if (imageCard) {
+                                // Retirer preselected de toutes les cartes
+                                document.querySelectorAll('.gallery-card').forEach(function(card) {
+                                    card.classList.remove('preselected');
+                                });
+                                // Ajouter preselected à la nouvelle image
+                                imageCard.classList.add('preselected');
+                                // Activer le bouton Valider
+                                var confirmBtn = document.getElementById('confirm-btn');
+                                if (confirmBtn) {
+                                    confirmBtn.disabled = false;
+                                }
+                                console.log('[onEmbeddedImageCreated] visual selection applied to new image');
+                            }
+                        }, 100); // Petit délai pour s'assurer que le DOM est mis à jour
+                        console.log('[onEmbeddedImageCreated] gallery updated with new image');
+                    })
+                    .catch(function(err){
+                        console.error('[onEmbeddedImageCreated] error updating gallery:', err);
+                    });
+            }
+        }
+
         // Fermer la modale embarquée
         closeEmbeddedImageModal();
     } catch (e) {
@@ -1509,6 +1573,175 @@ try {
 } catch (e) {
     console.error('Erreur lors de l\'initialisation directe:', e);
 }
+// Fonctions pour la galerie d'images
+window.currentGallerySelection = null;
+window.gallerySearchTimeout = null;
+window.gallerySelectedId = null;
+window.gallerySelectId = null;
+
+function openImageGalleryModal(selectId){
+    console.log('[openImageGalleryModal] opening gallery for selectId:', selectId);
+
+    // Créer/ouvrir overlay
+    var overlay = document.getElementById('embedded-image-gallery-modal');
+    if(!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'embedded-image-gallery-modal';
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10001;';
+        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 960px; width: 96%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-gallery-wrapper"></div></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    // Stocker le selectId pour la confirmation et la recherche
+    window.currentGallerySelectId = selectId;
+    window.gallerySelectId = selectId;
+
+    // Valeur sélectionnée actuelle
+    var sel = document.getElementById(selectId) || document.querySelector('select[name="'+selectId+'"]');
+    var selectedId = sel && sel.value ? sel.value : '';
+    window.gallerySelectedId = selectedId;
+    var url = '/api/images/gallery?select_id=' + encodeURIComponent(selectId) + (selectedId ? ('&selected_id=' + encodeURIComponent(selectedId)) : '');
+    fetch(url, { headers: { 'HX-Request': 'true' }})
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+          var wrap = document.getElementById('embedded-image-gallery-wrapper');
+          wrap.innerHTML = html;
+          // Réinitialiser la sélection courante
+          window.currentGallerySelection = null;
+      })
+      .catch(function(err){ console.error('[openImageGalleryModal] error:', err); });
+}
+
+function closeImageGalleryModal(){
+    var overlay = document.getElementById('embedded-image-gallery-modal');
+    if(overlay){ overlay.style.display = 'none'; }
+}
+
+function selectImageInGallery(imageId, element){
+    console.log('[selectImageInGallery] called with imageId:', imageId);
+
+    // Retirer la classe preselected de toutes les cartes
+    var allCards = document.querySelectorAll('.gallery-card');
+    allCards.forEach(function(card){
+        card.classList.remove('preselected');
+    });
+
+    // Ajouter la classe preselected à la carte cliquée
+    element.classList.add('preselected');
+
+    // Stocker la sélection courante
+    window.currentGallerySelection = {
+        id: imageId,
+        title: element.dataset.imageTitle,
+        filename: element.dataset.imageFilename,
+        altText: element.dataset.imageAlt
+    };
+
+    // Activer le bouton de validation
+    var confirmBtn = document.getElementById('confirm-btn');
+    if(confirmBtn){
+        confirmBtn.disabled = false;
+    }
+
+    console.log('[selectImageInGallery] selection stored:', window.currentGallerySelection);
+}
+
+function performGallerySearch(searchTerm) {
+    console.log('[performGallerySearch] called with:', searchTerm);
+
+    // Annuler le timeout précédent
+    if (window.gallerySearchTimeout) {
+        clearTimeout(window.gallerySearchTimeout);
+    }
+
+    // Déclencher la recherche après 300ms
+    window.gallerySearchTimeout = setTimeout(function() {
+        console.log('[performGallerySearch] executing search for:', searchTerm);
+
+        var url = '/api/images/gallery?search=' + encodeURIComponent(searchTerm) +
+                  '&selected_id=' + encodeURIComponent(window.gallerySelectedId || '') +
+                  '&select_id=' + encodeURIComponent(window.gallerySelectId || '') +
+                  '&partial=1';
+
+        console.log('[performGallerySearch] fetching:', url);
+
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(function(response) {
+                console.log('[performGallerySearch] response status:', response.status);
+                return response.text();
+            })
+            .then(function(html) {
+                console.log('[performGallerySearch] received HTML, updating gallery list');
+                var listElement = document.getElementById('images-gallery-list');
+                if (listElement) {
+                    listElement.innerHTML = html;
+                } else {
+                    console.error('[performGallerySearch] images-gallery-list element not found');
+                }
+            })
+            .catch(function(error) {
+                console.error('[performGallerySearch] error:', error);
+            });
+    }, 300);
+}
+
+function confirmGallerySelection(){
+    console.log('[confirmGallerySelection] called');
+
+    if(!window.currentGallerySelection){
+        console.warn('[confirmGallerySelection] no selection to confirm');
+        return;
+    }
+
+    var selectId = window.currentGallerySelectId;
+    if(!selectId){
+        console.error('[confirmGallerySelection] no selectId stored');
+        return;
+    }
+
+    console.log('[confirmGallerySelection] applying selection to selectId:', selectId);
+
+    try{
+        var sel = document.getElementById(selectId) || document.querySelector('select[name="'+selectId+'"]');
+        console.log('[confirmGallerySelection] found select element:', sel);
+        if(!sel){
+            console.error('[confirmGallerySelection] Select element not found for id/name:', selectId);
+            return;
+        }
+
+        var image = window.currentGallerySelection;
+        var exists = Array.prototype.some.call(sel.options, function(o){ return String(o.value)===String(image.id); });
+        console.log('[confirmGallerySelection] image already exists:', exists);
+        if(!exists){
+            var opt = document.createElement('option');
+            opt.value = String(image.id);
+            opt.textContent = image.title + ' (' + image.filename + ')';
+            opt.setAttribute('data-filename', image.filename || '');
+            opt.setAttribute('data-alt', image.altText || image.title || '');
+            sel.appendChild(opt);
+            console.log('[confirmGallerySelection] option added');
+        }
+        // Sélectionner la nouvelle image
+        sel.value = String(image.id);
+        console.log('[confirmGallerySelection] selected value set to:', sel.value);
+        // Déclencher l'événement change pour rafraîchir l'aperçu
+        var event = new Event('change', { bubbles: true });
+        sel.dispatchEvent(event);
+        console.log('[confirmGallerySelection] change event dispatched');
+        // Fermer la modale galerie
+        if(window.closeImageGalleryModal){
+            console.log('[confirmGallerySelection] closing gallery modal');
+            window.closeImageGalleryModal();
+        } else {
+            console.warn('[confirmGallerySelection] closeImageGalleryModal function not found');
+        }
+    }catch(e){
+        console.error('[confirmGallerySelection] error:', e);
+    }
+}
+
 </script>
 <style>
 .form-wrapper{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.75rem;box-shadow:var(--shadow);padding:1rem;max-width:1100px;width:100%}
