@@ -8,6 +8,11 @@ import json
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text, or_
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+import io
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 from unidecode import unidecode
 from email_utils import send_email_optional
 from config import config
@@ -784,6 +789,31 @@ def _secure_filename(original_name: str) -> str:
         safe = f'image_{int(datetime.utcnow().timestamp())}.bin'
     return safe
 
+def _optimize_image(file_storage, base_name: str):
+    """Optimise l'image pour le web (resize + WebP). Retourne (bytes, new_ext, mime) ou (None, None, None)."""
+    if Image is None or file_storage is None:
+        return None, None, None
+    try:
+        file_storage.stream.seek(0)
+        img = Image.open(file_storage.stream)
+        # GIF animé: on ne touche pas
+        if bool(getattr(img, 'is_animated', False)):
+            return None, None, None
+
+        has_alpha = (img.mode in ('RGBA', 'LA') or 'transparency' in img.info)
+        img = img.convert('RGBA') if has_alpha else img.convert('RGB')
+
+        # Redimension max 1600px
+        max_size = (1600, 1600)
+        img.thumbnail(max_size, Image.LANCZOS)
+
+        out = io.BytesIO()
+        img.save(out, format='WEBP', quality=80, method=6)
+        data = out.getvalue()
+        return data, '.webp', 'image/webp'
+    except Exception:
+        return None, None, None
+
 
 @app.route('/api/image', methods=['POST'])
 def create_image():
@@ -799,30 +829,42 @@ def create_image():
         if not file:
             return "Fichier requis", 400
 
-        filename = _secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        # Nom de base et optimisation
+        original_secure = _secure_filename(file.filename)
+        base_name, orig_ext = os.path.splitext(original_secure)
 
-        # Déduire l'unicité en cas de collision physique
-        if os.path.exists(filepath):
-            name, ext = os.path.splitext(filename)
-            filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+        optimized_bytes, new_ext, new_mime = _optimize_image(file, base_name)
+        if optimized_bytes is not None:
+            filename = f"{base_name}{new_ext}"
+            # Unicité DB uniquement
+            counter = 1
+            while ImageAsset.query.filter_by(filename=filename).first() is not None:
+                filename = f"{base_name}_{counter}{new_ext}"
+                counter += 1
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-        # Vérifier l'unicité du nom de fichier dans la base de données
-        base_filename = filename
-        counter = 1
-        while ImageAsset.query.filter_by(filename=filename).first() is not None:
-            name, ext = os.path.splitext(base_filename)
-            filename = f"{name}_{counter}{ext}"
-            counter += 1
-
-        # Mettre à jour le filepath si le nom a changé
-        if filename != base_filename:
+            with open(filepath, 'wb') as f:
+                f.write(optimized_bytes)
+            size_bytes = len(optimized_bytes)
+            mime_type = new_mime
+        else:
+            # Fallback: sauvegarde brute
+            filename = original_secure
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-        file.save(filepath)
-        size_bytes = os.path.getsize(filepath)
-        mime_type = file.mimetype
+            if os.path.exists(filepath):
+                name, ext = os.path.splitext(filename)
+                filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            base_filename = filename
+            counter = 1
+            while ImageAsset.query.filter_by(filename=filename).first() is not None:
+                name, ext = os.path.splitext(base_filename)
+                filename = f"{name}_{counter}{ext}"
+                counter += 1
+            if filename != base_filename:
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            size_bytes = os.path.getsize(filepath)
+            mime_type = file.mimetype
 
         image = ImageAsset(title=title, filename=filename, mime_type=mime_type, size_bytes=size_bytes, alt_text=alt_text)
         db.session.add(image)
@@ -862,17 +904,35 @@ def update_image(image_id: int):
         image.alt_text = alt_text
 
         if file:
-            filename = _secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            if os.path.exists(filepath):
-                name, ext = os.path.splitext(filename)
-                filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+            original_secure = _secure_filename(file.filename)
+            base_name, orig_ext = os.path.splitext(original_secure)
+
+            optimized_bytes, new_ext, new_mime = _optimize_image(file, base_name)
+            if optimized_bytes is not None:
+                filename = f"{base_name}{new_ext}"
+                counter = 1
+                while ImageAsset.query.filter_by(filename=filename).first() is not None and filename != image.filename:
+                    filename = f"{base_name}_{counter}{new_ext}"
+                    counter += 1
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            image.filename = filename
-            image.mime_type = file.mimetype
-            image.size_bytes = os.path.getsize(filepath)
-            image.updated_at = datetime.utcnow()
+                with open(filepath, 'wb') as f:
+                    f.write(optimized_bytes)
+                image.filename = filename
+                image.mime_type = new_mime
+                image.size_bytes = len(optimized_bytes)
+                image.updated_at = datetime.utcnow()
+            else:
+                filename = original_secure
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(filepath):
+                    name, ext = os.path.splitext(filename)
+                    filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                image.filename = filename
+                image.mime_type = file.mimetype
+                image.size_bytes = os.path.getsize(filepath)
+                image.updated_at = datetime.utcnow()
 
         db.session.commit()
         images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
