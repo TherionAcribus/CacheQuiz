@@ -2994,76 +2994,290 @@ def _quiz_session_keys(rule_set_slug: str):
     return playlist_key, index_key, score_key, correct_key, user_id_str
 
 
+def _get_user_answered_keywords(user_id: int) -> set[int]:
+    """Récupère les IDs de tous les keywords déjà répondus par l'utilisateur."""
+    if not user_id:
+        return set()
+    
+    try:
+        # Récupérer toutes les questions déjà répondues
+        answered_question_ids = {row.question_id for row in 
+                                 UserQuestionStat.query.with_entities(UserQuestionStat.question_id)
+                                 .filter_by(user_id=user_id).all()}
+        
+        if not answered_question_ids:
+            return set()
+        
+        # Récupérer les keywords de ces questions
+        from sqlalchemy import select
+        keyword_ids = set()
+        result = db.session.execute(
+            select(db.literal_column('keyword_id'))
+            .select_from(db.text('question_keywords'))
+            .where(db.literal_column('question_id').in_(answered_question_ids))
+        )
+        keyword_ids = {row[0] for row in result}
+        return keyword_ids
+    except Exception as e:
+        print(f"[KEYWORDS] Erreur lors de la récupération des keywords répondus: {e}")
+        return set()
+
+
+def _select_questions_with_keyword_logic(
+    candidate_ids: list[int],
+    seen_question_ids: set[int],
+    used_keywords: set[int],
+    answered_keywords: set[int],
+    prevent_duplicate_keywords: bool,
+    quota: int
+) -> tuple[list[int], set[int], dict[str, any]]:
+    """
+    Sélectionne les questions en respectant la logique des keywords.
+    
+    Priorités (par ordre d'importance):
+    1. Condition QuizRuleSet (ABSOLU) - déjà appliqué dans candidate_ids
+    2. Pas de doublons de keywords dans le quiz (si prevent_duplicate_keywords)
+    3. Pas de questions déjà répondues
+    4. Pas de keywords déjà répondus
+    
+    Retourne: (selected_ids, used_keywords_updated, stats)
+    """
+    if not candidate_ids or quota <= 0:
+        return [], used_keywords, {'perfect': True, 'conditions_met': []}
+    
+    # Charger toutes les questions candidates avec leurs keywords
+    candidates = Question.query.filter(Question.id.in_(candidate_ids)).options(
+        db.joinedload(Question.keywords)
+    ).all()
+    
+    # Stats pour le debug
+    stats = {
+        'perfect': True,
+        'total_candidates': len(candidates),
+        'conditions_met': [],
+        'fallback_used': []
+    }
+    
+    selected_ids = []
+    current_used_keywords = set(used_keywords)
+    
+    # Fonction pour scorer une question selon les priorités
+    def score_question(q: Question) -> tuple:
+        """Retourne un tuple de score (plus élevé = meilleur). Format: (prio1, prio2, prio3, prio4)"""
+        q_keywords = {kw.id for kw in q.keywords}
+        
+        # Priorité 1: Pas de doublons de keywords (si activé)
+        if prevent_duplicate_keywords and q_keywords:
+            has_duplicate_keyword = bool(q_keywords & current_used_keywords)
+        else:
+            has_duplicate_keyword = False
+        
+        # Priorité 2: Question non répondue
+        is_unseen = q.id not in seen_question_ids
+        
+        # Priorité 3: Keywords non répondus
+        if q_keywords and answered_keywords:
+            has_unanswered_keywords = bool(q_keywords & answered_keywords)
+        else:
+            has_unanswered_keywords = False
+        
+        # Questions sans keywords ont un bonus (pas de risque de doublon)
+        no_keywords = len(q_keywords) == 0
+        
+        # Retourner score (format: pas de doublon keyword, non vue, pas keyword répondu, sans keyword)
+        return (
+            not has_duplicate_keyword,  # Vrai = 1, Faux = 0 (on veut True en premier)
+            is_unseen,
+            not has_unanswered_keywords,
+            no_keywords
+        )
+    
+    # Trier les candidats par score (du meilleur au pire)
+    sorted_candidates = sorted(candidates, key=score_question, reverse=True)
+    
+    # Sélectionner jusqu'au quota
+    for q in sorted_candidates:
+        if len(selected_ids) >= quota:
+            break
+        
+        q_keywords = {kw.id for kw in q.keywords}
+        
+        # Vérifier si on respecte toutes les conditions
+        conditions_perfect = True
+        
+        # Condition 2: Pas de doublons de keywords
+        if prevent_duplicate_keywords and q_keywords and (q_keywords & current_used_keywords):
+            conditions_perfect = False
+            stats['fallback_used'].append('keyword_duplicate')
+        
+        # Condition 3: Question non répondue
+        if q.id in seen_question_ids:
+            conditions_perfect = False
+            stats['fallback_used'].append('question_already_seen')
+        
+        # Condition 4: Keywords non répondus
+        if q_keywords and answered_keywords and (q_keywords & answered_keywords):
+            conditions_perfect = False
+            stats['fallback_used'].append('keyword_already_answered')
+        
+        if not conditions_perfect:
+            stats['perfect'] = False
+        
+        selected_ids.append(q.id)
+        current_used_keywords.update(q_keywords)
+    
+    # Statistiques finales
+    if stats['perfect']:
+        stats['conditions_met'] = ['Toutes les conditions respectées ✅']
+    else:
+        fallback_counts = {}
+        for fb in stats['fallback_used']:
+            fallback_counts[fb] = fallback_counts.get(fb, 0) + 1
+        stats['conditions_met'] = [
+            f"⚠️ {count}x {reason.replace('_', ' ')}" 
+            for reason, count in fallback_counts.items()
+        ]
+    
+    return selected_ids, current_used_keywords, stats
+
+
 def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) -> list[int]:
-    """Génère la playlist (liste d'IDs de questions) pour un quiz à longueur fixe.
-    - En mode 'manual': réordonne la liste sélectionnée en mettant d'abord les non-vues.
-    - En mode 'auto': respecte les quotas par difficulté, préférant non-vues puis complétant avec déjà vues.
-    - Mélange intra-difficulté.
+    """
+    Génère la playlist (liste d'IDs de questions) pour un quiz à longueur fixe.
+    
+    Priorités de sélection:
+    1. Respecter les conditions du QuizRuleSet (ABSOLU)
+    2. Éviter les doublons de keywords dans le quiz
+    3. Éviter les questions déjà répondues
+    4. Éviter les keywords déjà répondus
+    
+    En mode 'manual': réordonne la liste sélectionnée en appliquant la logique keywords.
+    En mode 'auto': respecte les quotas par difficulté avec gestion keywords.
     """
     try:
+        print(f"\n[QUIZ PLAYLIST] === Génération playlist pour {rule_set.name} ===")
+        
         # Récupérer les IDs déjà vus par l'utilisateur (si connecté)
         seen_ids = set()
+        answered_keywords = set()
         if current_user_id:
-            seen_ids = {row.question_id for row in UserQuestionStat.query.with_entities(UserQuestionStat.question_id).filter_by(user_id=current_user_id).all()}
+            seen_ids = {row.question_id for row in 
+                       UserQuestionStat.query.with_entities(UserQuestionStat.question_id)
+                       .filter_by(user_id=current_user_id).all()}
+            answered_keywords = _get_user_answered_keywords(current_user_id)
+            print(f"[QUIZ PLAYLIST] Utilisateur {current_user_id}: {len(seen_ids)} questions vues, {len(answered_keywords)} keywords répondus")
+        
+        prevent_duplicate_keywords = rule_set.prevent_duplicate_keywords
+        print(f"[QUIZ PLAYLIST] Prévention doublons keywords: {'OUI' if prevent_duplicate_keywords else 'NON'}")
 
         # Mode manuel: partir de la sélection explicite
         if rule_set.question_selection_mode == 'manual' and rule_set.selected_questions:
+            print(f"[QUIZ PLAYLIST] Mode MANUEL: {len(rule_set.selected_questions)} questions sélectionnées")
             selected = [q for q in rule_set.selected_questions if q.is_published]
-            unseen = [q.id for q in selected if q.id not in seen_ids]
-            seen = [q.id for q in selected if q.id in seen_ids]
-            random.shuffle(unseen)
-            random.shuffle(seen)
-            playlist = unseen + seen
+            candidate_ids = [q.id for q in selected]
+            
+            # Appliquer la logique keywords sur toute la sélection
+            playlist, _, stats = _select_questions_with_keyword_logic(
+                candidate_ids=candidate_ids,
+                seen_question_ids=seen_ids,
+                used_keywords=set(),
+                answered_keywords=answered_keywords,
+                prevent_duplicate_keywords=prevent_duplicate_keywords,
+                quota=len(candidate_ids)
+            )
+            
+            # Logs
+            if stats['perfect']:
+                print(f"[QUIZ PLAYLIST] ✅ CONDITIONS PARFAITES: {', '.join(stats['conditions_met'])}")
+            else:
+                print(f"[QUIZ PLAYLIST] ⚠️ COMPROMIS NÉCESSAIRES:")
+                for condition in stats['conditions_met']:
+                    print(f"[QUIZ PLAYLIST]    {condition}")
+            
+            print(f"[QUIZ PLAYLIST] Playlist générée: {len(playlist)} questions")
             return playlist
 
         # Mode auto: quotas par difficulté et filtres de thèmes
         qmap = rule_set.get_questions_per_difficulty() or {}
         allowed_diffs = rule_set.get_allowed_difficulties() or [1, 2, 3, 4, 5]
+        print(f"[QUIZ PLAYLIST] Mode AUTO: difficultés {allowed_diffs}, quotas {qmap}")
 
         # Construire la requête de base selon le set de règles
         base_params = {'rule_set': rule_set.slug}
         base_query = _apply_quiz_filters(Question.query.filter(Question.is_published.is_(True)), base_params)
 
-        # Préparer par difficulté
+        # Préparer par difficulté avec logique keywords
         per_diff_ids: dict[int, list[int]] = {}
+        used_keywords_global = set()
+        all_stats = []
+        
         for d in allowed_diffs:
             quota = int(qmap.get(str(d), 0) or 0)
             if quota <= 0:
                 per_diff_ids[d] = []
                 continue
 
+            print(f"[QUIZ PLAYLIST] Difficulté {d}: quota={quota}")
+            
             q_for_diff = base_query.filter(Question.difficulty_level == d)
             candidates = q_for_diff.with_entities(Question.id).all()
             candidate_ids = [row.id for row in candidates]
-
-            # Séparer non-vues / vues
-            unseen_ids = [qid for qid in candidate_ids if qid not in seen_ids]
-            seen_ids_for_diff = [qid for qid in candidate_ids if qid in seen_ids]
-
-            random.shuffle(unseen_ids)
-            random.shuffle(seen_ids_for_diff)
-
-            chosen = []
-            # Prendre d'abord non-vues
-            if unseen_ids:
-                chosen.extend(unseen_ids[:quota])
-            # Compléter si nécessaire avec vues
-            if len(chosen) < quota and seen_ids_for_diff:
-                remaining = quota - len(chosen)
-                chosen.extend(seen_ids_for_diff[:remaining])
-
+            
+            print(f"[QUIZ PLAYLIST]   Candidats disponibles: {len(candidate_ids)}")
+            
+            # Appliquer la logique keywords
+            chosen, used_keywords_global, stats = _select_questions_with_keyword_logic(
+                candidate_ids=candidate_ids,
+                seen_question_ids=seen_ids,
+                used_keywords=used_keywords_global,
+                answered_keywords=answered_keywords,
+                prevent_duplicate_keywords=prevent_duplicate_keywords,
+                quota=quota
+            )
+            
             per_diff_ids[d] = chosen
+            all_stats.append({
+                'difficulty': d,
+                'quota': quota,
+                'selected': len(chosen),
+                'perfect': stats['perfect'],
+                'conditions': stats['conditions_met']
+            })
+            
+            print(f"[QUIZ PLAYLIST]   Sélectionnés: {len(chosen)}/{quota}")
+            if not stats['perfect']:
+                for condition in stats['conditions_met']:
+                    print(f"[QUIZ PLAYLIST]     {condition}")
 
         # Intercaler pour varier
         playlist = _interleave_round_robin(per_diff_ids)
-        # Log si quotas non respectés faute de pool suffisant
         expected_total = sum(int(qmap.get(str(d), 0) or 0) for d in allowed_diffs)
+        
+        # Logs finaux
+        print(f"\n[QUIZ PLAYLIST] === RÉSUMÉ FINAL ===")
+        print(f"[QUIZ PLAYLIST] Playlist générée: {len(playlist)}/{expected_total} questions")
+        
+        # Vérifier si toutes les conditions sont parfaites
+        all_perfect = all(stat['perfect'] for stat in all_stats)
+        if all_perfect:
+            print(f"[QUIZ PLAYLIST] ✅ CONDITIONS PARFAITES pour toutes les questions !")
+        else:
+            print(f"[QUIZ PLAYLIST] ⚠️ COMPROMIS NÉCESSAIRES:")
+            for stat in all_stats:
+                if not stat['perfect']:
+                    print(f"[QUIZ PLAYLIST]   Difficulté {stat['difficulty']}: {', '.join(stat['conditions'])}")
+        
         if len(playlist) < expected_total:
-            print(f"[QUIZ PLAYLIST] Avertissement: playlist incomplète ({len(playlist)}/{expected_total}). Pool insuffisant pour certains quotas.")
+            print(f"[QUIZ PLAYLIST] ⚠️ Playlist incomplète. Pool insuffisant pour certains quotas.")
+        
+        print(f"[QUIZ PLAYLIST] Keywords uniques utilisés: {len(used_keywords_global)}")
+        print(f"[QUIZ PLAYLIST] ==================\n")
 
         return playlist
     except Exception as e:
-        print(f"[QUIZ PLAYLIST] Erreur génération playlist: {e}")
+        print(f"[QUIZ PLAYLIST] ❌ ERREUR génération playlist: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 @app.route('/play')
