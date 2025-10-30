@@ -1,7 +1,7 @@
 {% if specific_themes %}
 <div class="specific-themes-grid">
     {% for specific_theme in specific_themes %}
-    <div class="specific-theme-card" {% if specific_theme.color %}style="border-left: 4px solid {{ specific_theme.color }}"{% endif %}>
+    <div class="specific-theme-card" {% if specific_theme.inherited_color %}style="border-left: 4px solid {{ specific_theme.inherited_color }}"{% endif %}>
         <div class="specific-theme-header">
             <div class="specific-theme-info">
                 {% if specific_theme.icon %}
@@ -48,8 +48,8 @@
             {% if specific_theme.translation_id %}
             <span class="badge badge-translation">📝 Traduction de #{{ specific_theme.translation_id }}</span>
             {% endif %}
-            {% if specific_theme.color %}
-            <span class="color-badge" style="background-color: {{ specific_theme.color }}"></span>
+            {% if specific_theme.inherited_color %}
+            <span class="color-badge" style="background-color: {{ specific_theme.inherited_color }}"></span>
             {% endif %}
         </div>
 

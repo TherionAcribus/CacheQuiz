@@ -1,0 +1,360 @@
+{% if themes %}
+<div class="themes-hierarchy">
+    {% for theme in themes %}
+    <div class="broad-theme-section" {% if theme.color %}style="border-left: 6px solid {{ theme.color }}"{% endif %}>
+        <!-- Header du thème large -->
+        <div class="broad-theme-header">
+            <div class="broad-theme-info">
+                {% if theme.icon %}
+                <span class="theme-icon">{{ theme.icon }}</span>
+                {% endif %}
+                <h2>{{ theme.name }}</h2>
+                <span class="badge badge-language">{{ theme.language.upper() }}</span>
+                <span class="badge badge-count">{{ theme.questions.count() }} question(s)</span>
+            </div>
+            <div class="broad-theme-actions">
+                <button class="btn-icon"
+                        type="button"
+                        onclick="document.getElementById('theme-form-container').classList.remove('hidden')"
+                        hx-get="/theme/{{ theme.id }}/edit"
+                        hx-target="#theme-form-container"
+                        hx-swap="innerHTML"
+                        title="Éditer le thème">
+                    ✏️
+                </button>
+                <button class="btn-icon"
+                        type="button"
+                        onclick="document.getElementById('specific-theme-form-container').classList.remove('hidden')"
+                        hx-get="/specific-theme/new?broad_theme_id={{ theme.id }}"
+                        hx-target="#specific-theme-form-container"
+                        hx-swap="innerHTML"
+                        title="Ajouter un sous-thème">
+                    ➕
+                </button>
+                <button class="btn-icon btn-danger"
+                        hx-delete="/api/theme/{{ theme.id }}"
+                        hx-target="#themes-unified-list"
+                        hx-confirm="Êtes-vous sûr de vouloir supprimer ce thème et tous ses sous-thèmes ?"
+                        title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+
+        {% if theme.description %}
+        <div class="broad-theme-description">
+            <p>{{ theme.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Section des sous-thèmes -->
+        <div class="specific-themes-section">
+            <h3>Sous-thèmes ({{ theme.specific_themes.count() }})</h3>
+
+            {% if theme.specific_themes %}
+            <div class="specific-themes-grid">
+                {% for specific_theme in theme.specific_themes %}
+                <div class="specific-theme-card" {% if specific_theme.inherited_color %}style="border-left: 4px solid {{ specific_theme.inherited_color }}"{% endif %}>
+                    <div class="specific-theme-header">
+                        <div class="specific-theme-info">
+                            {% if specific_theme.icon %}
+                            <span class="specific-theme-icon">{{ specific_theme.icon }}</span>
+                            {% endif %}
+                            <h4>{{ specific_theme.name }}</h4>
+                            <span class="badge badge-language">{{ specific_theme.language.upper() }}</span>
+                        </div>
+                        <div class="specific-theme-actions">
+                            <button class="btn-icon"
+                                    type="button"
+                                    onclick="document.getElementById('specific-theme-form-container').classList.remove('hidden')"
+                                    hx-get="/specific-theme/{{ specific_theme.id }}/edit"
+                                    hx-target="#specific-theme-form-container"
+                                    hx-swap="innerHTML"
+                                    title="Éditer le sous-thème">
+                                ✏️
+                            </button>
+                            <button class="btn-icon btn-danger"
+                                    hx-delete="/api/specific-theme/{{ specific_theme.id }}"
+                                    hx-target="#themes-unified-list"
+                                    hx-confirm="Êtes-vous sûr de vouloir supprimer ce sous-thème ?"
+                                    title="Supprimer le sous-thème">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if specific_theme.description %}
+                    <div class="specific-theme-description">
+                        <p>{{ specific_theme.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="specific-theme-stats">
+                        <span class="badge badge-count">{{ specific_theme.questions.count() }} question(s)</span>
+                        {% if specific_theme.translation_id %}
+                        <span class="badge badge-translation">📝 Traduction de #{{ specific_theme.translation_id }}</span>
+                        {% endif %}
+                        {% if specific_theme.inherited_color %}
+                        <span class="color-badge" style="background-color: {{ specific_theme.inherited_color }}"></span>
+                        {% endif %}
+                    </div>
+
+                    <div class="specific-theme-footer">
+                        <small>Créé: {{ specific_theme.created_at.strftime('%d/%m/%Y %H:%M') if specific_theme.created_at }}</small>
+                        <small>ID: {{ specific_theme.id }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-specific-themes">
+                <p>📋 Aucun sous-thème dans ce thème.</p>
+                <button class="btn btn-sm btn-outline"
+                        onclick="document.getElementById('specific-theme-form-container').classList.remove('hidden')"
+                        hx-get="/specific-theme/new?broad_theme_id={{ theme.id }}"
+                        hx-target="#specific-theme-form-container"
+                        hx-swap="innerHTML">
+                    Créer le premier sous-thème
+                </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="broad-theme-footer">
+            <small>Créé: {{ theme.created_at.strftime('%d/%m/%Y %H:%M') if theme.created_at }}</small>
+            <small>ID: {{ theme.id }}</small>
+            {% if theme.translation_id %}
+            <small>📝 Traduction de #{{ theme.translation_id }}</small>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-themes">
+    <p>📋 Aucun thème trouvé. Commencez par en créer un !</p>
+    <button class="btn btn-primary"
+            onclick="document.getElementById('theme-form-container').classList.remove('hidden')"
+            hx-get="/theme/new"
+            hx-target="#theme-form-container"
+            hx-swap="innerHTML">
+        Créer le premier thème
+    </button>
+</div>
+{% endif %}
+
+<style>
+    .themes-hierarchy {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .broad-theme-section {
+        background-color: var(--card-bg);
+        border-radius: 1rem;
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .broad-theme-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .broad-theme-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .broad-theme-info h2 {
+        font-size: 1.5rem;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .broad-theme-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .broad-theme-description {
+        margin-bottom: 1.5rem;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        padding: 1rem;
+        background-color: var(--bg-light);
+        border-radius: 0.5rem;
+    }
+
+    .specific-themes-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .specific-themes-section h3 {
+        font-size: 1.125rem;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .specific-themes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    .specific-theme-card {
+        background-color: var(--bg-light);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        border: 1px solid var(--border-light);
+        transition: all 0.2s;
+    }
+
+    .specific-theme-card:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-1px);
+    }
+
+    .specific-theme-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+
+    .specific-theme-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .specific-theme-info h4 {
+        font-size: 1rem;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .specific-theme-actions {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .specific-theme-description {
+        margin-bottom: 0.75rem;
+        color: var(--text-light);
+        font-size: 0.875rem;
+    }
+
+    .specific-theme-stats {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .specific-theme-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border-light);
+        font-size: 0.75rem;
+        color: var(--text-light);
+    }
+
+    .broad-theme-footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-light);
+        margin-top: 1.5rem;
+    }
+
+    .theme-icon, .specific-theme-icon {
+        font-size: 1.25rem;
+    }
+
+    .badge-language {
+        background-color: #e2e8f0;
+        color: #4a5568;
+        font-size: 0.75rem;
+    }
+
+    .badge-count {
+        background-color: #bee3f8;
+        color: #2c5282;
+        font-size: 0.75rem;
+    }
+
+    .badge-translation {
+        background-color: #fbd38d;
+        color: #7c2d12;
+        font-size: 0.75rem;
+    }
+
+    .color-badge {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 0.25rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 1rem;
+        transition: background-color 0.2s;
+    }
+
+    .btn-icon:hover {
+        background-color: var(--bg-hover);
+    }
+
+    .btn-icon.btn-danger:hover {
+        background-color: #fed7d7;
+        color: #c53030;
+    }
+
+    .btn-sm {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+        background-color: var(--bg-hover);
+    }
+
+    .no-themes, .no-specific-themes {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-light);
+        font-size: 1rem;
+    }
+
+    .no-specific-themes {
+        padding: 1rem;
+        background-color: var(--bg-light);
+        border-radius: 0.5rem;
+        border: 1px dashed var(--border-color);
+    }
+</style>

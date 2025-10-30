@@ -79,7 +79,7 @@
                 </td>
                 <td>
                     {% if question.specific_theme_obj %}
-                        <span class="badge badge-specific-theme" {% if question.specific_theme_obj.color %}style="background-color: {{ question.specific_theme_obj.color }}20; color: {{ question.specific_theme_obj.color }}; border: 1px solid {{ question.specific_theme_obj.color }}"{% endif %}>
+                        <span class="badge badge-specific-theme" {% if question.specific_theme_obj.inherited_color %}style="background-color: {{ question.specific_theme_obj.inherited_color }}20; color: {{ question.specific_theme_obj.inherited_color }}; border: 1px solid {{ question.specific_theme_obj.inherited_color }}"{% endif %}>
                             {% if question.specific_theme_obj.icon %}{{ question.specific_theme_obj.icon }} {% endif %}{{ question.specific_theme_obj.name }}
                         </span>
                     {% else %}

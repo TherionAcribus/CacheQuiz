@@ -107,6 +107,11 @@ class SpecificTheme(db.Model):
     def __repr__(self):
         return f'<SpecificTheme {self.id}: {self.name} (theme: {self.broad_theme.name if self.broad_theme else "None"})>'
 
+    @property
+    def inherited_color(self):
+        """Retourne la couleur propre ou héritée du thème parent"""
+        return self.color or (self.broad_theme.color if self.broad_theme and self.broad_theme.color else None)
+
     def to_dict(self):
         """Convertir le sous-thème en dictionnaire pour JSON"""
         return {
@@ -115,7 +120,7 @@ class SpecificTheme(db.Model):
             'description': self.description,
             'language': self.language,
             'icon': self.icon,
-            'color': self.color,
+            'color': self.inherited_color,  # Utilise la couleur héritée
             'broad_theme_id': self.broad_theme_id,
             'broad_theme_name': self.broad_theme.name if self.broad_theme else None,
             'translation_id': self.translation_id,

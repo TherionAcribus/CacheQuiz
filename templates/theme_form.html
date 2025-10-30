@@ -11,7 +11,7 @@
           {% else %}
           hx-post="/api/theme"
           {% endif %}
-          hx-target="#themes-list"
+          hx-target="#themes-unified-list"
           hx-swap="innerHTML"
           hx-on::after-request="document.getElementById('theme-form-container').classList.add('hidden')"{% endif %}>
 

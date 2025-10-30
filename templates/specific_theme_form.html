@@ -11,7 +11,7 @@
           {% else %}
           hx-post="/api/specific-theme"
           {% endif %}
-          hx-target="#specific-themes-list"
+          hx-target="#themes-unified-list"
           hx-swap="innerHTML"
           hx-on::after-request="document.getElementById('specific-theme-form-container').classList.add('hidden')"{% endif %}>
 
@@ -28,7 +28,7 @@
                     <select id="broad_theme_id" name="broad_theme_id" required>
                         {% for theme in broad_themes %}
                         <option value="{{ theme.id }}"
-                                {% if specific_theme and specific_theme.broad_theme_id == theme.id %}selected{% endif %}>
+                                {% if (specific_theme and specific_theme.broad_theme_id == theme.id) or (preselected_broad_theme_id and preselected_broad_theme_id == theme.id|string) %}selected{% endif %}>
                             {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}
                         </option>
                         {% endfor %}
@@ -81,12 +81,20 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="color">Couleur</label>
+                    <label for="color">Couleur *</label>
                     <input type="color"
                            id="color"
                            name="color"
-                           value="{{ specific_theme.color if specific_theme and specific_theme.color else '#6b7280' }}">
-                    <small>Couleur d'accent pour l'affichage du sous-thème</small>
+                           value="{% if specific_theme %}{{ specific_theme.color or specific_theme.broad_theme.color or '#6b7280' }}{% elif preselected_theme %}{{ preselected_theme.color or '#6b7280' }}{% else %}#6b7280{% endif %}">
+                    <small>
+                        {% if specific_theme and specific_theme.broad_theme %}
+                            Couleur du sous-thème (hérite par défaut de "{{ specific_theme.broad_theme.name }}" si non définie)
+                        {% elif preselected_theme %}
+                            Couleur du sous-thème (hérite par défaut de "{{ preselected_theme.name }}" si non définie)
+                        {% else %}
+                            Couleur du sous-thème
+                        {% endif %}
+                    </small>
                 </div>
 
                 <div class="form-group">
@@ -139,3 +147,40 @@
         border-color: var(--primary-color);
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const broadThemeSelect = document.getElementById('broad_theme_id');
+    const colorInput = document.getElementById('color');
+
+    if (broadThemeSelect && colorInput) {
+        // Créer un objet avec les couleurs des thèmes
+        const themeColors = {};
+        {% for theme in broad_themes %}
+        themeColors['{{ theme.id }}'] = {
+            name: '{{ theme.name }}',
+            color: '{{ theme.color or "" }}'
+        };
+        {% endfor %}
+
+        function updateDefaultColor() {
+            const selectedThemeId = broadThemeSelect.value;
+            const selectedTheme = themeColors[selectedThemeId];
+
+            // Ne changer la couleur que si elle n'a pas encore été modifiée par l'utilisateur
+            // et qu'aucune couleur spécifique n'était définie (nouveau sous-thème)
+            if (selectedTheme && selectedTheme.color && !colorInput.dataset.userModified) {
+                colorInput.value = selectedTheme.color;
+            }
+        }
+
+        // Marquer comme modifié par l'utilisateur dès qu'il change la couleur
+        colorInput.addEventListener('input', function() {
+            colorInput.dataset.userModified = 'true';
+        });
+
+        // Mettre à jour au changement de sélection de thème
+        broadThemeSelect.addEventListener('change', updateDefaultColor);
+    }
+});
+</script>

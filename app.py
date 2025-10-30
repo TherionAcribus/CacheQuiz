@@ -2114,23 +2114,14 @@ def sort_questions():
 
 # ===== Routes pour les thèmes =====
 
-@app.route('/themes')
-def themes_page():
-    """Page de gestion des thèmes"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    return render_template('themes.html')
-
-
 @app.route('/api/themes')
 def list_themes():
-    """Retourner la liste des thèmes en HTML (pour HTMX)"""
+    """Retourner la liste hiérarchique des thèmes et sous-thèmes en HTML (pour HTMX)"""
     denied = _ensure_perm_api()
     if denied:
         return denied
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return render_template('themes_list.html', themes=themes)
+    return render_template('themes_unified_list.html', themes=themes)
 
 
 @app.route('/api/themes/json')
@@ -2204,8 +2195,8 @@ def create_theme():
 
         # Retourner la liste mise à jour
         themes = BroadTheme.query.order_by(BroadTheme.name).all()
-        return render_template('themes_list.html', themes=themes)
-    
+        return render_template('themes_unified_list.html', themes=themes)
+
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
@@ -2233,8 +2224,8 @@ def update_theme(theme_id):
         
         # Retourner la liste mise à jour
         themes = BroadTheme.query.order_by(BroadTheme.name).all()
-        return render_template('themes_list.html', themes=themes)
-    
+        return render_template('themes_unified_list.html', themes=themes)
+
     except Exception as e:
         return f"Erreur: {str(e)}", 400
 
@@ -2258,7 +2249,7 @@ def delete_theme(theme_id):
 
         # Retourner la liste mise à jour
         themes = BroadTheme.query.order_by(BroadTheme.name).all()
-        return render_template('themes_list.html', themes=themes)
+        return render_template('themes_unified_list.html', themes=themes)
 
     except Exception as e:
         return f"Erreur: {str(e)}", 400
@@ -2281,8 +2272,8 @@ def list_specific_themes():
     denied = _ensure_perm_api()
     if denied:
         return denied
-    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    return render_template('specific_themes_list.html', specific_themes=specific_themes)
+    themes = BroadTheme.query.order_by(BroadTheme.name).all()
+    return render_template('themes_unified_list.html', themes=themes)
 
 
 @app.route('/specific-theme/new')
@@ -2293,8 +2284,15 @@ def new_specific_theme():
         return resp
     embedded = request.args.get('embedded') in ('1', 'true', 'yes')
     select_id = request.args.get('select_id') or ''
+    broad_theme_id = request.args.get('broad_theme_id')
     broad_themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes, embedded=embedded, select_id=select_id)
+
+    # Récupérer le thème pré-sélectionné pour afficher sa couleur
+    preselected_theme = None
+    if broad_theme_id:
+        preselected_theme = BroadTheme.query.get(int(broad_theme_id))
+
+    return render_template('specific_theme_form.html', specific_theme=None, broad_themes=broad_themes, embedded=embedded, select_id=select_id, preselected_broad_theme_id=broad_theme_id, preselected_theme=preselected_theme)
 
 
 @app.route('/specific-theme/<int:specific_theme_id>/edit')
@@ -2344,8 +2342,8 @@ def create_specific_theme():
             }
 
         # Retourner la liste mise à jour
-        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_unified_list.html', themes=themes)
 
     except Exception as e:
         return f"Erreur: {str(e)}", 400
@@ -2374,8 +2372,8 @@ def update_specific_theme(specific_theme_id):
         db.session.commit()
 
         # Retourner la liste mise à jour
-        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_unified_list.html', themes=themes)
 
     except Exception as e:
         return f"Erreur: {str(e)}", 400
@@ -2399,8 +2397,8 @@ def delete_specific_theme(specific_theme_id):
         db.session.commit()
 
         # Retourner la liste mise à jour
-        specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-        return render_template('specific_themes_list.html', specific_themes=specific_themes)
+        themes = BroadTheme.query.order_by(BroadTheme.name).all()
+        return render_template('themes_unified_list.html', themes=themes)
 
     except Exception as e:
         return f"Erreur: {str(e)}", 400
@@ -2418,6 +2416,17 @@ def get_specific_themes_for_broad_theme():
     else:
         specific_themes = []
     return render_template('specific_theme_options.html', specific_themes=specific_themes)
+
+
+# ===== Routes pour la gestion unifiée des thèmes =====
+
+@app.route('/themes')
+def themes_unified_page():
+    """Page de gestion unifiée des thèmes et sous-thèmes"""
+    resp = _ensure_admin_page_redirect()
+    if resp:
+        return resp
+    return render_template('themes_unified.html')
 
 
 # ===== Routes pour les mots-clés (Keywords) =====
