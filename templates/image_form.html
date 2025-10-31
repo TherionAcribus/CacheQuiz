@@ -24,6 +24,14 @@
                     <input type="text" id="alt_text" name="alt_text" value="{{ image.alt_text if image else '' }}" placeholder="Description de l'image">
                 </div>
                 <div class="form-group">
+                    <label for="copyright_credits">Crédits</label>
+                    <input type="text" id="copyright_credits" name="copyright_credits" value="{{ image.copyright_credits if image else '' }}" placeholder="Auteur, source, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="copyright_link">Lien copyright</label>
+                    <input type="url" id="copyright_link" name="copyright_link" value="{{ image.copyright_link if image else '' }}" placeholder="https://...">
+                </div>
+                <div class="form-group">
                     <label for="file">Fichier {% if not image %}*{% endif %}</label>
                     <input type="file" id="file" name="file" {% if not image %}required{% endif %} accept="image/*">
                 </div>

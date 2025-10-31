@@ -465,6 +465,10 @@ class ImageAsset(db.Model):
     size_bytes = db.Column(db.Integer)
     alt_text = db.Column(db.String(255))
 
+    # Copyright
+    copyright_link = db.Column(db.Text)  # Lien vers la source/origine de l'image
+    copyright_credits = db.Column(db.Text)  # Crédits (nom de l'auteur, source, etc.)
+
     # Relations inverses
     questions = db.relationship('Question',
                                 secondary=question_images,
@@ -482,6 +486,8 @@ class ImageAsset(db.Model):
             'mime_type': self.mime_type,
             'size_bytes': self.size_bytes,
             'alt_text': self.alt_text,
+            'copyright_link': self.copyright_link,
+            'copyright_credits': self.copyright_credits,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

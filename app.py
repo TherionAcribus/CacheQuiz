@@ -823,6 +823,8 @@ def create_image():
             return denied
         title = request.form.get('title', '').strip()
         alt_text = request.form.get('alt_text', '').strip()
+        copyright_credits = request.form.get('copyright_credits', '').strip()
+        copyright_link = request.form.get('copyright_link', '').strip()
         file = request.files.get('file')
         if not title:
             return "Titre requis", 400
@@ -866,7 +868,7 @@ def create_image():
             size_bytes = os.path.getsize(filepath)
             mime_type = file.mimetype
 
-        image = ImageAsset(title=title, filename=filename, mime_type=mime_type, size_bytes=size_bytes, alt_text=alt_text)
+        image = ImageAsset(title=title, filename=filename, mime_type=mime_type, size_bytes=size_bytes, alt_text=alt_text, copyright_credits=copyright_credits, copyright_link=copyright_link)
         db.session.add(image)
         db.session.commit()
 
@@ -877,7 +879,9 @@ def create_image():
                     'id': image.id,
                     'title': image.title,
                     'filename': image.filename,
-                    'alt_text': image.alt_text
+                    'alt_text': image.alt_text,
+                    'copyright_credits': image.copyright_credits,
+                    'copyright_link': image.copyright_link
                 },
                 'select_id': request.form.get('select_id') or request.args.get('select_id') or ''
             }
@@ -897,11 +901,15 @@ def update_image(image_id: int):
         image = ImageAsset.query.get_or_404(image_id)
         title = request.form.get('title', '').strip()
         alt_text = request.form.get('alt_text', '').strip()
+        copyright_credits = request.form.get('copyright_credits', '').strip()
+        copyright_link = request.form.get('copyright_link', '').strip()
         file = request.files.get('file')
 
         if title:
             image.title = title
         image.alt_text = alt_text
+        image.copyright_credits = copyright_credits
+        image.copyright_link = copyright_link
 
         if file:
             original_secure = _secure_filename(file.filename)
