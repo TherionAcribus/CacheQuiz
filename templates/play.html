@@ -138,9 +138,6 @@ endblock %}
             <span class="checkmark"></span>
             <span class="option-text">Double-clic pour valider</span>
         </label>
-        <small class="option-description">
-            Double-cliquez sur une réponse pour la valider automatiquement
-        </small>
     </div>
 
     <div class="rule-details">
@@ -889,7 +886,7 @@ endblock %}
 
         /* Styles pour l'option de double-clic rapide */
         .quick-double-click-option {
-            margin: 1rem 0;
+            margin: 1rem auto;
             padding: 1rem;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -898,6 +895,7 @@ endblock %}
             align-items: center;
             gap: 1rem;
             box-shadow: var(--shadow);
+            max-width: 600px;
         }
 
         .checkbox-label {
