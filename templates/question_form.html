@@ -1,34 +1,25 @@
 <div class="form-wrapper">
     <div class="form-header">
         <h2>{% if question %}Éditer la question{% else %}Nouvelle question{% endif %}</h2>
-        <button class="btn-close" 
-                type="button"
-                onclick="document.getElementById('question-form-container').classList.add('hidden')">✕</button>
+        <button class="btn-close" type="button"
+            onclick="document.getElementById('question-form-container').classList.add('hidden')">✕</button>
     </div>
-    
-    <form {% if question %}
-          hx-post="/api/question/{{ question.id }}"
-          {% else %}
-          hx-post="/api/question"
-          {% endif %}
-          hx-target="#questions-list"
-          hx-swap="innerHTML"
-          hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden')">
-        
+
+    <form {% if question %} hx-post="/api/question/{{ question.id }}" {% else %} hx-post="/api/question" {% endif %}
+        hx-target="#questions-list" hx-swap="innerHTML"
+        hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden')">
+
         <div class="form-grid-rows">
             <div class="form-row">
                 <div class="form-group">
                     <label for="question_text">Question *</label>
-                    <textarea id="question_text" 
-                              name="question_text" 
-                              rows="4" 
-                              required>{{ question.question_text if question else '' }}</textarea>
+                    <textarea id="question_text" name="question_text" rows="4"
+                        required>{{ question.question_text if question else '' }}</textarea>
                 </div>
                 <div class="form-group">
                     <label for="question_image_id">Image complémentaire de la question (optionnel)</label>
                     <div class="input-with-action">
-                    <select id="question_image_id" name="question_image_id" class="answer-image-select"
-                            onchange="(function(sel){
+                        <select id="question_image_id" name="question_image_id" class="answer-image-select" onchange="(function(sel){
                                 var opt = sel.options[sel.selectedIndex];
                                 var prev = document.getElementById('question-image-preview');
                                 var img = document.getElementById('question-image-thumb');
@@ -41,43 +32,52 @@
                                     prev.style.display = 'none';
                                 }
                             })(this)">
-                        <option value="">-- Pas d'image --</option>
-                        {% for img in images %}
-                        <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
-                            {% if question and question.images and (img.id in (question.images | map(attribute='id') | list)) %}selected{% endif %}>
-                            {{ img.title }} ({{ img.filename }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('question_image_id')">+</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('question_image_id')" title="Ouvrir la galerie">🖼️</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                            <option value="">-- Pas d'image --</option>
+                            {% for img in images %}
+                            <option value="{{ img.id }}" data-filename="{{ img.filename }}"
+                                data-alt="{{ (img.alt_text or img.title) | e }}" {% if question and question.images and
+                                (img.id in (question.images | map(attribute='id' ) | list)) %}selected{% endif %}>
+                                {{ img.title }} ({{ img.filename }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-small"
+                            onclick="openEmbeddedImageModal('question_image_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline"
+                            onclick="openImageGalleryModal('question_image_id')" title="Ouvrir la galerie">🖼️</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
+                            title="Rafraîchir la liste des images">↻</button>
                     </div>
-                    <div id="question-image-preview" class="image-preview" style="{% if question and question.images %}display: inline-block;{% else %}display: none;{% endif %}">
-                        <img id="question-image-thumb" src="{% if question and question.images %}/uploads/{{ question.images[0].filename }}{% endif %}" alt="Aperçu">
+                    <div id="question-image-preview" class="image-preview"
+                        style="{% if question and question.images %}display: inline-block;{% else %}display: none;{% endif %}">
+                        <img id="question-image-thumb"
+                            src="{% if question and question.images %}/uploads/{{ question.images[0].filename }}{% endif %}"
+                            alt="Aperçu">
                     </div>
                     <small>Image illustrative complémentaire pour la question</small>
-                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les
+                            images</a></small>
                 </div>
-                </div>
-                
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="broad_theme_id">Thématique large</label>
                     <div class="input-with-action">
-                    <select id="broad_theme_id"
-                            name="broad_theme_id"
-                            onchange="updateSpecificThemes(this.value)">
-                        <option value="">-- Aucun thème --</option>
-                        {% for theme in themes %}
-                        <option value="{{ theme.id }}"
-                                {% if question and question.broad_theme_id == theme.id %}selected{% endif %}>
-                            {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }} ({{ theme.language.upper() }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedThemeModal('broad_theme_id')">+</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                        <select id="broad_theme_id" name="broad_theme_id" onchange="updateSpecificThemes(this.value)">
+                            <option value="">-- Aucun thème --</option>
+                            {% for theme in themes %}
+                            <option value="{{ theme.id }}" {% if question and question.broad_theme_id==theme.id
+                                %}selected{% endif %}>
+                                {% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }} ({{
+                                theme.language.upper() }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-small"
+                            onclick="openEmbeddedThemeModal('broad_theme_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()"
+                            title="Rafraîchir la liste des thèmes">↻</button>
                     </div>
                     <small>
                         <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
@@ -86,22 +86,26 @@
                 <div class="form-group">
                     <label for="specific_theme_id">Sous-thématique</label>
                     <div class="input-with-action">
-                    <select id="specific_theme_id" name="specific_theme_id">
-                        <option value="">-- Aucun sous-thème --</option>
-                        {% for specific_theme in specific_themes %}
-                        <option value="{{ specific_theme.id }}"
-                                data-broad-theme-id="{{ specific_theme.broad_theme_id }}"
-                                {% if question and question.specific_theme_id == specific_theme.id %}selected{% endif %}>
-                            {% if specific_theme.icon %}{{ specific_theme.icon }} {% endif %}{{ specific_theme.name }}
-                            ({{ specific_theme.broad_theme.name }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedSpecificThemeModal('specific_theme_id')">+</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                        <select id="specific_theme_id" name="specific_theme_id">
+                            <option value="">-- Aucun sous-thème --</option>
+                            {% for specific_theme in specific_themes %}
+                            <option value="{{ specific_theme.id }}"
+                                data-broad-theme-id="{{ specific_theme.broad_theme_id }}" {% if question and
+                                question.specific_theme_id==specific_theme.id %}selected{% endif %}>
+                                {% if specific_theme.icon %}{{ specific_theme.icon }} {% endif %}{{ specific_theme.name
+                                }}
+                                ({{ specific_theme.broad_theme.name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-small"
+                            onclick="openEmbeddedSpecificThemeModal('specific_theme_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()"
+                            title="Rafraîchir la liste des thèmes">↻</button>
                     </div>
                     <small>
-                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
+                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les
+                            sous-thèmes</a>
                     </small>
                 </div>
             </div>
@@ -112,26 +116,26 @@
                     <div class="keywords-container">
                         <div id="keywords-tags" class="keywords-tags">
                             {% if question and question.keywords %}
-                                {% for keyword in question.keywords %}
-                                <span class="keyword-tag" data-keyword-id="{{ keyword.id }}" data-keyword-name="{{ keyword.name }}">
-                                    {{ keyword.name }}
-                                    <button type="button" class="remove-keyword" onclick="removeKeyword({{ keyword.id }})">&times;</button>
-                                    <input type="hidden" name="keywords" value="{{ keyword.id }}">
-                                </span>
-                                {% endfor %}
+                            {% for keyword in question.keywords %}
+                            <span class="keyword-tag" data-keyword-id="{{ keyword.id }}"
+                                data-keyword-name="{{ keyword.name }}">
+                                {{ keyword.name }}
+                                <button type="button" class="remove-keyword"
+                                    onclick="removeKeyword({{ keyword.id }})">&times;</button>
+                                <input type="hidden" name="keywords" value="{{ keyword.id }}">
+                            </span>
+                            {% endfor %}
                             {% endif %}
                         </div>
                         <div class="keywords-input-wrapper">
-                            <input type="text" 
-                                   id="keywords-input" 
-                                   placeholder="Tapez pour rechercher ou créer un mot-clé..."
-                                   autocomplete="off"
-                                   onkeyup="searchKeywords(this.value)"
-                                   onkeydown="handleKeywordInputKeydown(event)">
+                            <input type="text" id="keywords-input"
+                                placeholder="Tapez pour rechercher ou créer un mot-clé..." autocomplete="off"
+                                onkeyup="searchKeywords(this.value)" onkeydown="handleKeywordInputKeydown(event)">
                             <div id="keywords-suggestions" class="keywords-suggestions" style="display: none;"></div>
                         </div>
                     </div>
-                    <small>Ajoutez des mots-clés pour identifier les sujets très précis (ex: "première cache", "mingo"). Permet d'éviter les doublons dans les quiz.</small>
+                    <small>Ajoutez des mots-clés pour identifier les sujets très précis (ex: "première cache", "mingo").
+                        Permet d'éviter les doublons dans les quiz.</small>
                 </div>
             </div>
 
@@ -139,59 +143,66 @@
                 <div class="form-group full-width">
                     <label>Réponses possibless *</label>
                     <div id="answers-container">
-                        {% set answers = question.possible_answers.split('|||') if question and question.possible_answers else ['', '', '', ''] %}
+                        {% set answers = question.possible_answers.split('|||') if question and
+                        question.possible_answers else ['', '', '', ''] %}
                         {% for i in range(1, 5) %}
                         <div class="answer-input-group">
                             <div class="answer-left">
-                            <span class="answer-number">{{ i }}.</span>
-                            <input type="text"
-                                   name="answer_{{ i }}"
-                                   placeholder="Réponse {{ i }}"
-                                   value="{{ answers[i-1] if i <= answers|length else '' }}">
+                                <span class="answer-number">{{ i }}.</span>
+                                <input type="text" name="answer_{{ i }}" placeholder="Réponse {{ i }}"
+                                    value="{{ answers[i-1] if i <= answers|length else '' }}">
                             </div>
                             <div class="input-with-action answer-image-group">
                                 <select name="answer_image_id_{{ i }}" class="answer-image-select">
                                     <option value="">-- Pas d'image --</option>
-                                    {% set link = question.answer_image_links | selectattr('answer_index','equalto', i) | list if question else [] %}
+                                    {% set link = question.answer_image_links | selectattr('answer_index','equalto', i)
+                                    | list if question else [] %}
                                     {% for img in images %}
-                                    <option value="{{ img.id }}"
-                                        {% if link and link[0].image_id == img.id %}selected{% endif %}>
+                                    <option value="{{ img.id }}" {% if link and link[0].image_id==img.id %}selected{%
+                                        endif %}>
                                         {{ img.title }} ({{ img.filename }})
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('answer_image_id_{{ i }}')" title="Ouvrir la galerie">🖼️</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                <button type="button" class="btn btn-small"
+                                    onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+</button>
+                                <button type="button" class="btn btn-small btn-outline"
+                                    onclick="openImageGalleryModal('answer_image_id_{{ i }}')"
+                                    title="Ouvrir la galerie">🖼️</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
+                                    title="Rafraîchir la liste des images">↻</button>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ Ajouter une réponse</button>
+                    <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ Ajouter une
+                        réponse</button>
                 </div>
-                </div>
-                
+            </div>
+
             <div class="form-row full-width">
                 <div class="form-group">
                     <label for="correct_answer">Bonne réponse (numéro) *</label>
-                    <input type="number" id="correct_answer" name="correct_answer" min="1" value="{{ question.correct_answer if question else '1' }}" required>
+                    <input type="number" id="correct_answer" name="correct_answer" min="1"
+                        value="{{ question.correct_answer if question else '1' }}" required>
                 </div>
                 <div class="form-group">
                     <label for="hint">Indice</label>
                     <input type="text" id="hint" name="hint" value="{{ question.hint if question else '' }}">
                 </div>
-                </div>
-                
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="detailed_answer">Explication détaillée</label>
-                    <textarea id="detailed_answer" name="detailed_answer" rows="4">{{ question.detailed_answer if question else '' }}</textarea>
+                    <textarea id="detailed_answer" name="detailed_answer"
+                        rows="4">{{ question.detailed_answer if question else '' }}</textarea>
                 </div>
                 <div class="form-group">
                     <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
                     <div class="input-with-action">
-                    <select id="detailed_answer_image_id" name="detailed_answer_image_id" class="answer-image-select"
-                            onchange="(function(sel){
+                        <select id="detailed_answer_image_id" name="detailed_answer_image_id"
+                            class="answer-image-select" onchange="(function(sel){
                                 var opt = sel.options[sel.selectedIndex];
                                 var prev = document.getElementById('detailed-answer-image-preview');
                                 var img = document.getElementById('detailed-answer-image-thumb');
@@ -204,83 +215,104 @@
                                     prev.style.display = 'none';
                                 }
                             })(this)">
-                        <option value="">-- Pas d'image --</option>
-                        {% for img in images %}
-                        <option value="{{ img.id }}" data-filename="{{ img.filename }}" data-alt="{{ (img.alt_text or img.title) | e }}"
-                            {% if question and question.detailed_answer_image_id == img.id %}selected{% endif %}>
-                            {{ img.title }} ({{ img.filename }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('detailed_answer_image_id')">+</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('detailed_answer_image_id')" title="Ouvrir la galerie">🖼️</button>
-                    <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                            <option value="">-- Pas d'image --</option>
+                            {% for img in images %}
+                            <option value="{{ img.id }}" data-filename="{{ img.filename }}"
+                                data-alt="{{ (img.alt_text or img.title) | e }}" {% if question and
+                                question.detailed_answer_image_id==img.id %}selected{% endif %}>
+                                {{ img.title }} ({{ img.filename }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-small"
+                            onclick="openEmbeddedImageModal('detailed_answer_image_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline"
+                            onclick="openImageGalleryModal('detailed_answer_image_id')"
+                            title="Ouvrir la galerie">🖼️</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
+                            title="Rafraîchir la liste des images">↻</button>
                     </div>
-                    <div id="detailed-answer-image-preview" class="image-preview" style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
-                        <img id="detailed-answer-image-thumb" src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}" alt="Aperçu">
+                    <div id="detailed-answer-image-preview" class="image-preview"
+                        style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
+                        <img id="detailed-answer-image-thumb"
+                            src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}"
+                            alt="Aperçu">
                     </div>
                     <small>Image illustrative pour accompagner l'explication détaillée</small>
-                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les
+                            images</a></small>
                 </div>
-                </div>
+            </div>
 
             <div class="form-row">
                 <div class="form-group">
                     <label for="source">Source (optionnel)</label>
-                    <input type="text" id="source" name="source" placeholder="https://exemple.com/source-officielle" value="{{ question.source if question else '' }}">
+                    <input type="text" id="source" name="source" placeholder="https://exemple.com/source-officielle"
+                        value="{{ question.source if question else '' }}">
                     <small>URL ou référence où vérifier la réponse (site officiel, documentation, etc.)</small>
                 </div>
                 <div class="form-group">
                     <label for="difficulty_level">Niveau de difficulté</label>
                     <select id="difficulty_level" name="difficulty_level">
-                        <option value="1" {% if question and question.difficulty_level == 1 %}selected{% endif %}>1 - Très facile</option>
-                        <option value="2" {% if question and question.difficulty_level == 2 %}selected{% endif %}>2 - Facile</option>
-                        <option value="3" {% if question and question.difficulty_level == 3 %}selected{% endif %}>3 - Moyen</option>
-                        <option value="4" {% if question and question.difficulty_level == 4 %}selected{% endif %}>4 - Difficile</option>
-                        <option value="5" {% if question and question.difficulty_level == 5 %}selected{% endif %}>5 - Très difficile</option>
+                        <option value="1" {% if question and question.difficulty_level==1 %}selected{% endif %}>1 - Très
+                            facile</option>
+                        <option value="2" {% if question and question.difficulty_level==2 %}selected{% endif %}>2 -
+                            Facile</option>
+                        <option value="3" {% if question and question.difficulty_level==3 %}selected{% endif %}>3 -
+                            Moyen</option>
+                        <option value="4" {% if question and question.difficulty_level==4 %}selected{% endif %}>4 -
+                            Difficile</option>
+                        <option value="5" {% if question and question.difficulty_level==5 %}selected{% endif %}>5 - Très
+                            difficile</option>
                     </select>
                 </div>
-                </div>
-                
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label>Pays concernés</label>
                     <div class="countries-grid">
                         {% for country in countries %}
                         <label class="country-checkbox">
-                            <input type="checkbox" name="countries" value="{{ country.id }}" {% if question and country in question.countries %}checked{% endif %}>
+                            <input type="checkbox" name="countries" value="{{ country.id }}" {% if question and country
+                                in question.countries %}checked{% endif %}>
                             {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}
                             {% if country.code %}({{ country.code }}){% endif %}
                         </label>
                         {% endfor %}
                     </div>
                     <small>Sélectionnez tous les pays concernés par cette question</small>
-                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a></small>
+                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les
+                            pays</a></small>
                 </div>
                 <div class="form-group">
                     <label for="translation_id">ID de traduction (question liée)</label>
-                    <input type="number" id="translation_id" name="translation_id" placeholder="ID de la question dans une autre langue" value="{{ question.translation_id if question and question.translation_id else '' }}">
+                    <input type="number" id="translation_id" name="translation_id"
+                        placeholder="ID de la question dans une autre langue"
+                        value="{{ question.translation_id if question and question.translation_id else '' }}">
                     <small>Utilisé pour lier des questions dans différentes langues</small>
                 </div>
-                </div>
-                
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{% endif %}>
+                        <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{%
+                            endif %}>
                         Question en ligne (publiée)
                     </label>
                 </div>
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="is_private" {% if question and question.is_private %}checked{% endif %}>
+                        <input type="checkbox" name="is_private" {% if question and question.is_private %}checked{%
+                            endif %}>
                         Question privée (utilisable uniquement par son créateur)
                     </label>
                     <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
                 </div>
-                </div>
-                
-                {% if question %}
+            </div>
+
+            {% if question %}
             <div class="form-row full-width">
                 <div class="form-info">
                     <p><strong>Statistiques:</strong></p>
@@ -288,18 +320,18 @@
                     <p>Succès: {{ question.success_count }}/{{ question.times_answered }}</p>
                     <p>Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</p>
                     {% if question.source %}
-                    <p>Source: <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{ question.source }}</a></p>
+                    <p>Source: <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{
+                            question.source }}</a></p>
                     {% endif %}
                     <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
                 </div>
             </div>
             {% endif %}
         </div>
-        
+
         <div class="form-actions">
-            <button type="button" 
-                    class="btn btn-secondary"
-                    onclick="document.getElementById('question-form-container').classList.add('hidden')">
+            <button type="button" class="btn btn-secondary"
+                onclick="document.getElementById('question-form-container').classList.add('hidden')">
                 Annuler
             </button>
             <button type="submit" class="btn btn-primary">
@@ -310,1043 +342,1081 @@
 </div>
 
 <script>
-console.log('[question_form.js] Script loaded');
+    console.log('[question_form.js] Script loaded');
 
-// Fonction pour mettre à jour automatiquement le thème quand un sous-thème est sélectionné
-function updateBroadThemeFromSpecificTheme() {
-    const specificThemeSelect = document.getElementById('specific_theme_id');
-    const broadThemeSelect = document.getElementById('broad_theme_id');
+    // Fonction pour mettre à jour automatiquement le thème quand un sous-thème est sélectionné
+    function updateBroadThemeFromSpecificTheme() {
+        const specificThemeSelect = document.getElementById('specific_theme_id');
+        const broadThemeSelect = document.getElementById('broad_theme_id');
 
-    if (!specificThemeSelect || !broadThemeSelect) {
-        console.log('[updateBroadThemeFromSpecificTheme] Selects not found');
-        return;
-    }
-
-    const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
-    if (selectedOption && selectedOption.value) {
-        const broadThemeId = selectedOption.getAttribute('data-broad-theme-id');
-        const currentBroadThemeId = broadThemeSelect.value;
-
-        // Mettre à jour le thème large seulement s'il est différent
-        if (broadThemeId && broadThemeId !== currentBroadThemeId) {
-            console.log('[updateBroadThemeFromSpecificTheme] Updating broad theme from', currentBroadThemeId, 'to', broadThemeId);
-            broadThemeSelect.value = broadThemeId;
-
-            // Recharger les sous-thèmes pour ce nouveau thème et restaurer la sélection
-            updateSpecificThemes(broadThemeId, selectedOption.value);
+        if (!specificThemeSelect || !broadThemeSelect) {
+            console.log('[updateBroadThemeFromSpecificTheme] Selects not found');
+            return;
         }
-    } else {
-        // Si "Aucun sous-thème" est sélectionné, ne rien faire
-        console.log('[updateBroadThemeFromSpecificTheme] No specific theme selected');
-    }
-}
 
-// Fonction pour mettre à jour la coloration de la bonne réponse
-function updateCorrectAnswerHighlight() {
-    console.log('[updateCorrectAnswerHighlight] Function called');
-    const correctAnswerInput = document.getElementById('correct_answer');
-    if (!correctAnswerInput) {
-        console.log('[updateCorrectAnswerHighlight] correct_answer input not found');
-        return;
-    }
+        const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const broadThemeId = selectedOption.getAttribute('data-broad-theme-id');
+            const currentBroadThemeId = broadThemeSelect.value;
 
-    const correctAnswerNumber = parseInt(correctAnswerInput.value) || 1;
-    console.log('[updateCorrectAnswerHighlight] Correct answer number:', correctAnswerNumber);
+            // Mettre à jour le thème large seulement s'il est différent
+            if (broadThemeId && broadThemeId !== currentBroadThemeId) {
+                console.log('[updateBroadThemeFromSpecificTheme] Updating broad theme from', currentBroadThemeId, 'to', broadThemeId);
+                broadThemeSelect.value = broadThemeId;
 
-    // Supprimer la classe correct-answer de toutes les réponses
-    const answerGroups = document.querySelectorAll('.answer-input-group');
-    console.log('[updateCorrectAnswerHighlight] Found answer groups:', answerGroups.length);
-
-    answerGroups.forEach(group => {
-        group.classList.remove('correct-answer');
-    });
-
-    // Ajouter la classe correct-answer à la réponse sélectionnée
-    if (answerGroups[correctAnswerNumber - 1]) {
-        answerGroups[correctAnswerNumber - 1].classList.add('correct-answer');
-        console.log('[updateCorrectAnswerHighlight] Added correct-answer class to group', correctAnswerNumber - 1);
-    } else {
-        console.log('[updateCorrectAnswerHighlight] No answer group found for index', correctAnswerNumber - 1);
-    }
-}
-
-function updateSpecificThemes(broadThemeId, selectedSpecificThemeId = null) {
-    const specificThemeSelect = document.getElementById('specific_theme_id');
-
-    if (!broadThemeId) {
-        // Aucun thème sélectionné, vider la liste
-        specificThemeSelect.innerHTML = '<option value="">-- Aucun sous-thème --</option>';
-        return;
-    }
-
-    // Faire une requête pour récupérer les sous-thèmes
-    fetch(`/api/specific-themes/for-theme/?broad_theme_id=${broadThemeId}`)
-        .then(response => response.text())
-        .then(html => {
-            specificThemeSelect.innerHTML = html;
-
-            // Restaurer la sélection si spécifiée
-            if (selectedSpecificThemeId && selectedSpecificThemeId !== '0') {
-                specificThemeSelect.value = selectedSpecificThemeId;
-                console.log('[updateSpecificThemes] Restored specific theme selection to:', selectedSpecificThemeId);
+                // Recharger les sous-thèmes pour ce nouveau thème et restaurer la sélection
+                updateSpecificThemes(broadThemeId, selectedOption.value);
             }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la récupération des sous-thèmes:', error);
-            specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
+        } else {
+            // Si "Aucun sous-thème" est sélectionné, ne rien faire
+            console.log('[updateBroadThemeFromSpecificTheme] No specific theme selected');
+        }
+    }
+
+    // Fonction pour mettre à jour la coloration de la bonne réponse
+    function updateCorrectAnswerHighlight() {
+        console.log('[updateCorrectAnswerHighlight] Function called');
+        const correctAnswerInput = document.getElementById('correct_answer');
+        if (!correctAnswerInput) {
+            console.log('[updateCorrectAnswerHighlight] correct_answer input not found');
+            return;
+        }
+
+        const correctAnswerNumber = parseInt(correctAnswerInput.value) || 1;
+        console.log('[updateCorrectAnswerHighlight] Correct answer number:', correctAnswerNumber);
+
+        // Supprimer la classe correct-answer de toutes les réponses
+        const answerGroups = document.querySelectorAll('.answer-input-group');
+        console.log('[updateCorrectAnswerHighlight] Found answer groups:', answerGroups.length);
+
+        answerGroups.forEach(group => {
+            group.classList.remove('correct-answer');
         });
-}
 
-// Fonction pour rafraîchir tous les selects de thèmes de la page
-function refreshThemeSelects() {
-    console.log('[refreshThemeSelects] Refreshing theme selects...');
-    // Faire un appel à une API JSON pour obtenir les données des thèmes
-    fetch('/api/themes/json', { headers: { 'HX-Request': 'true' } })
-        .then(function(r) {
-            if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
-            return r.json();
-        })
-        .then(function(themes) {
-            console.log('[refreshThemeSelects] Received themes:', themes.length);
-            // Mettre à jour le select des thèmes larges
-            var broadThemeSelect = document.getElementById('broad_theme_id');
-            if (broadThemeSelect) {
-                var currentValue = broadThemeSelect.value;
+        // Ajouter la classe correct-answer à la réponse sélectionnée
+        if (answerGroups[correctAnswerNumber - 1]) {
+            answerGroups[correctAnswerNumber - 1].classList.add('correct-answer');
+            console.log('[updateCorrectAnswerHighlight] Added correct-answer class to group', correctAnswerNumber - 1);
+        } else {
+            console.log('[updateCorrectAnswerHighlight] No answer group found for index', correctAnswerNumber - 1);
+        }
+    }
 
-                // Garder seulement l'option "Aucun thème"
-                var noThemeOption = broadThemeSelect.querySelector('option[value=""]');
-                broadThemeSelect.innerHTML = '';
-                if (noThemeOption) {
-                    broadThemeSelect.appendChild(noThemeOption.cloneNode(true));
-                } else {
-                    var defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Aucun thème --';
-                    broadThemeSelect.appendChild(defaultOption);
+    function updateSpecificThemes(broadThemeId, selectedSpecificThemeId = null) {
+        const specificThemeSelect = document.getElementById('specific_theme_id');
+
+        if (!broadThemeId) {
+            // Aucun thème sélectionné, vider la liste
+            specificThemeSelect.innerHTML = '<option value="">-- Aucun sous-thème --</option>';
+            return;
+        }
+
+        // Faire une requête pour récupérer les sous-thèmes
+        fetch(`/api/specific-themes/for-theme/?broad_theme_id=${broadThemeId}`)
+            .then(response => response.text())
+            .then(html => {
+                specificThemeSelect.innerHTML = html;
+
+                // Restaurer la sélection si spécifiée
+                if (selectedSpecificThemeId && selectedSpecificThemeId !== '0') {
+                    specificThemeSelect.value = selectedSpecificThemeId;
+                    console.log('[updateSpecificThemes] Restored specific theme selection to:', selectedSpecificThemeId);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des sous-thèmes:', error);
+                specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
+            });
+    }
+
+    // Fonction pour rafraîchir tous les selects de thèmes de la page
+    function refreshThemeSelects() {
+        console.log('[refreshThemeSelects] Refreshing theme selects...');
+        // Faire un appel à une API JSON pour obtenir les données des thèmes
+        fetch('/api/themes/json', { headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (themes) {
+                console.log('[refreshThemeSelects] Received themes:', themes.length);
+                // Mettre à jour le select des thèmes larges
+                var broadThemeSelect = document.getElementById('broad_theme_id');
+                if (broadThemeSelect) {
+                    var currentValue = broadThemeSelect.value;
+
+                    // Garder seulement l'option "Aucun thème"
+                    var noThemeOption = broadThemeSelect.querySelector('option[value=""]');
+                    broadThemeSelect.innerHTML = '';
+                    if (noThemeOption) {
+                        broadThemeSelect.appendChild(noThemeOption.cloneNode(true));
+                    } else {
+                        var defaultOption = document.createElement('option');
+                        defaultOption.value = '';
+                        defaultOption.textContent = '-- Aucun thème --';
+                        broadThemeSelect.appendChild(defaultOption);
+                    }
+
+                    // Ajouter toutes les options de thèmes
+                    themes.forEach(function (theme) {
+                        var opt = document.createElement('option');
+                        opt.value = theme.id;
+                        opt.textContent = (theme.icon ? theme.icon + ' ' : '') + theme.name + ' (' + theme.language.toUpperCase() + ')';
+                        broadThemeSelect.appendChild(opt);
+                    });
+
+                    // Restaurer la sélection précédente si elle existe encore
+                    if (currentValue && broadThemeSelect.querySelector('option[value="' + currentValue + '"]')) {
+                        broadThemeSelect.value = currentValue;
+                    }
+
+                    // Déclencher l'événement change pour rafraîchir les sous-thèmes
+                    var event = new Event('change', { bubbles: true });
+                    broadThemeSelect.dispatchEvent(event);
                 }
 
-                // Ajouter toutes les options de thèmes
-                themes.forEach(function(theme) {
-                    var opt = document.createElement('option');
-                    opt.value = theme.id;
-                    opt.textContent = (theme.icon ? theme.icon + ' ' : '') + theme.name + ' (' + theme.language.toUpperCase() + ')';
-                    broadThemeSelect.appendChild(opt);
+                // Mettre à jour le select des sous-thèmes
+                if (broadThemeSelect && broadThemeSelect.value) {
+                    updateSpecificThemes(broadThemeSelect.value);
+                }
+
+                // Message de confirmation
+                showToast('Listes des thèmes mises à jour', 'success');
+            })
+            .catch(function (err) {
+                console.error('[refreshThemeSelects] Error:', err);
+                showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+            });
+    }
+
+    // Fonction pour rafraîchir tous les selects d'images de la page
+    function refreshImageSelects() {
+        // Faire un appel à une API JSON pour obtenir les données des images
+        fetch('/api/images/json', { headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (images) {
+                // Mettre à jour tous les selects d'images
+                var imageSelects = document.querySelectorAll('select.answer-image-select');
+                imageSelects.forEach(function (sel) {
+                    var currentValue = sel.value;
+
+                    // Garder seulement l'option "Pas d'image"
+                    var noImageOption = sel.querySelector('option[value=""]');
+                    sel.innerHTML = '';
+                    if (noImageOption) {
+                        sel.appendChild(noImageOption.cloneNode(true));
+                    } else {
+                        var defaultOption = document.createElement('option');
+                        defaultOption.value = '';
+                        defaultOption.textContent = '-- Pas d\'image --';
+                        sel.appendChild(defaultOption);
+                    }
+
+                    // Ajouter toutes les options d'images
+                    images.forEach(function (img) {
+                        var opt = document.createElement('option');
+                        opt.value = img.id;
+                        opt.textContent = img.title + ' (' + img.filename + ')';
+                        opt.setAttribute('data-filename', img.filename);
+                        opt.setAttribute('data-alt', img.alt_text || img.title);
+                        sel.appendChild(opt);
+                    });
+
+                    // Restaurer la sélection précédente si elle existe encore
+                    if (currentValue && sel.querySelector('option[value="' + currentValue + '"]')) {
+                        sel.value = currentValue;
+                    }
+
+                    // Déclencher l'événement change pour rafraîchir l'aperçu
+                    var event = new Event('change', { bubbles: true });
+                    sel.dispatchEvent(event);
                 });
 
-                // Restaurer la sélection précédente si elle existe encore
-                if (currentValue && broadThemeSelect.querySelector('option[value="' + currentValue + '"]')) {
-                    broadThemeSelect.value = currentValue;
-                }
+                // Message de confirmation
+                showToast('Liste des images mise à jour', 'success');
+            })
+            .catch(function (err) {
+                console.error('Erreur lors du rafraîchissement des images:', err);
+                showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+            });
+    }
 
-                // Déclencher l'événement change pour rafraîchir les sous-thèmes
-                var event = new Event('change', { bubbles: true });
-                broadThemeSelect.dispatchEvent(event);
+    // Fonction utilitaire pour afficher des messages toast
+    function showToast(message, type) {
+        // Créer un élément toast temporaire
+        var toast = document.createElement('div');
+        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' +
+            (type === 'success' ? '#10b981' : '#ef4444') +
+            '; color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 14px; max-width: 300px;';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        // Supprimer automatiquement après 3 secondes
+        setTimeout(function () {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
             }
+        }, 3000);
+    }
 
-            // Mettre à jour le select des sous-thèmes
-            if (broadThemeSelect && broadThemeSelect.value) {
-                updateSpecificThemes(broadThemeSelect.value);
-            }
+    // ============ Gestion des mots-clés (Keywords) ============
 
-            // Message de confirmation
-            showToast('Listes des thèmes mises à jour', 'success');
-        })
-        .catch(function(err) {
-            console.error('[refreshThemeSelects] Error:', err);
-            showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
-        });
-}
+    // Variables globales pour les mots-clés
+    window.keywordsSearchTimeout = null;
+    window.allKeywords = []; // Cache des mots-clés
 
-// Fonction pour rafraîchir tous les selects d'images de la page
-function refreshImageSelects() {
-    // Faire un appel à une API JSON pour obtenir les données des images
-    fetch('/api/images/json', { headers: { 'HX-Request': 'true' } })
-        .then(function(r) {
-            if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
-            return r.json();
-        })
-        .then(function(images) {
-            // Mettre à jour tous les selects d'images
-            var imageSelects = document.querySelectorAll('select.answer-image-select');
-            imageSelects.forEach(function(sel) {
-                var currentValue = sel.value;
+    // Normaliser une chaîne pour la recherche (insensible aux accents, espaces, traits d'union)
+    function normalizeString(str) {
+        if (!str) return '';
+        return str
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+            .replace(/[-\s_]+/g, ''); // Supprimer espaces, traits d'union, underscores
+    }
 
-                // Garder seulement l'option "Pas d'image"
-                var noImageOption = sel.querySelector('option[value=""]');
-                sel.innerHTML = '';
-                if (noImageOption) {
-                    sel.appendChild(noImageOption.cloneNode(true));
-                } else {
-                    var defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Pas d\'image --';
-                    sel.appendChild(defaultOption);
-                }
+    // Rechercher des mots-clés avec autocomplétion
+    function searchKeywords(searchTerm) {
+        console.log('[searchKeywords] called with:', searchTerm);
 
-                // Ajouter toutes les options d'images
-                images.forEach(function(img) {
-                    var opt = document.createElement('option');
-                    opt.value = img.id;
-                    opt.textContent = img.title + ' (' + img.filename + ')';
-                    opt.setAttribute('data-filename', img.filename);
-                    opt.setAttribute('data-alt', img.alt_text || img.title);
-                    sel.appendChild(opt);
-                });
+        // Annuler le timeout précédent
+        if (window.keywordsSearchTimeout) {
+            clearTimeout(window.keywordsSearchTimeout);
+        }
 
-                // Restaurer la sélection précédente si elle existe encore
-                if (currentValue && sel.querySelector('option[value="' + currentValue + '"]')) {
-                    sel.value = currentValue;
-                }
+        // Si la recherche est vide, cacher les suggestions
+        if (!searchTerm || searchTerm.trim().length === 0) {
+            document.getElementById('keywords-suggestions').style.display = 'none';
+            return;
+        }
 
-                // Déclencher l'événement change pour rafraîchir l'aperçu
-                var event = new Event('change', { bubbles: true });
-                sel.dispatchEvent(event);
+        // Déclencher la recherche après 300ms
+        window.keywordsSearchTimeout = setTimeout(function () {
+            var normalizedSearch = normalizeString(searchTerm);
+            console.log('[searchKeywords] normalized search:', normalizedSearch);
+
+            // Filtrer les mots-clés existants
+            var matches = window.allKeywords.filter(function (kw) {
+                var normalizedName = normalizeString(kw.name);
+                return normalizedName.includes(normalizedSearch);
             });
 
-            // Message de confirmation
-            showToast('Liste des images mise à jour', 'success');
-        })
-        .catch(function(err) {
-            console.error('Erreur lors du rafraîchissement des images:', err);
-            showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
-        });
-}
+            // Vérifier si le terme exact existe déjà (pour éviter les doublons)
+            var exactMatch = window.allKeywords.find(function (kw) {
+                return normalizeString(kw.name) === normalizedSearch;
+            });
 
-// Fonction utilitaire pour afficher des messages toast
-function showToast(message, type) {
-    // Créer un élément toast temporaire
-    var toast = document.createElement('div');
-    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' +
-        (type === 'success' ? '#10b981' : '#ef4444') +
-        '; color: white; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999; font-size: 14px; max-width: 300px;';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    // Supprimer automatiquement après 3 secondes
-    setTimeout(function() {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 3000);
-}
-
-// ============ Gestion des mots-clés (Keywords) ============
-
-// Variables globales pour les mots-clés
-window.keywordsSearchTimeout = null;
-window.allKeywords = []; // Cache des mots-clés
-
-// Normaliser une chaîne pour la recherche (insensible aux accents, espaces, traits d'union)
-function normalizeString(str) {
-    if (!str) return '';
-    return str
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
-        .replace(/[-\s_]+/g, ''); // Supprimer espaces, traits d'union, underscores
-}
-
-// Rechercher des mots-clés avec autocomplétion
-function searchKeywords(searchTerm) {
-    console.log('[searchKeywords] called with:', searchTerm);
-    
-    // Annuler le timeout précédent
-    if (window.keywordsSearchTimeout) {
-        clearTimeout(window.keywordsSearchTimeout);
+            // Afficher les suggestions
+            displayKeywordSuggestions(searchTerm, matches, exactMatch);
+        }, 300);
     }
-    
-    // Si la recherche est vide, cacher les suggestions
-    if (!searchTerm || searchTerm.trim().length === 0) {
-        document.getElementById('keywords-suggestions').style.display = 'none';
-        return;
-    }
-    
-    // Déclencher la recherche après 300ms
-    window.keywordsSearchTimeout = setTimeout(function() {
-        var normalizedSearch = normalizeString(searchTerm);
-        console.log('[searchKeywords] normalized search:', normalizedSearch);
-        
-        // Filtrer les mots-clés existants
-        var matches = window.allKeywords.filter(function(kw) {
-            var normalizedName = normalizeString(kw.name);
-            return normalizedName.includes(normalizedSearch);
-        });
-        
-        // Vérifier si le terme exact existe déjà (pour éviter les doublons)
-        var exactMatch = window.allKeywords.find(function(kw) {
-            return normalizeString(kw.name) === normalizedSearch;
-        });
-        
-        // Afficher les suggestions
-        displayKeywordSuggestions(searchTerm, matches, exactMatch);
-    }, 300);
-}
 
-// Afficher les suggestions de mots-clés
-function displayKeywordSuggestions(searchTerm, matches, exactMatch) {
-    var suggestionsDiv = document.getElementById('keywords-suggestions');
-    suggestionsDiv.innerHTML = '';
-    
-    // Vérifier les mots-clés déjà sélectionnés
-    var selectedKeywordIds = getSelectedKeywordIds();
-    
-    // Filtrer les correspondances pour ne pas afficher les déjà sélectionnés
-    var availableMatches = matches.filter(function(kw) {
-        return selectedKeywordIds.indexOf(kw.id) === -1;
-    });
-    
-    if (availableMatches.length > 0) {
-        // Afficher les correspondances existantes
-        availableMatches.forEach(function(kw) {
-            var item = document.createElement('div');
-            item.className = 'suggestion-item';
-            item.textContent = kw.name;
-            item.onclick = function() {
-                addKeywordTag(kw.id, kw.name);
-                document.getElementById('keywords-input').value = '';
-                suggestionsDiv.style.display = 'none';
-            };
-            suggestionsDiv.appendChild(item);
-        });
-    }
-    
-    // Si aucune correspondance exacte, proposer de créer
-    if (!exactMatch && searchTerm.trim().length >= 2) {
-        var createItem = document.createElement('div');
-        createItem.className = 'suggestion-item create-new';
-        createItem.innerHTML = '<strong>+ Créer :</strong> "' + searchTerm.trim() + '"';
-        createItem.onclick = function() {
-            createAndAddKeyword(searchTerm.trim());
-        };
-        suggestionsDiv.appendChild(createItem);
-    }
-    
-    // Afficher ou cacher les suggestions
-    if (suggestionsDiv.children.length > 0) {
-        suggestionsDiv.style.display = 'block';
-    } else {
-        suggestionsDiv.style.display = 'none';
-    }
-}
-
-// Obtenir les IDs des mots-clés déjà sélectionnés
-function getSelectedKeywordIds() {
-    var tags = document.querySelectorAll('.keyword-tag');
-    var ids = [];
-    tags.forEach(function(tag) {
-        var id = parseInt(tag.getAttribute('data-keyword-id'));
-        if (!isNaN(id)) {
-            ids.push(id);
-        }
-    });
-    return ids;
-}
-
-// Ajouter un tag de mot-clé sélectionné
-function addKeywordTag(keywordId, keywordName) {
-    console.log('[addKeywordTag] adding:', keywordId, keywordName);
-    
-    // Vérifier si déjà ajouté
-    var existing = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
-    if (existing) {
-        console.log('[addKeywordTag] already exists');
-        return;
-    }
-    
-    var tagsContainer = document.getElementById('keywords-tags');
-    var tag = document.createElement('span');
-    tag.className = 'keyword-tag';
-    tag.setAttribute('data-keyword-id', keywordId);
-    tag.setAttribute('data-keyword-name', keywordName);
-    tag.innerHTML = keywordName + 
-        ' <button type="button" class="remove-keyword" onclick="removeKeyword(' + keywordId + ')">&times;</button>' +
-        '<input type="hidden" name="keywords" value="' + keywordId + '">';
-    
-    tagsContainer.appendChild(tag);
-    console.log('[addKeywordTag] tag added');
-}
-
-// Supprimer un mot-clé sélectionné
-function removeKeyword(keywordId) {
-    console.log('[removeKeyword] removing:', keywordId);
-    var tag = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
-    if (tag) {
-        tag.remove();
-    }
-}
-
-// Créer un nouveau mot-clé et l'ajouter
-function createAndAddKeyword(keywordName) {
-    console.log('[createAndAddKeyword] creating:', keywordName);
-    
-    // Afficher un message de création
-    var input = document.getElementById('keywords-input');
-    input.disabled = true;
-    input.value = 'Création en cours...';
-    
-    // Appel API pour créer le mot-clé
-    var formData = new FormData();
-    formData.append('name', keywordName);
-    formData.append('language', 'fr'); // Par défaut en français
-    
-    fetch('/api/keyword', {
-        method: 'POST',
-        body: formData,
-        headers: { 'HX-Request': 'true' }
-    })
-    .then(function(response) {
-        if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
-        return response.json();
-    })
-    .then(function(data) {
-        console.log('[createAndAddKeyword] created:', data);
-        if (data && data.keyword) {
-            // Ajouter au cache
-            window.allKeywords.push(data.keyword);
-            // Ajouter le tag
-            addKeywordTag(data.keyword.id, data.keyword.name);
-            // Réinitialiser l'input
-            input.value = '';
-            input.disabled = false;
-            input.focus();
-            // Cacher les suggestions
-            document.getElementById('keywords-suggestions').style.display = 'none';
-            showToast('Mot-clé "' + data.keyword.name + '" créé avec succès', 'success');
-        }
-    })
-    .catch(function(error) {
-        console.error('[createAndAddKeyword] error:', error);
-        showToast('Erreur lors de la création du mot-clé', 'error');
-        input.value = '';
-        input.disabled = false;
-    });
-}
-
-// Gérer les touches spéciales dans l'input de mots-clés
-function handleKeywordInputKeydown(event) {
-    // Entrée : sélectionner la première suggestion ou créer
-    if (event.key === 'Enter') {
-        event.preventDefault();
+    // Afficher les suggestions de mots-clés
+    function displayKeywordSuggestions(searchTerm, matches, exactMatch) {
         var suggestionsDiv = document.getElementById('keywords-suggestions');
-        var firstSuggestion = suggestionsDiv.querySelector('.suggestion-item');
-        if (firstSuggestion) {
-            firstSuggestion.click();
-        }
-        return false;
-    }
-    
-    // Échap : fermer les suggestions
-    if (event.key === 'Escape') {
-        document.getElementById('keywords-suggestions').style.display = 'none';
-        event.target.blur();
-    }
-}
+        suggestionsDiv.innerHTML = '';
 
-// Charger tous les mots-clés au chargement de la page
-function loadAllKeywords() {
-    console.log('[loadAllKeywords] loading keywords...');
-    fetch('/api/keywords/json', { headers: { 'HX-Request': 'true' } })
-        .then(function(response) {
-            if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
-            return response.json();
-        })
-        .then(function(keywords) {
-            console.log('[loadAllKeywords] loaded:', keywords.length, 'keywords');
-            window.allKeywords = keywords || [];
-        })
-        .catch(function(error) {
-            console.error('[loadAllKeywords] error:', error);
-            window.allKeywords = [];
+        // Vérifier les mots-clés déjà sélectionnés
+        var selectedKeywordIds = getSelectedKeywordIds();
+
+        // Filtrer les correspondances pour ne pas afficher les déjà sélectionnés
+        var availableMatches = matches.filter(function (kw) {
+            return selectedKeywordIds.indexOf(kw.id) === -1;
         });
-}
 
-// Fermer les suggestions si on clique ailleurs
-document.addEventListener('click', function(event) {
-    var suggestionsDiv = document.getElementById('keywords-suggestions');
-    var input = document.getElementById('keywords-input');
-    if (suggestionsDiv && input) {
-        if (!suggestionsDiv.contains(event.target) && event.target !== input) {
+        if (availableMatches.length > 0) {
+            // Afficher les correspondances existantes
+            availableMatches.forEach(function (kw) {
+                var item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = kw.name;
+                item.onclick = function () {
+                    addKeywordTag(kw.id, kw.name);
+                    document.getElementById('keywords-input').value = '';
+                    suggestionsDiv.style.display = 'none';
+                };
+                suggestionsDiv.appendChild(item);
+            });
+        }
+
+        // Si aucune correspondance exacte, proposer de créer
+        if (!exactMatch && searchTerm.trim().length >= 2) {
+            var createItem = document.createElement('div');
+            createItem.className = 'suggestion-item create-new';
+            createItem.innerHTML = '<strong>+ Créer :</strong> "' + searchTerm.trim() + '"';
+            createItem.onclick = function () {
+                createAndAddKeyword(searchTerm.trim());
+            };
+            suggestionsDiv.appendChild(createItem);
+        }
+
+        // Afficher ou cacher les suggestions
+        if (suggestionsDiv.children.length > 0) {
+            suggestionsDiv.style.display = 'block';
+        } else {
             suggestionsDiv.style.display = 'none';
         }
     }
-});
 
-// Charger les mots-clés au chargement du script
-loadAllKeywords();
-
-// Ouvrir une modale embarquée pour créer une image, au-dessus de la modale des questions
-function openEmbeddedImageModal(selectId) {
-    console.log('[openEmbeddedImageModal] called with selectId:', selectId);
-    // Créer un conteneur overlay si absent
-    var overlay = document.getElementById('embedded-image-modal');
-    if (!overlay) {
-        console.log('[openEmbeddedImageModal] creating overlay');
-        overlay = document.createElement('div');
-        overlay.id = 'embedded-image-modal';
-        overlay.className = 'modal-overlay';
-        // Utiliser un z-index plus élevé si on est dans une modale de galerie
-        var zIndex = document.getElementById('embedded-image-gallery-modal') ? '10002' : '10000';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: ' + zIndex + ';';
-        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-form-wrapper"></div></div>';
-        document.body.appendChild(overlay);
-    } else {
-        // Ajuster le z-index si nécessaire
-        var galleryModal = document.getElementById('embedded-image-gallery-modal');
-        if (galleryModal && galleryModal.style.display !== 'none') {
-            overlay.style.zIndex = '10002';
-        }
+    // Obtenir les IDs des mots-clés déjà sélectionnés
+    function getSelectedKeywordIds() {
+        var tags = document.querySelectorAll('.keyword-tag');
+        var ids = [];
+        tags.forEach(function (tag) {
+            var id = parseInt(tag.getAttribute('data-keyword-id'));
+            if (!isNaN(id)) {
+                ids.push(id);
+            }
+        });
+        return ids;
     }
-    overlay.style.display = 'flex';
-    console.log('[openEmbeddedImageModal] overlay displayed');
 
-    // Charger le formulaire d'image en mode embarqué
-    var url = '/image/new?embedded=1&select_id=' + encodeURIComponent(selectId);
-    console.log('[openEmbeddedImageModal] fetching:', url);
-    fetch(url, { headers: { 'HX-Request': 'true' }})
-      .then(function(r){
-          console.log('[openEmbeddedImageModal] fetch response status:', r.status);
-          return r.text();
-      })
-      .then(function(html){
-          console.log('[openEmbeddedImageModal] received HTML, length:', html.length);
-          console.log('[openEmbeddedImageModal] HTML preview:', html.substring(0, 200) + '...');
-          var wrap = document.getElementById('embedded-image-form-wrapper');
-          console.log('[openEmbeddedImageModal] wrapper element:', wrap);
-          wrap.innerHTML = html;
-          console.log('[openEmbeddedImageModal] HTML injected');
-          console.log('[openEmbeddedImageModal] wrapper content after injection:', wrap.innerHTML.substring(0, 200) + '...');
-      })
-      .catch(function(err){
-          console.error('[openEmbeddedImageModal] fetch error:', err);
-      });
-}
+    // Ajouter un tag de mot-clé sélectionné
+    function addKeywordTag(keywordId, keywordName) {
+        console.log('[addKeywordTag] adding:', keywordId, keywordName);
 
-function closeEmbeddedImageModal() {
-    var overlay = document.getElementById('embedded-image-modal');
-    if (overlay) overlay.style.display = 'none';
-}
-
-// Ouvrir une modale embarquée pour créer un thème, au-dessus de la modale des questions
-function openEmbeddedThemeModal(selectId) {
-    console.log('[openEmbeddedThemeModal] called with selectId:', selectId);
-    // Créer un conteneur overlay si absent
-    var overlay = document.getElementById('embedded-theme-modal');
-    if (!overlay) {
-        console.log('[openEmbeddedThemeModal] creating overlay');
-        overlay = document.createElement('div');
-        overlay.id = 'embedded-theme-modal';
-        overlay.className = 'modal-overlay';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-theme-form-wrapper"></div></div>';
-        document.body.appendChild(overlay);
-    }
-    overlay.style.display = 'flex';
-    console.log('[openEmbeddedThemeModal] overlay displayed');
-
-    // Charger le formulaire de thème en mode embarqué
-    var url = '/theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
-    console.log('[openEmbeddedThemeModal] fetching:', url);
-    fetch(url, { headers: { 'HX-Request': 'true' }})
-      .then(function(r){
-          console.log('[openEmbeddedThemeModal] fetch response status:', r.status);
-          return r.text();
-      })
-      .then(function(html){
-          console.log('[openEmbeddedThemeModal] received HTML, length:', html.length);
-          var wrap = document.getElementById('embedded-theme-form-wrapper');
-          wrap.innerHTML = html;
-          console.log('[openEmbeddedThemeModal] HTML injected');
-      })
-      .catch(function(err){
-          console.error('[openEmbeddedThemeModal] fetch error:', err);
-      });
-}
-
-// Ouvrir une modale embarquée pour créer un sous-thème, au-dessus de la modale des questions
-function openEmbeddedSpecificThemeModal(selectId) {
-    console.log('[openEmbeddedSpecificThemeModal] called with selectId:', selectId);
-    // Créer un conteneur overlay si absent
-    var overlay = document.getElementById('embedded-specific-theme-modal');
-    if (!overlay) {
-        console.log('[openEmbeddedSpecificThemeModal] creating overlay');
-        overlay = document.createElement('div');
-        overlay.id = 'embedded-specific-theme-modal';
-        overlay.className = 'modal-overlay';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-specific-theme-form-wrapper"></div></div>';
-        document.body.appendChild(overlay);
-    }
-    overlay.style.display = 'flex';
-    console.log('[openEmbeddedSpecificThemeModal] overlay displayed');
-
-    // Charger le formulaire de sous-thème en mode embarqué
-    var url = '/specific-theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
-    console.log('[openEmbeddedSpecificThemeModal] fetching:', url);
-    fetch(url, { headers: { 'HX-Request': 'true' }})
-      .then(function(r){
-          console.log('[openEmbeddedSpecificThemeModal] fetch response status:', r.status);
-          return r.text();
-      })
-      .then(function(html){
-          console.log('[openEmbeddedSpecificThemeModal] received HTML, length:', html.length);
-          var wrap = document.getElementById('embedded-specific-theme-form-wrapper');
-          wrap.innerHTML = html;
-          console.log('[openEmbeddedSpecificThemeModal] HTML injected');
-      })
-      .catch(function(err){
-          console.error('[openEmbeddedSpecificThemeModal] fetch error:', err);
-      });
-}
-
-// Callback appelé par le formulaire d'image embarqué après création
-window.onEmbeddedImageCreated = function(createdImage, selectId){
-    console.log('[onEmbeddedImageCreated] called with:', createdImage, 'selectId:', selectId);
-    try {
-        // Chercher d'abord par ID, puis par name si pas trouvé
-        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
-        console.log('[onEmbeddedImageCreated] found select element:', sel);
-        if (!sel) {
-            console.error('[onEmbeddedImageCreated] Select element not found for id/name:', selectId);
+        // Vérifier si déjà ajouté
+        var existing = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
+        if (existing) {
+            console.log('[addKeywordTag] already exists');
             return;
         }
-        // Ajouter l'option si absente
-        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdImage.id); });
-        if (!existing) {
-            var opt = document.createElement('option');
-            opt.value = String(createdImage.id);
-            opt.textContent = createdImage.title + ' (' + createdImage.filename + ')';
-            opt.setAttribute('data-filename', createdImage.filename || '');
-            opt.setAttribute('data-alt', createdImage.alt_text || createdImage.title || '');
-            sel.appendChild(opt);
-        }
-        // Sélectionner la nouvelle image
-        sel.value = String(createdImage.id);
-        // Déclencher l'événement change pour rafraîchir l'aperçu
-        var event = new Event('change', { bubbles: true });
-        sel.dispatchEvent(event);
 
-        // Si la galerie est ouverte, la mettre à jour avec la nouvelle image
-        var galleryModal = document.getElementById('embedded-image-gallery-modal');
-        if (galleryModal && galleryModal.style.display !== 'none') {
-            console.log('[onEmbeddedImageCreated] gallery is open, updating it');
-            // Mettre à jour la galerie en rechargeant avec la nouvelle image sélectionnée
-            var galleryWrapper = document.getElementById('embedded-image-gallery-wrapper');
-            if (galleryWrapper && window.gallerySelectId) {
-                var url = '/api/images/gallery?select_id=' + encodeURIComponent(window.gallerySelectId) +
-                          '&selected_id=' + encodeURIComponent(createdImage.id);
-                fetch(url, { headers: { 'HX-Request': 'true' } })
-                    .then(function(r){ return r.text(); })
-                    .then(function(html){
-                        galleryWrapper.innerHTML = html;
-                        // Mettre à jour les variables globales
-                        window.gallerySelectedId = createdImage.id;
-                        window.currentGallerySelection = createdImage;
-                        // Appliquer la pré-sélection visuelle et activer le bouton
-                        setTimeout(function() {
-                            var imageCard = document.querySelector('.gallery-card[data-image-id="' + createdImage.id + '"]');
-                            if (imageCard) {
-                                // Retirer preselected de toutes les cartes
-                                document.querySelectorAll('.gallery-card').forEach(function(card) {
-                                    card.classList.remove('preselected');
-                                });
-                                // Ajouter preselected à la nouvelle image
-                                imageCard.classList.add('preselected');
-                                // Activer le bouton Valider
-                                var confirmBtn = document.getElementById('confirm-btn');
-                                if (confirmBtn) {
-                                    confirmBtn.disabled = false;
+        var tagsContainer = document.getElementById('keywords-tags');
+        var tag = document.createElement('span');
+        tag.className = 'keyword-tag';
+        tag.setAttribute('data-keyword-id', keywordId);
+        tag.setAttribute('data-keyword-name', keywordName);
+        tag.innerHTML = keywordName +
+            ' <button type="button" class="remove-keyword" onclick="removeKeyword(' + keywordId + ')">&times;</button>' +
+            '<input type="hidden" name="keywords" value="' + keywordId + '">';
+
+        tagsContainer.appendChild(tag);
+        console.log('[addKeywordTag] tag added');
+    }
+
+    // Supprimer un mot-clé sélectionné
+    function removeKeyword(keywordId) {
+        console.log('[removeKeyword] removing:', keywordId);
+        var tag = document.querySelector('.keyword-tag[data-keyword-id="' + keywordId + '"]');
+        if (tag) {
+            tag.remove();
+        }
+    }
+
+    // Créer un nouveau mot-clé et l'ajouter
+    function createAndAddKeyword(keywordName) {
+        console.log('[createAndAddKeyword] creating:', keywordName);
+
+        // Afficher un message de création
+        var input = document.getElementById('keywords-input');
+        input.disabled = true;
+        input.value = 'Création en cours...';
+
+        // Appel API pour créer le mot-clé
+        var formData = new FormData();
+        formData.append('name', keywordName);
+        formData.append('language', 'fr'); // Par défaut en français
+
+        fetch('/api/keyword', {
+            method: 'POST',
+            body: formData,
+            headers: { 'HX-Request': 'true' }
+        })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                console.log('[createAndAddKeyword] created:', data);
+                if (data && data.keyword) {
+                    // Ajouter au cache
+                    window.allKeywords.push(data.keyword);
+                    // Ajouter le tag
+                    addKeywordTag(data.keyword.id, data.keyword.name);
+                    // Réinitialiser l'input
+                    input.value = '';
+                    input.disabled = false;
+                    input.focus();
+                    // Cacher les suggestions
+                    document.getElementById('keywords-suggestions').style.display = 'none';
+                    showToast('Mot-clé "' + data.keyword.name + '" créé avec succès', 'success');
+                }
+            })
+            .catch(function (error) {
+                console.error('[createAndAddKeyword] error:', error);
+                showToast('Erreur lors de la création du mot-clé', 'error');
+                input.value = '';
+                input.disabled = false;
+            });
+    }
+
+    // Gérer les touches spéciales dans l'input de mots-clés
+    function handleKeywordInputKeydown(event) {
+        // Entrée : sélectionner la première suggestion ou créer
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            var suggestionsDiv = document.getElementById('keywords-suggestions');
+            var firstSuggestion = suggestionsDiv.querySelector('.suggestion-item');
+            if (firstSuggestion) {
+                firstSuggestion.click();
+            }
+            return false;
+        }
+
+        // Échap : fermer les suggestions
+        if (event.key === 'Escape') {
+            document.getElementById('keywords-suggestions').style.display = 'none';
+            event.target.blur();
+        }
+    }
+
+    // Charger tous les mots-clés au chargement de la page
+    function loadAllKeywords() {
+        console.log('[loadAllKeywords] loading keywords...');
+        fetch('/api/keywords/json', { headers: { 'HX-Request': 'true' } })
+            .then(function (response) {
+                if (!response.ok) throw new Error('Erreur HTTP ' + response.status);
+                return response.json();
+            })
+            .then(function (keywords) {
+                console.log('[loadAllKeywords] loaded:', keywords.length, 'keywords');
+                window.allKeywords = keywords || [];
+            })
+            .catch(function (error) {
+                console.error('[loadAllKeywords] error:', error);
+                window.allKeywords = [];
+            });
+    }
+
+    // Fermer les suggestions si on clique ailleurs
+    document.addEventListener('click', function (event) {
+        var suggestionsDiv = document.getElementById('keywords-suggestions');
+        var input = document.getElementById('keywords-input');
+        if (suggestionsDiv && input) {
+            if (!suggestionsDiv.contains(event.target) && event.target !== input) {
+                suggestionsDiv.style.display = 'none';
+            }
+        }
+    });
+
+    // Charger les mots-clés au chargement du script
+    loadAllKeywords();
+
+    // Ouvrir une modale embarquée pour créer une image, au-dessus de la modale des questions
+    function openEmbeddedImageModal(selectId) {
+        console.log('[openEmbeddedImageModal] called with selectId:', selectId);
+        // Créer un conteneur overlay si absent
+        var overlay = document.getElementById('embedded-image-modal');
+        if (!overlay) {
+            console.log('[openEmbeddedImageModal] creating overlay');
+            overlay = document.createElement('div');
+            overlay.id = 'embedded-image-modal';
+            overlay.className = 'modal-overlay';
+            // Utiliser un z-index plus élevé si on est dans une modale de galerie
+            var zIndex = document.getElementById('embedded-image-gallery-modal') ? '10002' : '10000';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: ' + zIndex + ';';
+            overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-form-wrapper"></div></div>';
+            document.body.appendChild(overlay);
+        } else {
+            // Ajuster le z-index si nécessaire
+            if (galleryModal && galleryModal.style.display !== 'none') {
+                overlay.style.zIndex = '10002';
+            }
+        }
+        var wrap = document.getElementById('embedded-image-form-wrapper');
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        overlay.style.display = 'flex';
+        console.log('[openEmbeddedImageModal] overlay displayed');
+
+        // Charger le formulaire d'image en mode embarqué
+        var url = '/image/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+        console.log('[openEmbeddedImageModal] fetching:', url);
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[openEmbeddedImageModal] fetch response status:', r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                console.log('[openEmbeddedImageModal] received HTML, length:', html.length);
+                console.log('[openEmbeddedImageModal] HTML preview:', html.substring(0, 200) + '...');
+                var wrap = document.getElementById('embedded-image-form-wrapper');
+                console.log('[openEmbeddedImageModal] wrapper element:', wrap);
+                wrap.innerHTML = html;
+                console.log('[openEmbeddedImageModal] HTML injected');
+                console.log('[openEmbeddedImageModal] wrapper content after injection:', wrap.innerHTML.substring(0, 200) + '...');
+            })
+            .catch(function (err) {
+                console.error('[openEmbeddedImageModal] fetch error:', err);
+            });
+    }
+
+    function closeEmbeddedImageModal() {
+        var overlay = document.getElementById('embedded-image-modal');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    // Ouvrir une modale embarquée pour créer un thème, au-dessus de la modale des questions
+    function openEmbeddedThemeModal(selectId) {
+        console.log('[openEmbeddedThemeModal] called with selectId:', selectId);
+        // Créer un conteneur overlay si absent
+        var overlay = document.getElementById('embedded-theme-modal');
+        if (!overlay) {
+            console.log('[openEmbeddedThemeModal] creating overlay');
+            overlay = document.createElement('div');
+            overlay.id = 'embedded-theme-modal';
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-theme-form-wrapper"></div></div>';
+            document.body.appendChild(overlay);
+        }
+        var wrap = document.getElementById('embedded-theme-form-wrapper');
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        overlay.style.display = 'flex';
+        console.log('[openEmbeddedThemeModal] overlay displayed');
+
+        // Charger le formulaire de thème en mode embarqué
+        var url = '/theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+        console.log('[openEmbeddedThemeModal] fetching:', url);
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[openEmbeddedThemeModal] fetch response status:', r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                console.log('[openEmbeddedThemeModal] received HTML, length:', html.length);
+                var wrap = document.getElementById('embedded-theme-form-wrapper');
+                wrap.innerHTML = html;
+                console.log('[openEmbeddedThemeModal] HTML injected');
+            })
+            .catch(function (err) {
+                console.error('[openEmbeddedThemeModal] fetch error:', err);
+            });
+    }
+
+    // Ouvrir une modale embarquée pour créer un sous-thème, au-dessus de la modale des questions
+    function openEmbeddedSpecificThemeModal(selectId) {
+        console.log('[openEmbeddedSpecificThemeModal] called with selectId:', selectId);
+        // Créer un conteneur overlay si absent
+        var overlay = document.getElementById('embedded-specific-theme-modal');
+        if (!overlay) {
+            console.log('[openEmbeddedSpecificThemeModal] creating overlay');
+            overlay = document.createElement('div');
+            overlay.id = 'embedded-specific-theme-modal';
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;';
+            overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 640px; width: 94%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-specific-theme-form-wrapper"></div></div>';
+            document.body.appendChild(overlay);
+        }
+        var wrap = document.getElementById('embedded-specific-theme-form-wrapper');
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        overlay.style.display = 'flex';
+        console.log('[openEmbeddedSpecificThemeModal] overlay displayed');
+
+        // Charger le formulaire de sous-thème en mode embarqué
+        var url = '/specific-theme/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+        console.log('[openEmbeddedSpecificThemeModal] fetching:', url);
+        fetch(url, { headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[openEmbeddedSpecificThemeModal] fetch response status:', r.status);
+                return r.text();
+            })
+            .then(function (html) {
+                console.log('[openEmbeddedSpecificThemeModal] received HTML, length:', html.length);
+                var wrap = document.getElementById('embedded-specific-theme-form-wrapper');
+                wrap.innerHTML = html;
+                console.log('[openEmbeddedSpecificThemeModal] HTML injected');
+            })
+            .catch(function (err) {
+                console.error('[openEmbeddedSpecificThemeModal] fetch error:', err);
+            });
+    }
+
+    // Callback appelé par le formulaire d'image embarqué après création
+    window.onEmbeddedImageCreated = function (createdImage, selectId) {
+        console.log('[onEmbeddedImageCreated] called with:', createdImage, 'selectId:', selectId);
+        try {
+            // Chercher d'abord par ID, puis par name si pas trouvé
+            var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+            console.log('[onEmbeddedImageCreated] found select element:', sel);
+            if (!sel) {
+                console.error('[onEmbeddedImageCreated] Select element not found for id/name:', selectId);
+                return;
+            }
+            // Ajouter l'option si absente
+            var existing = Array.prototype.some.call(sel.options, function (o) { return String(o.value) === String(createdImage.id); });
+            if (!existing) {
+                var opt = document.createElement('option');
+                opt.value = String(createdImage.id);
+                opt.textContent = createdImage.title + ' (' + createdImage.filename + ')';
+                opt.setAttribute('data-filename', createdImage.filename || '');
+                opt.setAttribute('data-alt', createdImage.alt_text || createdImage.title || '');
+                sel.appendChild(opt);
+            }
+            // Sélectionner la nouvelle image
+            sel.value = String(createdImage.id);
+            // Déclencher l'événement change pour rafraîchir l'aperçu
+            var event = new Event('change', { bubbles: true });
+            sel.dispatchEvent(event);
+
+            // Si la galerie est ouverte, la mettre à jour avec la nouvelle image
+            var galleryModal = document.getElementById('embedded-image-gallery-modal');
+            if (galleryModal && galleryModal.style.display !== 'none') {
+                console.log('[onEmbeddedImageCreated] gallery is open, updating it');
+                // Mettre à jour la galerie en rechargeant avec la nouvelle image sélectionnée
+                var galleryWrapper = document.getElementById('embedded-image-gallery-wrapper');
+                if (galleryWrapper && window.gallerySelectId) {
+                    var url = '/api/images/gallery?select_id=' + encodeURIComponent(window.gallerySelectId) +
+                        '&selected_id=' + encodeURIComponent(createdImage.id);
+                    fetch(url, { headers: { 'HX-Request': 'true' } })
+                        .then(function (r) { return r.text(); })
+                        .then(function (html) {
+                            galleryWrapper.innerHTML = html;
+                            // Mettre à jour les variables globales
+                            window.gallerySelectedId = createdImage.id;
+                            window.currentGallerySelection = createdImage;
+                            // Appliquer la pré-sélection visuelle et activer le bouton
+                            setTimeout(function () {
+                                var imageCard = document.querySelector('.gallery-card[data-image-id="' + createdImage.id + '"]');
+                                if (imageCard) {
+                                    // Retirer preselected de toutes les cartes
+                                    document.querySelectorAll('.gallery-card').forEach(function (card) {
+                                        card.classList.remove('preselected');
+                                    });
+                                    // Ajouter preselected à la nouvelle image
+                                    imageCard.classList.add('preselected');
+                                    // Activer le bouton Valider
+                                    var confirmBtn = document.getElementById('confirm-btn');
+                                    if (confirmBtn) {
+                                        confirmBtn.disabled = false;
+                                    }
+                                    console.log('[onEmbeddedImageCreated] visual selection applied to new image');
                                 }
-                                console.log('[onEmbeddedImageCreated] visual selection applied to new image');
-                            }
-                        }, 100); // Petit délai pour s'assurer que le DOM est mis à jour
-                        console.log('[onEmbeddedImageCreated] gallery updated with new image');
-                    })
-                    .catch(function(err){
-                        console.error('[onEmbeddedImageCreated] error updating gallery:', err);
-                    });
+                            }, 100); // Petit délai pour s'assurer que le DOM est mis à jour
+                            console.log('[onEmbeddedImageCreated] gallery updated with new image');
+                        })
+                        .catch(function (err) {
+                            console.error('[onEmbeddedImageCreated] error updating gallery:', err);
+                        });
+                }
+            }
+
+            // Fermer la modale embarquée
+            closeEmbeddedImageModal();
+        } catch (e) {
+            closeEmbeddedImageModal();
+        }
+    }
+
+    // Callback appelé par le formulaire de thème embarqué après création
+    window.onEmbeddedThemeCreated = function (createdTheme, selectId) {
+        console.log('[onEmbeddedThemeCreated] called with:', createdTheme, 'selectId:', selectId);
+        try {
+            // Chercher d'abord par ID, puis par name si pas trouvé
+            var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+            console.log('[onEmbeddedThemeCreated] found select element:', sel);
+            if (!sel) {
+                console.error('[onEmbeddedThemeCreated] Select element not found for id/name:', selectId);
+                return;
+            }
+            // Ajouter l'option si absente
+            var existing = Array.prototype.some.call(sel.options, function (o) { return String(o.value) === String(createdTheme.id); });
+            if (!existing) {
+                var opt = document.createElement('option');
+                opt.value = String(createdTheme.id);
+                opt.textContent = (createdTheme.icon ? createdTheme.icon + ' ' : '') + createdTheme.name + ' (' + createdTheme.language.toUpperCase() + ')';
+                sel.appendChild(opt);
+            }
+            // Sélectionner le nouveau thème
+            sel.value = String(createdTheme.id);
+            // Déclencher l'événement change pour rafraîchir les sous-thèmes
+            var event = new Event('change', { bubbles: true });
+            sel.dispatchEvent(event);
+        } catch (e) {
+            console.error('[onEmbeddedThemeCreated] Error:', e);
+        }
+    }
+
+    // Callback appelé par le formulaire de sous-thème embarqué après création
+    window.onEmbeddedSpecificThemeCreated = function (createdSpecificTheme, selectId) {
+        console.log('[onEmbeddedSpecificThemeCreated] called with:', createdSpecificTheme, 'selectId:', selectId);
+        try {
+            // Chercher d'abord par ID, puis par name si pas trouvé
+            var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+            console.log('[onEmbeddedSpecificThemeCreated] found select element:', sel);
+            if (!sel) {
+                console.error('[onEmbeddedSpecificThemeCreated] Select element not found for id/name:', selectId);
+                return;
+            }
+            // Ajouter l'option si absente
+            var existing = Array.prototype.some.call(sel.options, function (o) { return String(o.value) === String(createdSpecificTheme.id); });
+            if (!existing) {
+                var opt = document.createElement('option');
+                opt.value = String(createdSpecificTheme.id);
+                opt.textContent = (createdSpecificTheme.icon ? createdSpecificTheme.icon + ' ' : '') + createdSpecificTheme.name;
+                opt.setAttribute('data-broad-theme-id', createdSpecificTheme.broad_theme_id);
+                sel.appendChild(opt);
+            }
+            // Sélectionner le nouveau sous-thème
+            sel.value = String(createdSpecificTheme.id);
+            // Mettre à jour le thème large automatiquement
+            updateBroadThemeFromSpecificTheme();
+        } catch (e) {
+            console.error('[onEmbeddedSpecificThemeCreated] Error:', e);
+        }
+    }
+
+    function closeEmbeddedThemeModal() {
+        var overlay = document.getElementById('embedded-theme-modal');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    function closeEmbeddedSpecificThemeModal() {
+        var overlay = document.getElementById('embedded-specific-theme-modal');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    // Fonction pour soumettre le formulaire embedded de sous-thème
+    function submitEmbeddedSpecificThemeForm(formEl) {
+        console.log('[submitEmbeddedSpecificThemeForm] Function called with form:', formEl);
+
+        // Empêcher complètement toute soumission normale
+        if (typeof event !== 'undefined' && event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+
+        var url = formEl.getAttribute('action') || '/api/specific-theme';
+        var formData = new FormData(formEl);
+        formData.set('embedded', '1');
+        // select_id transmis depuis champ hidden
+        var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+        console.log('[submitEmbeddedSpecificThemeForm] submitting to:', url, 'with selectId:', selectId);
+
+        fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[submitEmbeddedSpecificThemeForm] response status:', r.status);
+                if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (json) {
+                console.log('[submitEmbeddedSpecificThemeForm] received JSON:', json);
+                if (json && json.created_specific_theme) {
+                    console.log('[submitEmbeddedSpecificThemeForm] Success! Closing modal and calling callback');
+                    // Fermer d'abord la modale embedded
+                    closeEmbeddedSpecificThemeModal();
+                    // Puis appeler le callback parent
+                    if (window.parent && window.parent.onEmbeddedSpecificThemeCreated) {
+                        window.parent.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
+                    } else if (window.onEmbeddedSpecificThemeCreated) {
+                        window.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
+                    } else {
+                        console.error('[submitEmbeddedSpecificThemeForm] No callback function found!');
+                    }
+                }
+            })
+            .catch(function (err) {
+                console.error('Erreur lors de la création du sous-thème:', err);
+                alert('Erreur lors de la création du sous-thème: ' + err.message);
+            });
+
+        // Empêcher toute soumission de formulaire
+        return false;
+    }
+
+    // Fonction pour soumettre le formulaire embedded de thème
+    function submitEmbeddedThemeForm(formEl) {
+        console.log('[submitEmbeddedThemeForm] Function called with form:', formEl);
+
+        // Empêcher complètement toute soumission normale
+        if (typeof event !== 'undefined' && event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+
+        var url = formEl.getAttribute('action') || '/api/theme';
+        var formData = new FormData(formEl);
+        formData.set('embedded', '1');
+        // select_id transmis depuis champ hidden
+        var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+        console.log('[submitEmbeddedThemeForm] submitting to:', url, 'with selectId:', selectId);
+
+        fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[submitEmbeddedThemeForm] response status:', r.status);
+                if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (json) {
+                console.log('[submitEmbeddedThemeForm] received JSON:', json);
+                if (json && json.created_theme) {
+                    console.log('[submitEmbeddedThemeForm] Success! Closing modal and calling callback');
+                    // Fermer d'abord la modale embedded
+                    closeEmbeddedThemeModal();
+                    // Puis appeler le callback parent
+                    if (window.parent && window.parent.onEmbeddedThemeCreated) {
+                        window.parent.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
+                    } else if (window.onEmbeddedThemeCreated) {
+                        window.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
+                    } else {
+                        console.error('[submitEmbeddedThemeForm] No callback function found!');
+                    }
+                }
+            })
+            .catch(function (err) {
+                console.error('Erreur lors de la création du thème:', err);
+                alert('Erreur lors de la création du thème: ' + err.message);
+            });
+
+        // Empêcher toute soumission de formulaire
+        return false;
+    }
+
+    // Soumission manuelle du formulaire embarqué pour éviter TOUT rafraîchissement
+    function submitEmbeddedImageForm(formEl) {
+        console.log('[submitEmbeddedImageForm] Function called with form:', formEl);
+
+        // Empêcher complètement toute soumission normale
+        if (typeof event !== 'undefined' && event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+
+        var url = formEl.getAttribute('action');
+        var formData = new FormData(formEl);
+        formData.set('embedded', '1');
+        // select_id transmis depuis champ hidden
+        var selectId = formEl.querySelector('input[name="select_id"]').value || '';
+        console.log('[submitEmbeddedImageForm] submitting to:', url, 'with selectId:', selectId);
+        fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
+            .then(function (r) {
+                console.log('[submitEmbeddedImageForm] response status:', r.status);
+                if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (json) {
+                console.log('[submitEmbeddedImageForm] received JSON:', json);
+                if (json && json.created_image) {
+                    console.log('[submitEmbeddedImageForm] calling onEmbeddedImageCreated with:', json.created_image, json.select_id || selectId);
+                    if (window.onEmbeddedImageCreated) {
+                        window.onEmbeddedImageCreated(json.created_image, json.select_id || selectId);
+                    }
+                    // Fermer la modale - retiré car déjà fait dans onEmbeddedImageCreated
+                }
+            })
+            .catch(function (err) {
+                console.error('Erreur lors de la création d\'image:', err);
+                alert('Erreur lors de la création de l\'image: ' + err.message);
+            });
+        return false; // Empêcher la soumission par défaut du formulaire
+    }
+
+    // Fonction pour ajouter dynamiquement une nouvelle réponse
+    function addNewAnswer() {
+        const container = document.getElementById('answers-container');
+        const count = container.children.length + 1;
+
+        // Créer la div principale
+        const answerGroup = document.createElement('div');
+        answerGroup.className = 'answer-input-group';
+
+        // Numéro de réponse
+        const numberSpan = document.createElement('span');
+        numberSpan.className = 'answer-number';
+        numberSpan.textContent = count + '.';
+        answerGroup.appendChild(numberSpan);
+
+        // Input text
+        const textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.name = 'answer_' + count;
+        textInput.placeholder = 'Réponse ' + count;
+        answerGroup.appendChild(textInput);
+
+        // Container pour le select et boutons
+        const imageGroup = document.createElement('div');
+        imageGroup.className = 'input-with-action answer-image-group';
+
+        // Select pour l'image
+        const select = document.createElement('select');
+        select.name = 'answer_image_id_' + count;
+        select.className = 'answer-image-select';
+
+        // Option par défaut
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Pas d\'image --';
+        select.appendChild(defaultOption);
+
+        // Options d'images depuis la liste globale
+        const imageSelects = document.querySelectorAll('select.answer-image-select');
+        if (imageSelects.length > 0) {
+            const firstSelect = imageSelects[0];
+            // Copier toutes les options sauf la première (qui est "-- Pas d'image --")
+            for (let i = 1; i < firstSelect.options.length; i++) {
+                const option = firstSelect.options[i].cloneNode(true);
+                select.appendChild(option);
             }
         }
 
-        // Fermer la modale embarquée
-        closeEmbeddedImageModal();
-    } catch (e) {
-        closeEmbeddedImageModal();
-    }
-}
+        imageGroup.appendChild(select);
 
-// Callback appelé par le formulaire de thème embarqué après création
-window.onEmbeddedThemeCreated = function(createdTheme, selectId){
-    console.log('[onEmbeddedThemeCreated] called with:', createdTheme, 'selectId:', selectId);
-    try {
-        // Chercher d'abord par ID, puis par name si pas trouvé
-        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
-        console.log('[onEmbeddedThemeCreated] found select element:', sel);
-        if (!sel) {
-            console.error('[onEmbeddedThemeCreated] Select element not found for id/name:', selectId);
-            return;
-        }
-        // Ajouter l'option si absente
-        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdTheme.id); });
-        if (!existing) {
-            var opt = document.createElement('option');
-            opt.value = String(createdTheme.id);
-            opt.textContent = (createdTheme.icon ? createdTheme.icon + ' ' : '') + createdTheme.name + ' (' + createdTheme.language.toUpperCase() + ')';
-            sel.appendChild(opt);
-        }
-        // Sélectionner le nouveau thème
-        sel.value = String(createdTheme.id);
-        // Déclencher l'événement change pour rafraîchir les sous-thèmes
-        var event = new Event('change', { bubbles: true });
-        sel.dispatchEvent(event);
-    } catch (e) {
-        console.error('[onEmbeddedThemeCreated] Error:', e);
-    }
-}
+        // Bouton ajouter image
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'btn btn-small';
+        addButton.onclick = function () { openEmbeddedImageModal('answer_image_id_' + count); };
+        addButton.textContent = '+';
+        imageGroup.appendChild(addButton);
 
-// Callback appelé par le formulaire de sous-thème embarqué après création
-window.onEmbeddedSpecificThemeCreated = function(createdSpecificTheme, selectId){
-    console.log('[onEmbeddedSpecificThemeCreated] called with:', createdSpecificTheme, 'selectId:', selectId);
-    try {
-        // Chercher d'abord par ID, puis par name si pas trouvé
-        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
-        console.log('[onEmbeddedSpecificThemeCreated] found select element:', sel);
-        if (!sel) {
-            console.error('[onEmbeddedSpecificThemeCreated] Select element not found for id/name:', selectId);
-            return;
-        }
-        // Ajouter l'option si absente
-        var existing = Array.prototype.some.call(sel.options, function(o){ return String(o.value) === String(createdSpecificTheme.id); });
-        if (!existing) {
-            var opt = document.createElement('option');
-            opt.value = String(createdSpecificTheme.id);
-            opt.textContent = (createdSpecificTheme.icon ? createdSpecificTheme.icon + ' ' : '') + createdSpecificTheme.name;
-            opt.setAttribute('data-broad-theme-id', createdSpecificTheme.broad_theme_id);
-            sel.appendChild(opt);
-        }
-        // Sélectionner le nouveau sous-thème
-        sel.value = String(createdSpecificTheme.id);
-        // Mettre à jour le thème large automatiquement
-        updateBroadThemeFromSpecificTheme();
-    } catch (e) {
-        console.error('[onEmbeddedSpecificThemeCreated] Error:', e);
-    }
-}
+        // Bouton rafraîchir
+        const refreshButton = document.createElement('button');
+        refreshButton.type = 'button';
+        refreshButton.className = 'btn btn-small btn-outline';
+        refreshButton.onclick = refreshImageSelects;
+        refreshButton.title = 'Rafraîchir la liste des images';
+        refreshButton.textContent = '↻';
+        imageGroup.appendChild(refreshButton);
 
-function closeEmbeddedThemeModal() {
-    var overlay = document.getElementById('embedded-theme-modal');
-    if (overlay) overlay.style.display = 'none';
-}
+        answerGroup.appendChild(imageGroup);
 
-function closeEmbeddedSpecificThemeModal() {
-    var overlay = document.getElementById('embedded-specific-theme-modal');
-    if (overlay) overlay.style.display = 'none';
-}
+        // Ajouter au container
+        container.appendChild(answerGroup);
 
-// Fonction pour soumettre le formulaire embedded de sous-thème
-function submitEmbeddedSpecificThemeForm(formEl){
-    console.log('[submitEmbeddedSpecificThemeForm] Function called with form:', formEl);
-
-    // Empêcher complètement toute soumission normale
-    if (typeof event !== 'undefined' && event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        // Mettre à jour la coloration après ajout d'une nouvelle réponse
+        updateCorrectAnswerHighlight();
     }
 
-    var url = formEl.getAttribute('action') || '/api/specific-theme';
-    var formData = new FormData(formEl);
-    formData.set('embedded','1');
-    // select_id transmis depuis champ hidden
-    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
-    console.log('[submitEmbeddedSpecificThemeForm] submitting to:', url, 'with selectId:', selectId);
+    // Fonction d'initialisation commune
+    function initializeForm() {
+        console.log('[initializeForm] Initializing form...');
 
-    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
-      .then(function(r){
-          console.log('[submitEmbeddedSpecificThemeForm] response status:', r.status);
-          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
-          return r.json();
-      })
-      .then(function(json){
-          console.log('[submitEmbeddedSpecificThemeForm] received JSON:', json);
-          if (json && json.created_specific_theme){
-              console.log('[submitEmbeddedSpecificThemeForm] Success! Closing modal and calling callback');
-              // Fermer d'abord la modale embedded
-              closeEmbeddedSpecificThemeModal();
-              // Puis appeler le callback parent
-              if (window.parent && window.parent.onEmbeddedSpecificThemeCreated){
-                  window.parent.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
-              } else if (window.onEmbeddedSpecificThemeCreated){
-                  window.onEmbeddedSpecificThemeCreated(json.created_specific_theme, json.select_id || selectId);
-              } else {
-                  console.error('[submitEmbeddedSpecificThemeForm] No callback function found!');
-              }
-          }
-      })
-      .catch(function(err){
-          console.error('Erreur lors de la création du sous-thème:', err);
-          alert('Erreur lors de la création du sous-thème: ' + err.message);
-      });
+        // Vérifier d'abord la cohérence des sélections existantes
+        const specificThemeSelect = document.getElementById('specific_theme_id');
+        const broadThemeSelect = document.getElementById('broad_theme_id');
 
-    // Empêcher toute soumission de formulaire
-    return false;
-}
+        let needsThemeReload = true;
 
-// Fonction pour soumettre le formulaire embedded de thème
-function submitEmbeddedThemeForm(formEl){
-    console.log('[submitEmbeddedThemeForm] Function called with form:', formEl);
-
-    // Empêcher complètement toute soumission normale
-    if (typeof event !== 'undefined' && event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-    }
-
-    var url = formEl.getAttribute('action') || '/api/theme';
-    var formData = new FormData(formEl);
-    formData.set('embedded','1');
-    // select_id transmis depuis champ hidden
-    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
-    console.log('[submitEmbeddedThemeForm] submitting to:', url, 'with selectId:', selectId);
-
-    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' } })
-      .then(function(r){
-          console.log('[submitEmbeddedThemeForm] response status:', r.status);
-          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
-          return r.json();
-      })
-      .then(function(json){
-          console.log('[submitEmbeddedThemeForm] received JSON:', json);
-          if (json && json.created_theme){
-              console.log('[submitEmbeddedThemeForm] Success! Closing modal and calling callback');
-              // Fermer d'abord la modale embedded
-              closeEmbeddedThemeModal();
-              // Puis appeler le callback parent
-              if (window.parent && window.parent.onEmbeddedThemeCreated){
-                  window.parent.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
-              } else if (window.onEmbeddedThemeCreated){
-                  window.onEmbeddedThemeCreated(json.created_theme, json.select_id || selectId);
-              } else {
-                  console.error('[submitEmbeddedThemeForm] No callback function found!');
-              }
-          }
-      })
-      .catch(function(err){
-          console.error('Erreur lors de la création du thème:', err);
-          alert('Erreur lors de la création du thème: ' + err.message);
-      });
-
-    // Empêcher toute soumission de formulaire
-    return false;
-}
-
-// Soumission manuelle du formulaire embarqué pour éviter TOUT rafraîchissement
-function submitEmbeddedImageForm(formEl){
-    console.log('[submitEmbeddedImageForm] Function called with form:', formEl);
-
-    // Empêcher complètement toute soumission normale
-    if (typeof event !== 'undefined' && event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-    }
-
-    var url = formEl.getAttribute('action');
-    var formData = new FormData(formEl);
-    formData.set('embedded','1');
-    // select_id transmis depuis champ hidden
-    var selectId = formEl.querySelector('input[name="select_id"]').value || '';
-    console.log('[submitEmbeddedImageForm] submitting to:', url, 'with selectId:', selectId);
-    fetch(url, { method: 'POST', body: formData, headers: { 'HX-Request': 'true' }})
-      .then(function(r){
-          console.log('[submitEmbeddedImageForm] response status:', r.status);
-          if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
-          return r.json();
-      })
-      .then(function(json){
-          console.log('[submitEmbeddedImageForm] received JSON:', json);
-          if (json && json.created_image){
-              console.log('[submitEmbeddedImageForm] calling onEmbeddedImageCreated with:', json.created_image, json.select_id || selectId);
-              if (window.onEmbeddedImageCreated){
-                  window.onEmbeddedImageCreated(json.created_image, json.select_id || selectId);
-              }
-              // Fermer la modale - retiré car déjà fait dans onEmbeddedImageCreated
-          }
-      })
-      .catch(function(err){
-          console.error('Erreur lors de la création d\'image:', err);
-          alert('Erreur lors de la création de l\'image: ' + err.message);
-      });
-    return false; // Empêcher la soumission par défaut du formulaire
-}
-
-// Fonction pour ajouter dynamiquement une nouvelle réponse
-function addNewAnswer() {
-    const container = document.getElementById('answers-container');
-    const count = container.children.length + 1;
-
-    // Créer la div principale
-    const answerGroup = document.createElement('div');
-    answerGroup.className = 'answer-input-group';
-
-    // Numéro de réponse
-    const numberSpan = document.createElement('span');
-    numberSpan.className = 'answer-number';
-    numberSpan.textContent = count + '.';
-    answerGroup.appendChild(numberSpan);
-
-    // Input text
-    const textInput = document.createElement('input');
-    textInput.type = 'text';
-    textInput.name = 'answer_' + count;
-    textInput.placeholder = 'Réponse ' + count;
-    answerGroup.appendChild(textInput);
-
-    // Container pour le select et boutons
-    const imageGroup = document.createElement('div');
-    imageGroup.className = 'input-with-action answer-image-group';
-
-    // Select pour l'image
-    const select = document.createElement('select');
-    select.name = 'answer_image_id_' + count;
-    select.className = 'answer-image-select';
-
-    // Option par défaut
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = '-- Pas d\'image --';
-    select.appendChild(defaultOption);
-
-    // Options d'images depuis la liste globale
-    const imageSelects = document.querySelectorAll('select.answer-image-select');
-    if (imageSelects.length > 0) {
-        const firstSelect = imageSelects[0];
-        // Copier toutes les options sauf la première (qui est "-- Pas d'image --")
-        for (let i = 1; i < firstSelect.options.length; i++) {
-            const option = firstSelect.options[i].cloneNode(true);
-            select.appendChild(option);
-        }
-    }
-
-    imageGroup.appendChild(select);
-
-    // Bouton ajouter image
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn btn-small';
-    addButton.onclick = function() { openEmbeddedImageModal('answer_image_id_' + count); };
-    addButton.textContent = '+';
-    imageGroup.appendChild(addButton);
-
-    // Bouton rafraîchir
-    const refreshButton = document.createElement('button');
-    refreshButton.type = 'button';
-    refreshButton.className = 'btn btn-small btn-outline';
-    refreshButton.onclick = refreshImageSelects;
-    refreshButton.title = 'Rafraîchir la liste des images';
-    refreshButton.textContent = '↻';
-    imageGroup.appendChild(refreshButton);
-
-    answerGroup.appendChild(imageGroup);
-
-    // Ajouter au container
-    container.appendChild(answerGroup);
-
-    // Mettre à jour la coloration après ajout d'une nouvelle réponse
-    updateCorrectAnswerHighlight();
-}
-
-// Fonction d'initialisation commune
-function initializeForm() {
-    console.log('[initializeForm] Initializing form...');
-
-    // Vérifier d'abord la cohérence des sélections existantes
-    const specificThemeSelect = document.getElementById('specific_theme_id');
-    const broadThemeSelect = document.getElementById('broad_theme_id');
-
-    let needsThemeReload = true;
-
-    if (specificThemeSelect && specificThemeSelect.value && broadThemeSelect) {
-        // Si un sous-thème est sélectionné, vérifier que le thème large correspond
-        const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
-        if (selectedOption) {
-            const expectedBroadThemeId = selectedOption.getAttribute('data-broad-theme-id');
-            if (expectedBroadThemeId === broadThemeSelect.value) {
-                // Les sélections sont cohérentes, pas besoin de recharger
-                needsThemeReload = false;
-                console.log('[initializeForm] Selections are consistent, no reload needed');
+        if (specificThemeSelect && specificThemeSelect.value && broadThemeSelect) {
+            // Si un sous-thème est sélectionné, vérifier que le thème large correspond
+            const selectedOption = specificThemeSelect.options[specificThemeSelect.selectedIndex];
+            if (selectedOption) {
+                const expectedBroadThemeId = selectedOption.getAttribute('data-broad-theme-id');
+                if (expectedBroadThemeId === broadThemeSelect.value) {
+                    // Les sélections sont cohérentes, pas besoin de recharger
+                    needsThemeReload = false;
+                    console.log('[initializeForm] Selections are consistent, no reload needed');
+                }
             }
         }
-    }
 
-    // Recharger les sous-thèmes seulement si nécessaire
-    if (broadThemeSelect && broadThemeSelect.value && needsThemeReload) {
-        updateSpecificThemes(broadThemeSelect.value);
-    }
-
-    // Initialiser la coloration de la bonne réponse
-    updateCorrectAnswerHighlight();
-
-    // Ajouter un écouteur d'événement sur le champ bonne réponse
-    const correctAnswerInput = document.getElementById('correct_answer');
-    if (correctAnswerInput) {
-        correctAnswerInput.addEventListener('input', updateCorrectAnswerHighlight);
-        correctAnswerInput.addEventListener('change', updateCorrectAnswerHighlight);
-        console.log('[initializeForm] Event listeners added to correct_answer input');
-    } else {
-        console.log('[initializeForm] correct_answer input not found');
-    }
-
-    // Ajouter un écouteur d'événement sur le select des sous-thèmes
-    if (specificThemeSelect) {
-        specificThemeSelect.addEventListener('change', updateBroadThemeFromSpecificTheme);
-        console.log('[initializeForm] Event listener added to specific_theme_id select');
-    } else {
-        console.log('[initializeForm] specific_theme_id select not found');
-    }
-}
-
-// Approche simplifiée : essayer d'initialiser immédiatement et régulièrement
-function tryInitializeForm() {
-    const correctAnswerInput = document.getElementById('correct_answer');
-    const answerGroups = document.querySelectorAll('.answer-input-group');
-
-    if (correctAnswerInput && answerGroups.length > 0) {
-        console.log('[tryInitializeForm] Elements found, initializing...');
-        initializeForm();
-        return true; // Initialisation réussie
-    } else {
-        console.log('[tryInitializeForm] Elements not ready yet, retrying...');
-        return false; // Réessayer plus tard
-    }
-}
-
-// Essayer immédiatement
-if (!tryInitializeForm()) {
-    // Si ça ne marche pas, réessayer toutes les 200ms pendant 5 secondes
-    let attempts = 0;
-    const maxAttempts = 25; // 25 * 200ms = 5 secondes
-
-    const retryInterval = setInterval(function() {
-        attempts++;
-        if (tryInitializeForm() || attempts >= maxAttempts) {
-            clearInterval(retryInterval);
-            if (attempts >= maxAttempts) {
-                console.log('[tryInitializeForm] Max attempts reached, giving up');
-            }
+        // Recharger les sous-thèmes seulement si nécessaire
+        if (broadThemeSelect && broadThemeSelect.value && needsThemeReload) {
+            updateSpecificThemes(broadThemeSelect.value);
         }
-    }, 200);
-}
+
+        // Initialiser la coloration de la bonne réponse
+        updateCorrectAnswerHighlight();
+
+        // Ajouter un écouteur d'événement sur le champ bonne réponse
+        const correctAnswerInput = document.getElementById('correct_answer');
+        if (correctAnswerInput) {
+            correctAnswerInput.addEventListener('input', updateCorrectAnswerHighlight);
+            correctAnswerInput.addEventListener('change', updateCorrectAnswerHighlight);
+            console.log('[initializeForm] Event listeners added to correct_answer input');
+        } else {
+            console.log('[initializeForm] correct_answer input not found');
+        }
+
+        // Ajouter un écouteur d'événement sur le select des sous-thèmes
+        if (specificThemeSelect) {
+            specificThemeSelect.addEventListener('change', updateBroadThemeFromSpecificTheme);
+            console.log('[initializeForm] Event listener added to specific_theme_id select');
+        } else {
+            console.log('[initializeForm] specific_theme_id select not found');
+        }
+    }
+
+    // Approche simplifiée : essayer d'initialiser immédiatement et régulièrement
+    function tryInitializeForm() {
+        const correctAnswerInput = document.getElementById('correct_answer');
+        const answerGroups = document.querySelectorAll('.answer-input-group');
+
+        if (correctAnswerInput && answerGroups.length > 0) {
+            console.log('[tryInitializeForm] Elements found, initializing...');
+            initializeForm();
+            return true; // Initialisation réussie
+        } else {
+            console.log('[tryInitializeForm] Elements not ready yet, retrying...');
+            return false; // Réessayer plus tard
+        }
+    }
+
+    // Essayer immédiatement
+    if (!tryInitializeForm()) {
+        // Si ça ne marche pas, réessayer toutes les 200ms pendant 5 secondes
+        let attempts = 0;
+        const maxAttempts = 25; // 25 * 200ms = 5 secondes
+
+        const retryInterval = setInterval(function () {
+            attempts++;
+            if (tryInitializeForm() || attempts >= maxAttempts) {
+                clearInterval(retryInterval);
+                if (attempts >= maxAttempts) {
+                    console.log('[tryInitializeForm] Max attempts reached, giving up');
+                }
+            }
+        }, 200);
+    }
 </script>
 
 <style>
-    .form-grid-rows{display:grid;grid-template-columns:1fr;gap:1rem}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    .form-row.full-width{grid-template-columns:1fr}
-    .answer-input-group{display:grid;grid-template-columns:minmax(140px,1fr) 1fr;gap:.75rem;align-items:start;margin-bottom:.5rem}
-    .answer-left{display:flex;align-items:center;gap:.5rem}
-    .answer-left input[type="text"]{flex:1}
-    .answer-input-group.correct-answer{background-color:#e6f7ff;border-color:#1890ff;border-width:2px}
+    .form-grid-rows {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem
+    }
+
+    .form-row.full-width {
+        grid-template-columns: 1fr
+    }
+
+    .answer-input-group {
+        display: grid;
+        grid-template-columns: minmax(140px, 1fr) 1fr;
+        gap: .75rem;
+        align-items: start;
+        margin-bottom: .5rem
+    }
+
+    .answer-left {
+        display: flex;
+        align-items: center;
+        gap: .5rem
+    }
+
+    .answer-left input[type="text"] {
+        flex: 1
+    }
+
+    .answer-input-group.correct-answer {
+        background-color: #e6f7ff;
+        border-color: #1890ff;
+        border-width: 2px
+    }
+
     .countries-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1380,20 +1450,77 @@ if (!tryInitializeForm()) {
         height: 1rem;
         cursor: pointer;
     }
-    .images-grid-select{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;max-height:240px;overflow:auto;border:2px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--bg-color)}
-    .image-checkbox{display:flex;align-items:center;gap:.5rem;padding:.5rem;border-radius:.375rem;cursor:pointer}
-    .image-checkbox:hover{background:var(--card-bg)}
-    .image-checkbox .thumb{width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--border-color);border-radius:.25rem;overflow:hidden}
-    .image-checkbox img{max-width:100%;max-height:100%;object-fit:cover}
-    .image-preview{margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border-color);border-radius:0.375rem;background:var(--card-bg);display:inline-block}
-    .image-preview img{display:block;max-width:160px;max-height:120px}
-    .answer-image-group{flex:1;margin-left:0.5rem}
+
+    .images-grid-select {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: .75rem;
+        max-height: 240px;
+        overflow: auto;
+        border: 2px solid var(--border-color);
+        border-radius: .5rem;
+        padding: .75rem;
+        background: var(--bg-color)
+    }
+
+    .image-checkbox {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .5rem;
+        border-radius: .375rem;
+        cursor: pointer
+    }
+
+    .image-checkbox:hover {
+        background: var(--card-bg)
+    }
+
+    .image-checkbox .thumb {
+        width: 48px;
+        height: 48px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: .25rem;
+        overflow: hidden
+    }
+
+    .image-checkbox img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover
+    }
+
+    .image-preview {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        background: var(--card-bg);
+        display: inline-block
+    }
+
+    .image-preview img {
+        display: block;
+        max-width: 160px;
+        max-height: 120px
+    }
+
+    .answer-image-group {
+        flex: 1;
+        margin-left: 0.5rem
+    }
+
     /* Limiter la largeur des selects d'images et couper le texte des options */
     select.answer-image-select {
         max-width: 200px;
         overflow: hidden;
         text-overflow: ellipsis;
     }
+
     select.answer-image-select option {
         max-width: 100%;
         overflow: hidden;
@@ -1407,7 +1534,7 @@ if (!tryInitializeForm()) {
         flex-direction: column;
         gap: 0.75rem;
     }
-    
+
     .keywords-tags {
         display: flex;
         flex-wrap: wrap;
@@ -1418,13 +1545,13 @@ if (!tryInitializeForm()) {
         border-radius: 0.5rem;
         background: var(--bg-color);
     }
-    
+
     .keywords-tags:empty::before {
         content: 'Aucun mot-clé sélectionné';
         color: #9ca3af;
         font-style: italic;
     }
-    
+
     .keyword-tag {
         display: inline-flex;
         align-items: center;
@@ -1435,17 +1562,17 @@ if (!tryInitializeForm()) {
         border-radius: 1rem;
         font-size: 0.875rem;
         font-weight: 500;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: all 0.2s;
     }
-    
+
     .keyword-tag:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         transform: translateY(-1px);
     }
-    
+
     .keyword-tag .remove-keyword {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.2);
         border: none;
         color: white;
         width: 1.25rem;
@@ -1460,16 +1587,16 @@ if (!tryInitializeForm()) {
         padding: 0;
         transition: all 0.2s;
     }
-    
+
     .keyword-tag .remove-keyword:hover {
-        background: rgba(255,255,255,0.3);
+        background: rgba(255, 255, 255, 0.3);
         transform: scale(1.1);
     }
-    
+
     .keywords-input-wrapper {
         position: relative;
     }
-    
+
     #keywords-input {
         width: 100%;
         padding: 0.75rem;
@@ -1478,13 +1605,13 @@ if (!tryInitializeForm()) {
         font-size: 0.9375rem;
         transition: all 0.2s;
     }
-    
+
     #keywords-input:focus {
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
-    
+
     .keywords-suggestions {
         position: absolute;
         top: 100%;
@@ -1494,213 +1621,214 @@ if (!tryInitializeForm()) {
         background: white;
         border: 2px solid var(--border-color);
         border-radius: 0.5rem;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         max-height: 300px;
         overflow-y: auto;
         z-index: 1000;
     }
-    
+
     .suggestion-item {
         padding: 0.75rem 1rem;
         cursor: pointer;
         transition: background 0.15s;
         border-bottom: 1px solid #f3f4f6;
     }
-    
+
     .suggestion-item:last-child {
         border-bottom: none;
     }
-    
+
     .suggestion-item:hover {
         background: #f9fafb;
     }
-    
+
     .suggestion-item.create-new {
         background: #eff6ff;
         color: #1e40af;
         font-weight: 500;
         border-top: 2px solid #dbeafe;
     }
-    
+
     .suggestion-item.create-new:hover {
         background: #dbeafe;
     }
-    
+
     .suggestion-item.create-new strong {
         color: #1e40af;
     }
 </style>
 
 <script>
-function openImageGalleryModal(selectId){
-    console.log('[openImageGalleryModal] opening gallery for selectId:', selectId);
+    function openImageGalleryModal(selectId) {
+        console.log('[openImageGalleryModal] opening gallery for selectId:', selectId);
 
-    // Créer/ouvrir overlay
-    var overlay = document.getElementById('embedded-image-gallery-modal');
-    if(!overlay){
-        overlay = document.createElement('div');
-        overlay.id = 'embedded-image-gallery-modal';
-        overlay.className = 'modal-overlay';
-        overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10001;';
-        overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 960px; width: 96%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-gallery-wrapper"></div></div>';
-        document.body.appendChild(overlay);
-    }
-    overlay.style.display = 'flex';
+        // Créer/ouvrir overlay
+        var overlay = document.getElementById('embedded-image-gallery-modal');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'embedded-image-gallery-modal';
+            overlay.className = 'modal-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10001;';
+            overlay.innerHTML = '<div class="modal-content" style="background: white; border-radius: 1rem; max-width: 960px; width: 96%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3); padding: 1rem;"><div id="embedded-image-gallery-wrapper"></div></div>';
+            document.body.appendChild(overlay);
+        }
+        var wrap = document.getElementById('embedded-image-gallery-wrapper');
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        overlay.style.display = 'flex';
 
-    // Stocker le selectId pour la confirmation et la recherche
-    window.currentGallerySelectId = selectId;
-    window.gallerySelectId = selectId;
+        // Stocker le selectId pour la confirmation et la recherche
+        window.currentGallerySelectId = selectId;
+        window.gallerySelectId = selectId;
 
-    // Valeur sélectionnée actuelle
-    var sel = document.getElementById(selectId) || document.querySelector('select[name="'+selectId+'"]');
-    var selectedId = sel && sel.value ? sel.value : '';
-    window.gallerySelectedId = selectedId;
-    var url = '/api/images/gallery?select_id=' + encodeURIComponent(selectId) + (selectedId ? ('&selected_id=' + encodeURIComponent(selectedId)) : '');
-    fetch(url, { headers: { 'HX-Request': 'true' }})
-      .then(function(r){ return r.text(); })
-      .then(function(html){
-          var wrap = document.getElementById('embedded-image-gallery-wrapper');
-          wrap.innerHTML = html;
-          // Réinitialiser la sélection courante
-          window.currentGallerySelection = null;
-      })
-      .catch(function(err){ console.error('[openImageGalleryModal] error:', err); });
-}
-
-function closeImageGalleryModal(){
-    var overlay = document.getElementById('embedded-image-gallery-modal');
-    if(overlay){ overlay.style.display = 'none'; }
-}
-
-// Fonctions pour la galerie d'images
-window.currentGallerySelection = null;
-
-function selectImageInGallery(imageId, element){
-    console.log('[selectImageInGallery] called with imageId:', imageId);
-
-    // Retirer la classe preselected de toutes les cartes
-    var allCards = document.querySelectorAll('.gallery-card');
-    allCards.forEach(function(card){
-        card.classList.remove('preselected');
-    });
-
-    // Ajouter la classe preselected à la carte cliquée
-    element.classList.add('preselected');
-
-    // Stocker la sélection courante
-    window.currentGallerySelection = {
-        id: imageId,
-        title: element.dataset.imageTitle,
-        filename: element.dataset.imageFilename,
-        altText: element.dataset.imageAlt
-    };
-
-    // Activer le bouton de validation
-    var confirmBtn = document.getElementById('confirm-btn');
-    if(confirmBtn){
-        confirmBtn.disabled = false;
-    }
-
-    console.log('[selectImageInGallery] selection stored:', window.currentGallerySelection);
-}
-
-// Variables pour la recherche dans la galerie
-window.gallerySearchTimeout = null;
-window.gallerySelectedId = null;
-window.gallerySelectId = null;
-
-function performGallerySearch(searchTerm) {
-    console.log('[performGallerySearch] called with:', searchTerm);
-
-    // Annuler le timeout précédent
-    if (window.gallerySearchTimeout) {
-        clearTimeout(window.gallerySearchTimeout);
-    }
-
-    // Déclencher la recherche après 300ms
-    window.gallerySearchTimeout = setTimeout(function() {
-        console.log('[performGallerySearch] executing search for:', searchTerm);
-
-        var url = '/api/images/gallery?search=' + encodeURIComponent(searchTerm) +
-                  '&selected_id=' + encodeURIComponent(window.gallerySelectedId || '') +
-                  '&select_id=' + encodeURIComponent(window.gallerySelectId || '') +
-                  '&partial=1';
-
-        console.log('[performGallerySearch] fetching:', url);
-
+        // Valeur sélectionnée actuelle
+        var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+        var selectedId = sel && sel.value ? sel.value : '';
+        window.gallerySelectedId = selectedId;
+        var url = '/api/images/gallery?select_id=' + encodeURIComponent(selectId) + (selectedId ? ('&selected_id=' + encodeURIComponent(selectedId)) : '');
         fetch(url, { headers: { 'HX-Request': 'true' } })
-            .then(function(response) {
-                console.log('[performGallerySearch] response status:', response.status);
-                return response.text();
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                var wrap = document.getElementById('embedded-image-gallery-wrapper');
+                wrap.innerHTML = html;
+                // Réinitialiser la sélection courante
+                window.currentGallerySelection = null;
             })
-            .then(function(html) {
-                console.log('[performGallerySearch] received HTML, updating gallery list');
-                var listElement = document.getElementById('images-gallery-list');
-                if (listElement) {
-                    listElement.innerHTML = html;
-                } else {
-                    console.error('[performGallerySearch] images-gallery-list element not found');
-                }
-            })
-            .catch(function(error) {
-                console.error('[performGallerySearch] error:', error);
-            });
-    }, 300);
-}
-
-function confirmGallerySelection(){
-    console.log('[confirmGallerySelection] called');
-
-    if(!window.currentGallerySelection){
-        console.warn('[confirmGallerySelection] no selection to confirm');
-        return;
+            .catch(function (err) { console.error('[openImageGalleryModal] error:', err); });
     }
 
-    var selectId = window.currentGallerySelectId;
-    if(!selectId){
-        console.error('[confirmGallerySelection] no selectId stored');
-        return;
+    function closeImageGalleryModal() {
+        var overlay = document.getElementById('embedded-image-gallery-modal');
+        if (overlay) { overlay.style.display = 'none'; }
     }
 
-    console.log('[confirmGallerySelection] applying selection to selectId:', selectId);
+    // Fonctions pour la galerie d'images
+    window.currentGallerySelection = null;
 
-    try{
-        var sel = document.getElementById(selectId) || document.querySelector('select[name="'+selectId+'"]');
-        console.log('[confirmGallerySelection] found select element:', sel);
-        if(!sel){
-            console.error('[confirmGallerySelection] Select element not found for id/name:', selectId);
+    function selectImageInGallery(imageId, element) {
+        console.log('[selectImageInGallery] called with imageId:', imageId);
+
+        // Retirer la classe preselected de toutes les cartes
+        var allCards = document.querySelectorAll('.gallery-card');
+        allCards.forEach(function (card) {
+            card.classList.remove('preselected');
+        });
+
+        // Ajouter la classe preselected à la carte cliquée
+        element.classList.add('preselected');
+
+        // Stocker la sélection courante
+        window.currentGallerySelection = {
+            id: imageId,
+            title: element.dataset.imageTitle,
+            filename: element.dataset.imageFilename,
+            altText: element.dataset.imageAlt
+        };
+
+        // Activer le bouton de validation
+        var confirmBtn = document.getElementById('confirm-btn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+        }
+
+        console.log('[selectImageInGallery] selection stored:', window.currentGallerySelection);
+    }
+
+    // Variables pour la recherche dans la galerie
+    window.gallerySearchTimeout = null;
+    window.gallerySelectedId = null;
+    window.gallerySelectId = null;
+
+    function performGallerySearch(searchTerm) {
+        console.log('[performGallerySearch] called with:', searchTerm);
+
+        // Annuler le timeout précédent
+        if (window.gallerySearchTimeout) {
+            clearTimeout(window.gallerySearchTimeout);
+        }
+
+        // Déclencher la recherche après 300ms
+        window.gallerySearchTimeout = setTimeout(function () {
+            console.log('[performGallerySearch] executing search for:', searchTerm);
+
+            var url = '/api/images/gallery?search=' + encodeURIComponent(searchTerm) +
+                '&selected_id=' + encodeURIComponent(window.gallerySelectedId || '') +
+                '&select_id=' + encodeURIComponent(window.gallerySelectId || '') +
+                '&partial=1';
+
+            console.log('[performGallerySearch] fetching:', url);
+
+            fetch(url, { headers: { 'HX-Request': 'true' } })
+                .then(function (response) {
+                    console.log('[performGallerySearch] response status:', response.status);
+                    return response.text();
+                })
+                .then(function (html) {
+                    console.log('[performGallerySearch] received HTML, updating gallery list');
+                    var listElement = document.getElementById('images-gallery-list');
+                    if (listElement) {
+                        listElement.innerHTML = html;
+                    } else {
+                        console.error('[performGallerySearch] images-gallery-list element not found');
+                    }
+                })
+                .catch(function (error) {
+                    console.error('[performGallerySearch] error:', error);
+                });
+        }, 300);
+    }
+
+    function confirmGallerySelection() {
+        console.log('[confirmGallerySelection] called');
+
+        if (!window.currentGallerySelection) {
+            console.warn('[confirmGallerySelection] no selection to confirm');
             return;
         }
 
-        var image = window.currentGallerySelection;
-        var exists = Array.prototype.some.call(sel.options, function(o){ return String(o.value)===String(image.id); });
-        console.log('[confirmGallerySelection] image already exists:', exists);
-        if(!exists){
-            var opt = document.createElement('option');
-            opt.value = String(image.id);
-            opt.textContent = image.title + ' (' + image.filename + ')';
-            opt.setAttribute('data-filename', image.filename || '');
-            opt.setAttribute('data-alt', image.altText || image.title || '');
-            sel.appendChild(opt);
-            console.log('[confirmGallerySelection] option added');
+        var selectId = window.currentGallerySelectId;
+        if (!selectId) {
+            console.error('[confirmGallerySelection] no selectId stored');
+            return;
         }
-        // Sélectionner la nouvelle image
-        sel.value = String(image.id);
-        console.log('[confirmGallerySelection] selected value set to:', sel.value);
-        // Déclencher l'événement change pour rafraîchir l'aperçu
-        var evt = new Event('change', { bubbles: true });
-        sel.dispatchEvent(evt);
-        console.log('[confirmGallerySelection] change event dispatched');
-        // Fermer la modale galerie
-        if(window.closeImageGalleryModal){
-            console.log('[confirmGallerySelection] closing gallery modal');
-            window.closeImageGalleryModal();
-        } else {
-            console.warn('[confirmGallerySelection] closeImageGalleryModal function not found');
-        }
-    }catch(e){
-        console.error('[confirmGallerySelection] error:', e);
-    }
-}
-</script>
 
+        console.log('[confirmGallerySelection] applying selection to selectId:', selectId);
+
+        try {
+            var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
+            console.log('[confirmGallerySelection] found select element:', sel);
+            if (!sel) {
+                console.error('[confirmGallerySelection] Select element not found for id/name:', selectId);
+                return;
+            }
+
+            var image = window.currentGallerySelection;
+            var exists = Array.prototype.some.call(sel.options, function (o) { return String(o.value) === String(image.id); });
+            console.log('[confirmGallerySelection] image already exists:', exists);
+            if (!exists) {
+                var opt = document.createElement('option');
+                opt.value = String(image.id);
+                opt.textContent = image.title + ' (' + image.filename + ')';
+                opt.setAttribute('data-filename', image.filename || '');
+                opt.setAttribute('data-alt', image.altText || image.title || '');
+                sel.appendChild(opt);
+                console.log('[confirmGallerySelection] option added');
+            }
+            // Sélectionner la nouvelle image
+            sel.value = String(image.id);
+            console.log('[confirmGallerySelection] selected value set to:', sel.value);
+            // Déclencher l'événement change pour rafraîchir l'aperçu
+            var evt = new Event('change', { bubbles: true });
+            sel.dispatchEvent(evt);
+            console.log('[confirmGallerySelection] change event dispatched');
+            // Fermer la modale galerie
+            if (window.closeImageGalleryModal) {
+                console.log('[confirmGallerySelection] closing gallery modal');
+                window.closeImageGalleryModal();
+            } else {
+                console.warn('[confirmGallerySelection] closeImageGalleryModal function not found');
+            }
+        } catch (e) {
+            console.error('[confirmGallerySelection] error:', e);
+        }
+    }
+</script>

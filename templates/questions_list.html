@@ -8,12 +8,17 @@
         <div class="question-header">
             <div class="question-meta">
                 {% if question.theme %}
-                <span class="badge badge-theme" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
+                <span class="badge badge-theme" {% if question.theme.color
+                    %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"
+                    {% endif %}>
                     {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
                 </span>
                 {% if question.specific_theme_obj %}
-                <span class="badge badge-specific-theme" {% if question.specific_theme_obj.inherited_color %}style="background-color: {{ question.specific_theme_obj.inherited_color }}20; color: {{ question.specific_theme_obj.inherited_color }}; border: 1px solid {{ question.specific_theme_obj.inherited_color }}"{% endif %}>
-                    {% if question.specific_theme_obj.icon %}{{ question.specific_theme_obj.icon }} {% endif %}{{ question.specific_theme_obj.name }}
+                <span class="badge badge-specific-theme" {% if question.specific_theme_obj.inherited_color
+                    %}style="background-color: {{ question.specific_theme_obj.inherited_color }}20; color: {{ question.specific_theme_obj.inherited_color }}; border: 1px solid {{ question.specific_theme_obj.inherited_color }}"
+                    {% endif %}>
+                    {% if question.specific_theme_obj.icon %}{{ question.specific_theme_obj.icon }} {% endif %}{{
+                    question.specific_theme_obj.name }}
                 </span>
                 {% endif %}
                 {% else %}
@@ -27,55 +32,56 @@
                 {% endif %}
             </div>
             <div class="question-actions">
-                <button class="btn-icon" 
-                        type="button"
-                        onclick="document.getElementById('question-form-container').classList.remove('hidden')"
-                        hx-get="/question/{{ question.id }}/edit"
-                        hx-target="#question-form-container"
-                        hx-swap="innerHTML"
-                        title="Éditer">
+                <button class="btn-icon" type="button"
+                    onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>Chargement...</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
+                    hx-get="/question/{{ question.id }}/edit" hx-target="#question-form-container" hx-swap="innerHTML"
+                    title="Éditer">
                     ✏️
                 </button>
-                <button class="btn-icon btn-danger" 
-                        hx-delete="/api/question/{{ question.id }}"
-                        hx-target="#questions-list"
-                        hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
-                        title="Supprimer">
+                <button class="btn-icon btn-danger" hx-delete="/api/question/{{ question.id }}"
+                    hx-target="#questions-list" hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
+                    title="Supprimer">
                     🗑️
                 </button>
             </div>
         </div>
-        
+
         <div class="question-content">
             <h3>{{ question.question_text }}</h3>
             <div class="question-info">
-                <p><strong>Auteur:</strong> {{ question.author_user.username if question.author_user else 'Auteur inconnu' }}</p>
+                <p><strong>Auteur:</strong> {{ question.author_user.username if question.author_user else 'Auteur
+                    inconnu' }}</p>
                 {% if question.hint %}
                 <p><strong>Indice:</strong> {{ question.hint }}</p>
                 {% endif %}
                 {% if question.source %}
-                <p><strong>Source:</strong> <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{ question.source }}</a></p>
+                <p><strong>Source:</strong> <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{
+                        question.source }}</a></p>
                 {% endif %}
                 {% if question.countries %}
-                <p><strong>Pays:</strong> 
+                <p><strong>Pays:</strong>
                     {% for country in question.countries %}
-                        {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}{% if not loop.last %}, {% endif %}
+                    {% if country.flag %}{{ country.flag }} {% endif %}{{ country.name }}{% if not loop.last %}, {%
+                    endif %}
                     {% endfor %}
                 </p>
                 {% endif %}
             </div>
-            
+
             {% set answers = question.possible_answers.split('|||') %}
             {% if answers %}
             <div class="answers-preview">
                 <strong>Réponses possiblesf:</strong>
                 <ul>
                     {% for answer in answers %}
-                    <li {% if loop.index == question.correct_answer|int %}class="correct-answer"{% endif %}>
+                    <li {% if loop.index==question.correct_answer|int %}class="correct-answer" {% endif %}>
                         {{ answer }}
-                        {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) | list) %}
+                        {% set link = (question.answer_image_links | selectattr('answer_index','equalto', loop.index) |
+                        list) %}
                         {% if link and link[0] and link[0].image %}
-                        <img src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}" style="max-width:80px; max-height:80px; object-fit:contain; margin-left:.5rem; vertical-align:middle;" />
+                        <img src="/uploads/{{ link[0].image.filename }}"
+                            alt="{{ link[0].image.alt_text or link[0].image.title }}"
+                            style="max-width:80px; max-height:80px; object-fit:contain; margin-left:.5rem; vertical-align:middle;" />
                         {% endif %}
                         {% if loop.index == question.correct_answer|int %}✓{% endif %}
                     </li>
@@ -88,12 +94,13 @@
                 <strong>Images:</strong>
                 <div class="image-row">
                     {% for img in question.images %}
-                    <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}" style="max-width:100px; max-height:100px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem; margin-right:.5rem;" />
+                    <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}"
+                        style="max-width:100px; max-height:100px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem; margin-right:.5rem;" />
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
-            
+
             {% if question.detailed_answer %}
             <div class="detailed-answer">
                 <strong>Explication:</strong>
@@ -101,24 +108,25 @@
                 {% if question.detailed_answer_image %}
                 <div class="answer-image">
                     <img src="/uploads/{{ question.detailed_answer_image.filename }}"
-                         alt="{{ question.detailed_answer_image.alt_text or question.detailed_answer_image.title }}"
-                         title="{{ question.detailed_answer_image.title }}"
-                         style="max-width:200px; max-height:150px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem;" />
+                        alt="{{ question.detailed_answer_image.alt_text or question.detailed_answer_image.title }}"
+                        title="{{ question.detailed_answer_image.title }}"
+                        style="max-width:200px; max-height:150px; object-fit:cover; border:1px solid var(--border-color); border-radius:.25rem;" />
                 </div>
                 {% endif %}
             </div>
             {% endif %}
         </div>
-        
+
         <div class="question-footer">
             <small>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</small>
             <small>Modifié: {{ question.updated_at.strftime('%d/%m/%Y %H:%M') if question.updated_at }}</small>
             {% if question.times_answered > 0 %}
-            <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.success_count }}/{{ question.times_answered }})</small>
+            <small>Réussite: {{ "%.1f"|format(question.success_rate) }}% ({{ question.success_count }}/{{
+                question.times_answered }})</small>
             {% endif %}
-                <div class="actions-row">
-                    <a href="/question/{{ question.id }}/stats" class="btn btn-outline btn-small">📊 Stats</a>
-                </div>
+            <div class="actions-row">
+                <a href="/question/{{ question.id }}/stats" class="btn btn-outline btn-small">📊 Stats</a>
+            </div>
         </div>
     </div>
     {% endfor %}
@@ -137,4 +145,3 @@
         font-weight: 500;
     }
 </style>
-
