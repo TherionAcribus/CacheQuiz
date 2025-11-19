@@ -1,17 +1,20 @@
 {% extends "base_public.html" %}
 
-{% block title %}{% if rule_set %}{{ rule_set.name }} - CacheQuiz{% else %}Choisir un Quiz - CacheQuiz{% endif %}{% endblock %}
+{% block title %}{% if rule_set %}{{ rule_set.name }} - CacheQuiz{% else %}Choisir un Quiz - CacheQuiz{% endif %}{%
+endblock %}
 
 {% block meta_tags %}
 {% if rule_set %}
 <!-- Meta tags Open Graph pour le partage social -->
-<meta name="description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(160) }}{% else %}Teste tes connaissances avec le quiz {{ rule_set.name }}. Rejoins-moi et viens relever le défi !{% endif %}">
+<meta name="description"
+    content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(160) }}{% else %}Teste tes connaissances avec le quiz {{ rule_set.name }}. Rejoins-moi et viens relever le défi !{% endif %}">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="CacheQuiz">
 <meta property="og:title" content="Quiz : {{ rule_set.name }}">
-<meta property="og:description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching. Rejoins-moi et viens relever le défi !{% endif %}">
+<meta property="og:description"
+    content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching. Rejoins-moi et viens relever le défi !{% endif %}">
 <meta property="og:url" content="{{ request.url_root }}play/{{ rule_set.slug }}">
 {% if rule_set.intro_image %}
 <meta property="og:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
@@ -24,7 +27,8 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Quiz : {{ rule_set.name }}">
-<meta name="twitter:description" content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching !{% endif %}">
+<meta name="twitter:description"
+    content="{% if rule_set.description %}{{ rule_set.description|striptags|truncate(200) }}{% else %}Teste tes connaissances avec ce quiz de géocaching !{% endif %}">
 {% if rule_set.intro_image %}
 <meta name="twitter:image" content="{{ request.url_root[:-1] }}{{ rule_set.intro_image.url }}">
 {% else %}
@@ -32,11 +36,13 @@
 {% endif %}
 {% else %}
 <!-- Meta tags par défaut -->
-<meta name="description" content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
+<meta name="description"
+    content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
 <meta property="og:site_name" content="CacheQuiz">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CacheQuiz - Quiz de Géocaching">
-<meta property="og:description" content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
+<meta property="og:description"
+    content="Choisis ton quiz de géocaching et teste tes connaissances. Différents thèmes et niveaux de difficulté disponibles !">
 <meta property="og:url" content="{{ request.url }}">
 <meta property="og:image" content="{{ request.url_root }}static/images/logo_geoquiz.png">
 <meta name="twitter:card" content="summary">
@@ -53,17 +59,19 @@
         {% if rule_set.intro_image %}
         <div class="intro-image">
             <img src="{{ rule_set.intro_image.url }}" alt="Image d'introduction" />
-                {% if rule_set.intro_image.copyright_credits or rule_set.intro_image.copyright_link %}
-                <div class="image-copyright">
-                    {% if rule_set.intro_image.copyright_credits and rule_set.intro_image.copyright_link %}
-                    <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">© {{ rule_set.intro_image.copyright_credits }}</a></small>
-                    {% elif rule_set.intro_image.copyright_credits %}
-                    <small>© {{ rule_set.intro_image.copyright_credits }}</small>
-                    {% elif rule_set.intro_image.copyright_link %}
-                    <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">🔗 Source</a></small>
-                    {% endif %}
-                </div>
+            {% if rule_set.intro_image.copyright_credits or rule_set.intro_image.copyright_link %}
+            <div class="image-copyright">
+                {% if rule_set.intro_image.copyright_credits and rule_set.intro_image.copyright_link %}
+                <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer"
+                        class="copyright-link">© {{ rule_set.intro_image.copyright_credits }}</a></small>
+                {% elif rule_set.intro_image.copyright_credits %}
+                <small>© {{ rule_set.intro_image.copyright_credits }}</small>
+                {% elif rule_set.intro_image.copyright_link %}
+                <small><a href="{{ rule_set.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer"
+                        class="copyright-link">🔗 Source</a></small>
                 {% endif %}
+            </div>
+            {% endif %}
         </div>
         {% endif %}
         {% if rule_set.intro_message %}
@@ -74,16 +82,15 @@
     </div>
     {% endif %}
 
-    {% set start_redirect_url = url_for('play_quiz', rule_set=rule_set.slug, auto_start=1) if rule_set else url_for('play_quiz', auto_start=1) %}
+    {% set start_redirect_url = url_for('play_quiz', rule_set=rule_set.slug, auto_start=1) if rule_set else
+    url_for('play_quiz', auto_start=1) %}
 
-    <div class="quiz-start" id="play-start-wrapper" data-has-user="{{ 'true' if current_user else 'false' }}" data-auto-start="{{ 'true' if auto_start else 'false' }}">
+    <div class="quiz-start" id="play-start-wrapper" data-has-user="{{ 'true' if current_user else 'false' }}"
+        data-auto-start="{{ 'true' if auto_start else 'false' }}">
         {% if current_user %}
-        <button class="btn btn-primary btn-large"
-                hx-get="/api/quiz/next"
-                hx-target="#quiz-stage"
-                hx-swap="innerHTML"
-                hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ 'true' if quick_double_click else 'false' }}"}'
-                id="start-quiz-btn">
+        <button class="btn btn-primary btn-large" hx-get="/api/quiz/next" hx-target="#quiz-stage" hx-swap="innerHTML"
+            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ ' true' if
+            quick_double_click else 'false' }}"}' id="start-quiz-btn">
             🚀 Démarrer le quiz
         </button>
         {% else %}
@@ -101,14 +108,16 @@
                 <button class="btn btn-primary" type="submit">Valider et démarrer le quiz</button>
                 <button class="btn btn-secondary" type="button" id="cancel-start-input">Annuler</button>
             </div>
-            <p class="login-hint">Si ce pseudo est protégé par un mot de passe, nous vous le demanderons juste après.</p>
+            <p class="login-hint">Si ce pseudo est protégé par un mot de passe, nous vous le demanderons juste après.
+            </p>
         </form>
         <form id="password-start-form" class="start-form" hx-post="/auth/widget-login" hx-swap="none" hidden>
             <div class="form-fields">
                 <label for="password-start-username" class="form-label">Pseudo</label>
                 <input type="text" id="password-start-username" name="username" readonly>
                 <label for="password-start-password" class="form-label">Mot de passe</label>
-                <input type="password" id="password-start-password" name="password" placeholder="Votre mot de passe" required>
+                <input type="password" id="password-start-password" name="password" placeholder="Votre mot de passe"
+                    required>
             </div>
             <input type="hidden" name="next" value="{{ start_redirect_url }}">
             <input type="hidden" name="source" value="play-start">
@@ -124,8 +133,8 @@
     <!-- Option temporaire de double-clic -->
     <div class="quick-double-click-option">
         <label class="checkbox-label">
-            <input type="checkbox" id="quick-double-click" name="quick_double_click"
-                   {% if quick_double_click %}checked{% endif %}>
+            <input type="checkbox" id="quick-double-click" name="quick_double_click" {% if quick_double_click
+                %}checked{% endif %}>
             <span class="checkmark"></span>
             <span class="option-text">Double-clic pour valider</span>
         </label>
@@ -200,12 +209,11 @@
             </ul>
         </div>
         <div class="banner-actions">
-            <button class="btn btn-primary btn-banner"
-                    onclick="showUpgradeModal()">
+            <button class="btn btn-primary btn-banner" onclick="showUpgradeModal()">
                 Créer mon compte sécurisé
             </button>
             <button class="btn btn-secondary btn-small"
-                    onclick="this.parentElement.parentElement.parentElement.style.display='none'">
+                onclick="this.parentElement.parentElement.parentElement.style.display='none'">
                 Plus tard
             </button>
         </div>
@@ -232,7 +240,8 @@
             </div>
             <div class="form-group">
                 <label for="password_confirm">Confirmer le mot de passe *</label>
-                <input type="password" id="password_confirm" name="password_confirm" required placeholder="Retapez le mot de passe">
+                <input type="password" id="password_confirm" name="password_confirm" required
+                    placeholder="Retapez le mot de passe">
             </div>
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Créer mon compte</button>
@@ -256,14 +265,18 @@
                         <div class="tooltip-title">Détails techniques</div>
                         <div class="tooltip-info">
                             <div><strong>⏱️ Timer:</strong> {{ rule_set_item.timer_seconds }} secondes</div>
-                            <div><strong>⚙️ Points de base:</strong> {{ rule_set_item.scoring_base_points }} points</div>
+                            <div><strong>⚙️ Points de base:</strong> {{ rule_set_item.scoring_base_points }} points
+                            </div>
                             {% if rule_set_item.scoring_difficulty_bonus_type == 'add' %}
-                            <div><strong>🎯 Bonus difficulté:</strong> +{{ rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
+                            <div><strong>🎯 Bonus difficulté:</strong> +{{
+                                rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
                             {% elif rule_set_item.scoring_difficulty_bonus_type == 'mult' %}
-                            <div><strong>🎯 Multiplicateur difficulté:</strong> ×{{ rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
+                            <div><strong>🎯 Multiplicateur difficulté:</strong> ×{{
+                                rule_set_item.get_difficulty_bonus_map()|tojson }}</div>
                             {% endif %}
                             {% if rule_set_item.combo_bonus_enabled %}
-                            <div><strong>🔥 Combo:</strong> +{{ rule_set_item.combo_bonus_points }} points tous les {{ rule_set_item.combo_step }} bonnes réponses</div>
+                            <div><strong>🔥 Combo:</strong> +{{ rule_set_item.combo_bonus_points }} points tous les {{
+                                rule_set_item.combo_step }} bonnes réponses</div>
                             {% endif %}
                             {% if rule_set_item.perfect_quiz_bonus %}
                             <div><strong>🏆 Quiz parfait:</strong> +{{ rule_set_item.perfect_quiz_bonus }} points</div>
@@ -286,14 +299,22 @@
             <div class="card-image">
                 <img src="{{ rule_set_item.intro_image.url }}" alt="Image d'introduction" />
                 {% if rule_set_item.intro_image.copyright_credits or rule_set_item.intro_image.copyright_link %}
-                <div class="image-copyright">
-                    {% if rule_set_item.intro_image.copyright_credits and rule_set_item.intro_image.copyright_link %}
-                    <small><a href="{{ rule_set_item.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">© {{ rule_set_item.intro_image.copyright_credits }}</a></small>
-                    {% elif rule_set_item.intro_image.copyright_credits %}
-                    <small>© {{ rule_set_item.intro_image.copyright_credits }}</small>
-                    {% elif rule_set_item.intro_image.copyright_link %}
-                    <small><a href="{{ rule_set_item.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer" class="copyright-link">🔗 Source</a></small>
-                    {% endif %}
+                <div class="image-copyright-icon info-tooltip">
+                    <span class="info-icon" style="color: white; opacity: 1; font-size: 1.1rem;">©</span>
+                    <div class="tooltip-content"
+                        style="bottom: 100%; top: auto; right: 0; left: auto; transform: none; margin-bottom: 8px;">
+                        <div class="tooltip-title">Crédits image</div>
+                        <div class="tooltip-info">
+                            {% if rule_set_item.intro_image.copyright_credits %}
+                            <div><strong>Auteur:</strong> {{ rule_set_item.intro_image.copyright_credits }}</div>
+                            {% endif %}
+                            {% if rule_set_item.intro_image.copyright_link %}
+                            <div><a href="{{ rule_set_item.intro_image.copyright_link }}" target="_blank"
+                                    rel="noopener noreferrer" style="color: var(--primary-color);">🔗 Voir la source</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -319,9 +340,11 @@
 </div>
 {% endif %}
 
-<div id="quiz-stage" class="quiz-stage">   
+<div id="quiz-stage" class="quiz-stage">
     <style>
-        .quiz-stage { margin-top: 1rem; }
+        .quiz-stage {
+            margin-top: 1rem;
+        }
 
         /* Styles pour la bannière de mise à niveau du compte */
         .account-upgrade-banner {
@@ -330,8 +353,8 @@
             border-radius: 1rem;
             padding: 1.5rem;
             margin: 2rem 0 2rem 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .banner-content {
@@ -400,7 +423,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -416,7 +439,7 @@
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             animation: slideUp 0.3s ease-out;
         }
 
@@ -459,25 +482,41 @@
         }
 
         /* Styles pour la sélection des sets de règles */
-        .rule-sets-selection { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        .rule-sets-selection h3 { text-align: center; margin-bottom: 2rem; color: var(--primary-color); }
-        .rule-sets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .rule-sets-selection {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .rule-sets-selection h3 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+
+        .rule-sets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
 
         .rule-set-card {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: .75rem;
             padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
             height: 100%;
             min-height: 380px;
         }
+
         .rule-set-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .card-header {
@@ -486,6 +525,7 @@
             justify-content: space-between;
             align-items: flex-start;
         }
+
         .card-header h4 {
             margin: 0;
             color: var(--primary-color);
@@ -520,7 +560,7 @@
             border: 1px solid var(--border-color);
             border-radius: 0.5rem;
             padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             min-width: 250px;
             max-width: 300px;
@@ -551,11 +591,13 @@
         }
 
         .card-image {
+            position: relative;
             margin-bottom: 1rem;
             height: 200px;
             overflow: hidden;
             border-radius: 0.5rem;
         }
+
         .card-image img {
             width: 100%;
             height: 100%;
@@ -577,6 +619,36 @@
             gap: 0.25rem;
         }
 
+        .card-image .image-copyright-icon {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            z-index: 2;
+            transition: background 0.2s;
+        }
+
+        .card-image .image-copyright-icon:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .card-image .image-copyright-icon .tooltip-content {
+            width: max-content;
+            min-width: 150px;
+            max-width: 250px;
+            font-size: 0.85rem;
+            text-align: left;
+            color: var(--text-color);
+        }
+
         .copyright-link {
             color: inherit;
             text-decoration: none;
@@ -595,12 +667,21 @@
             flex-grow: 1;
         }
 
-        .card-actions { text-align: center; }
+        .card-actions {
+            text-align: center;
+        }
 
-        .no-rule-sets { text-align: center; padding: 2rem; color: var(--muted-color); }
+        .no-rule-sets {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted-color);
+        }
 
         /* Styles pour le mode avec set de règles sélectionné */
-        .rule-set-mode { text-align: center; margin: 2rem 0; }
+        .rule-set-mode {
+            text-align: center;
+            margin: 2rem 0;
+        }
 
         /* Styles pour la section d'introduction */
         .intro-section {
@@ -613,8 +694,9 @@
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .intro-image {
             position: relative;
             display: inline-block;
@@ -625,7 +707,7 @@
             max-width: 100%;
             height: auto;
             border-radius: 0.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .intro-image .image-copyright {
@@ -647,41 +729,163 @@
             line-height: 1.6;
             color: var(--text-color);
         }
+
         .intro-message p {
             margin: 0.5rem 0;
         }
+
         .intro-message p:first-child {
             margin-top: 0;
         }
+
         .intro-message p:last-child {
             margin-bottom: 0;
         }
 
-        .rule-details { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .5rem; padding: 1.5rem; margin-bottom: 1.5rem; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
-        .rule-details h3 { margin: 0 0 1rem 0; color: var(--primary-color); }
-        .rule-details ul { margin: 0; padding-left: 1.5rem; }
-        .rule-details li { margin-bottom: .5rem; }
-        .btn-large { font-size: 1.2rem; padding: .75rem 1.5rem; }
-        .rule-actions { margin-top: 1rem; }
-        .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
-        .btn-outline:hover { background: var(--primary-color); color: white; }
+        .rule-details {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: .5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-        .quiz-start { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
-        .quiz-start .btn-large { font-size: 1.25rem; padding: 1rem 2.75rem; }
-        .start-button-step { display: flex; justify-content: center; width: 100%; }
-        .start-form { display: none; width: 100%; max-width: 460px; background: rgba(16, 26, 49, 0.65); border: 1px solid rgba(255,255,255,0.14); border-radius: 1rem; padding: 1.75rem; box-shadow: 0 24px 40px rgba(7, 14, 32, 0.4); flex-direction: column; gap: 1.25rem; }
-        .start-form.active { display: flex; }
-        .start-form .form-fields { display: flex; flex-direction: column; gap: 1rem; }
-        .start-form .form-label { font-weight: 600; color: var(--primary-color); font-size: 1.05rem; }
+        .rule-details h3 {
+            margin: 0 0 1rem 0;
+            color: var(--primary-color);
+        }
+
+        .rule-details ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .rule-details li {
+            margin-bottom: .5rem;
+        }
+
+        .btn-large {
+            font-size: 1.2rem;
+            padding: .75rem 1.5rem;
+        }
+
+        .rule-actions {
+            margin-top: 1rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .quiz-start {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .quiz-start .btn-large {
+            font-size: 1.25rem;
+            padding: 1rem 2.75rem;
+        }
+
+        .start-button-step {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .start-form {
+            display: none;
+            width: 100%;
+            max-width: 460px;
+            background: rgba(16, 26, 49, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 1rem;
+            padding: 1.75rem;
+            box-shadow: 0 24px 40px rgba(7, 14, 32, 0.4);
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .start-form.active {
+            display: flex;
+        }
+
+        .start-form .form-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .start-form .form-label {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.05rem;
+        }
+
         .start-form input[type="text"],
-        .start-form input[type="password"] { padding: 1.05rem 1.35rem; border-radius: 0.9rem; border: 1px solid rgba(255,255,255,0.22); background: rgba(10, 18, 35, 0.78); color: white; font-size: 1.15rem; }
-        .start-form input::placeholder { color: rgba(255,255,255,0.65); }
-        .start-form input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(62, 84, 172, 0.22); }
-        .start-form .form-actions { display: flex; gap: 0.85rem; flex-wrap: wrap; justify-content: flex-end; }
-        .start-form .btn { flex: 1; min-width: 150px; font-size: 1rem; }
-        .start-form .btn-secondary { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.2); }
-        .start-form .login-hint { margin: 0; font-size: 0.9rem; color: rgba(219, 234, 254, 0.85); }
-        .start-form .error-message { margin: 0; font-size: 0.9rem; color: #fca5a5; font-weight: 600; }
+        .start-form input[type="password"] {
+            padding: 1.05rem 1.35rem;
+            border-radius: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: rgba(10, 18, 35, 0.78);
+            color: white;
+            font-size: 1.15rem;
+        }
+
+        .start-form input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .start-form input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(62, 84, 172, 0.22);
+        }
+
+        .start-form .form-actions {
+            display: flex;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .start-form .btn {
+            flex: 1;
+            min-width: 150px;
+            font-size: 1rem;
+        }
+
+        .start-form .btn-secondary {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .start-form .login-hint {
+            margin: 0;
+            font-size: 0.9rem;
+            color: rgba(219, 234, 254, 0.85);
+        }
+
+        .start-form .error-message {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #fca5a5;
+            font-weight: 600;
+        }
 
         /* Styles pour l'option de double-clic rapide */
         .quick-double-click-option {
@@ -729,7 +933,7 @@
             border-color: var(--primary-color);
         }
 
-        .checkbox-label input[type="checkbox"]:checked ~ .checkmark {
+        .checkbox-label input[type="checkbox"]:checked~.checkmark {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
         }
@@ -747,7 +951,7 @@
             transform: rotate(45deg);
         }
 
-        .checkbox-label input[type="checkbox"]:checked ~ .checkmark:after {
+        .checkbox-label input[type="checkbox"]:checked~.checkmark:after {
             display: block;
         }
 
@@ -775,11 +979,19 @@
                 margin-left: 1.75rem;
             }
 
-            .start-form { max-width: 100%; padding: 1.25rem; }
-            .start-form .form-actions { flex-direction: column; }
-            .start-form .btn { width: 100%; }
-        }
+            .start-form {
+                max-width: 100%;
+                padding: 1.25rem;
+            }
 
+            .start-form .form-actions {
+                flex-direction: column;
+            }
+
+            .start-form .btn {
+                width: 100%;
+            }
+        }
     </style>
 
     <script>
@@ -795,17 +1007,17 @@
         }
 
         // Fermer la modal en cliquant sur l'overlay
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('upgrade-modal');
             if (modal) {
-                modal.addEventListener('click', function(e) {
+                modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
                         hideUpgradeModal();
                     }
                 });
 
                 // Fermer avec la touche Échap
-                document.addEventListener('keydown', function(e) {
+                document.addEventListener('keydown', function (e) {
                     if (e.key === 'Escape' && modal.style.display === 'flex') {
                         hideUpgradeModal();
                     }
@@ -952,18 +1164,18 @@
 
             if (startBtn && checkbox) {
                 // Mettre à jour les valeurs HTMX quand la checkbox change
-                checkbox.addEventListener('change', function() {
+                checkbox.addEventListener('change', function () {
                     const currentVals = startBtn.getAttribute('hx-vals') || '{}';
                     let vals = {};
                     try {
                         vals = JSON.parse(currentVals);
-                    } catch (e) {}
+                    } catch (e) { }
 
                     vals.quick_double_click = this.checked ? 'true' : 'false';
                     startBtn.setAttribute('hx-vals', JSON.stringify(vals));
                     try {
                         window.sessionStorage.setItem('quickDoubleClickCheckbox', this.checked ? 'true' : 'false');
-                    } catch (err) {}
+                    } catch (err) { }
                 });
 
                 // Initialiser avec la valeur actuelle
@@ -971,7 +1183,7 @@
                 let vals = {};
                 try {
                     vals = JSON.parse(currentVals);
-                } catch (e) {}
+                } catch (e) { }
 
                 vals.quick_double_click = checkbox.checked ? 'true' : 'false';
                 startBtn.setAttribute('hx-vals', JSON.stringify(vals));
@@ -986,18 +1198,18 @@
                             startBtn.setAttribute('hx-vals', JSON.stringify(vals));
                         }
                     }
-                } catch (err) {}
+                } catch (err) { }
             }
         }
 
         // Écouter les événements HTMX pour supprimer la configuration
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Initialiser la gestion du double-clic rapide
             handleQuickDoubleClick();
             initStartPrompt();
 
             // Quand HTMX charge du contenu dans #quiz-stage, supprimer la configuration
-            document.getElementById('quiz-stage').addEventListener('htmx:afterSwap', function(evt) {
+            document.getElementById('quiz-stage').addEventListener('htmx:afterSwap', function (evt) {
                 // Vérifier si le contenu chargé contient une question (pas un placeholder)
                 if (!evt.detail.xhr.responseText.includes('placeholder')) {
                     removeQuizSetup();
@@ -1013,7 +1225,7 @@
 
     <script>
         // Gestion des effets sonores du quiz
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const stage = document.getElementById('quiz-stage');
             const sfxClick = document.getElementById('sfx-click');
             const sfxValidate = document.getElementById('sfx-validate');
@@ -1025,13 +1237,13 @@
                 try {
                     audioEl.currentTime = 0;
                     const p = audioEl.play();
-                    if (p && typeof p.catch === 'function') p.catch(function(){});
-                } catch (e) {}
+                    if (p && typeof p.catch === 'function') p.catch(function () { });
+                } catch (e) { }
             }
 
             if (stage) {
                 // Clic sur une réponse (label.answer-frame)
-                stage.addEventListener('click', function(e) {
+                stage.addEventListener('click', function (e) {
                     const frame = e.target.closest && e.target.closest('label.answer-frame');
                     if (frame && stage.contains(frame)) {
                         playSafe(sfxClick);
@@ -1039,7 +1251,7 @@
                 });
 
                 // Validation du formulaire de réponse
-                stage.addEventListener('submit', function(e) {
+                stage.addEventListener('submit', function (e) {
                     const form = e.target;
                     if (form && form.classList && form.classList.contains('answers-grid')) {
                         // Optionnel: ne jouer que si le formulaire est valide
@@ -1050,7 +1262,7 @@
                 }, true);
 
                 // Après swap HTMX: jouer correct/error selon le résultat
-                stage.addEventListener('htmx:afterSwap', function() {
+                stage.addEventListener('htmx:afterSwap', function () {
                     const ok = stage.querySelector('.result-status.ok');
                     const ko = stage.querySelector('.result-status.ko');
                     if (ok) {
@@ -1064,5 +1276,3 @@
     </script>
 </div>
 {% endblock %}
-
-
