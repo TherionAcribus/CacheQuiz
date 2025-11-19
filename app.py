@@ -2183,11 +2183,31 @@ def search_questions():
             db.or_(
                 Question.question_text.contains(query_param),
                 User.username.contains(query_param),
-                User.username.contains(query_param),
                 BroadTheme.name.contains(query_param),
                 SpecificTheme.name.contains(query_param)
             )
         )
+
+    # Filtres avancés
+    author_id = request.args.get('author_id', type=int)
+    if author_id:
+        base_query = base_query.filter(Question.author_id == author_id)
+
+    broad_theme_id = request.args.get('broad_theme_id', type=int)
+    if broad_theme_id:
+        base_query = base_query.filter(Question.broad_theme_id == broad_theme_id)
+
+    specific_theme_id = request.args.get('specific_theme_id', type=int)
+    if specific_theme_id:
+        base_query = base_query.filter(Question.specific_theme_id == specific_theme_id)
+
+    difficulty_level = request.args.get('difficulty_level', type=int)
+    if difficulty_level:
+        base_query = base_query.filter(Question.difficulty_level == difficulty_level)
+
+    keyword_id = request.args.get('keyword_id', type=int)
+    if keyword_id:
+        base_query = base_query.join(Question.keywords).filter(Keyword.id == keyword_id)
 
     questions = _apply_sorting(base_query, sort_by, sort_order).all()
 
@@ -2252,12 +2272,51 @@ def list_themes_json():
     if denied:
         return denied
     themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    return [{
-        'id': theme.id,
-        'name': theme.name,
-        'language': theme.language,
-        'icon': theme.icon
-    } for theme in themes]
+    return [{'id': t.id, 'name': t.name} for t in themes]
+
+
+@app.route('/api/subthemes/json')
+def list_subthemes_json():
+    """Retourner la liste des sous-thèmes en JSON"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    broad_theme_id = request.args.get('broad_theme_id', type=int)
+    query = SpecificTheme.query
+    if broad_theme_id:
+        query = query.filter_by(broad_theme_id=broad_theme_id)
+    
+    subthemes = query.order_by(SpecificTheme.name).all()
+    return [{'id': t.id, 'name': t.name, 'broad_theme_id': t.broad_theme_id} for t in subthemes]
+
+
+@app.route('/api/authors/json')
+def list_authors_json():
+    """Retourner la liste des auteurs en JSON"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    # On ne liste que les utilisateurs qui ont créé au moins une question
+    authors = db.session.query(User).join(Question).distinct().order_by(User.username).all()
+    return [{'id': u.id, 'username': u.username} for u in authors]
+
+
+
+
+
+@app.route('/api/difficulties/json')
+def list_difficulties_json():
+    """Retourner la liste des difficultés en JSON"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+    # On récupère les difficultés existantes ou une liste par défaut
+    diffs = db.session.query(Question.difficulty_level).distinct().filter(Question.difficulty_level.isnot(None)).order_by(Question.difficulty_level).all()
+    existing = [d[0] for d in diffs]
+    if not existing:
+        existing = [1, 2, 3, 4, 5]
+    return [{'id': d, 'name': f"Niveau {d}"} for d in existing]
+
 
 
 @app.route('/theme/new')

@@ -4,8 +4,31 @@
 <div class="page-header">
     <h2>Base de données des questions</h2>
     <div class="header-actions">
-        <input type="text" id="search-input" placeholder="Rechercher une question..." hx-get="/api/questions/search"
-            hx-trigger="keyup changed delay:500ms" hx-target="#questions-list" hx-include="this" name="q">
+        <div class="search-container">
+            <div class="search-wrapper">
+                <div id="search-chips" class="search-chips"></div>
+                <input type="text" id="search-input" placeholder="Rechercher une question... (tapez @ pour filtrer)"
+                    autocomplete="off">
+            </div>
+
+            <!-- Dropdown pour le type de filtre -->
+            <div id="filter-type-dropdown" class="search-dropdown hidden">
+                <div class="dropdown-header">Filtrer par...</div>
+                <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="/api/themes/json">📂 Thème</div>
+                <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="/api/subthemes/json">ue
+                    Sous-thème</div>
+                <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
+                <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
+                <div class="dropdown-item" data-type="difficulty_level" data-endpoint="/api/difficulties/json">⭐ Niveau
+                </div>
+            </div>
+
+            <!-- Dropdown pour les valeurs de filtre -->
+            <div id="filter-value-dropdown" class="search-dropdown hidden">
+                <div class="dropdown-header">Sélectionner...</div>
+                <div id="filter-value-list"></div>
+            </div>
+        </div>
 
         <div class="view-toggle">
             <button class="btn btn-secondary" id="view-cards" onclick="toggleView('cards')">
@@ -42,6 +65,98 @@
 </div>
 
 <style>
+    .search-container {
+        position: relative;
+        width: 400px;
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px 8px;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: var(--card-bg);
+        transition: border-color 0.2s;
+    }
+
+    .search-wrapper:focus-within {
+        border-color: var(--primary-color);
+    }
+
+    #search-input {
+        border: none;
+        outline: none;
+        padding: 4px;
+        flex: 1;
+        min-width: 150px;
+        background: transparent;
+        color: var(--text-color);
+    }
+
+    .search-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: rgba(2, 135, 77, 0.15);
+        color: var(--primary-color);
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .search-chip .remove-chip {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.6;
+    }
+
+    .search-chip .remove-chip:hover {
+        opacity: 1;
+    }
+
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        box-shadow: var(--shadow-lg);
+        z-index: 100;
+        margin-top: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .dropdown-header {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        color: var(--text-light);
+        font-weight: 600;
+        background: rgba(0, 0, 0, 0.02);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-color);
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item.selected {
+        background: rgba(2, 135, 77, 0.1);
+        color: var(--primary-color);
+    }
+
     .stats-overview {
         display: flex;
         gap: 1rem;
@@ -150,6 +265,208 @@
 
 <script>
     let currentView = localStorage.getItem('questionsView') || 'cards';
+    let activeFilters = []; // { type: 'author_id', label: 'Auteur', value: 1, display: 'Admin' }
+    let searchTimeout;
+
+    // --- Gestion de la recherche avancée ---
+    const searchInput = document.getElementById('search-input');
+    const typeDropdown = document.getElementById('filter-type-dropdown');
+    const valueDropdown = document.getElementById('filter-value-dropdown');
+    const valueList = document.getElementById('filter-value-list');
+    const chipsContainer = document.getElementById('search-chips');
+
+    let currentFilterType = null; // Stocke le type de filtre en cours de sélection
+
+    searchInput.addEventListener('input', function (e) {
+        const val = this.value;
+
+        // Détection du déclencheur '@'
+        if (val.endsWith('@')) {
+            // Afficher le menu des types de filtres
+            showTypeDropdown();
+        } else if (currentFilterType) {
+            // Si on est en train de chercher une valeur pour un filtre
+            filterValueList(val);
+        } else {
+            // Recherche texte standard (debounce)
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(triggerSearch, 500);
+        }
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+        // Navigation clavier dans les dropdowns
+        const activeDropdown = !typeDropdown.classList.contains('hidden') ? typeDropdown :
+            (!valueDropdown.classList.contains('hidden') ? valueDropdown : null);
+
+        if (activeDropdown) {
+            const items = activeDropdown.querySelectorAll('.dropdown-item:not(.hidden)');
+            let currentIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextIndex = (currentIndex + 1) % items.length;
+                selectDropdownItem(items, nextIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                selectDropdownItem(items, prevIndex);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentIndex >= 0) items[currentIndex].click();
+            } else if (e.key === 'Escape') {
+                hideDropdowns();
+                currentFilterType = null;
+            }
+        } else if (e.key === 'Backspace' && this.value === '' && activeFilters.length > 0) {
+            // Supprimer le dernier filtre si on efface
+            removeFilter(activeFilters.length - 1);
+        }
+    });
+
+    function selectDropdownItem(items, index) {
+        items.forEach(item => item.classList.remove('selected'));
+        if (items[index]) {
+            items[index].classList.add('selected');
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function showTypeDropdown() {
+        // Positionner et afficher le dropdown
+        typeDropdown.classList.remove('hidden');
+        valueDropdown.classList.add('hidden');
+
+        // Nettoyer le '@' de l'input pour ne pas gêner
+        // searchInput.value = searchInput.value.slice(0, -1);
+    }
+
+    // Gestion du clic sur un type de filtre
+    typeDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function () {
+            const type = this.dataset.type;
+            const endpoint = this.dataset.endpoint;
+            const label = this.textContent;
+
+            currentFilterType = { type, endpoint, label };
+
+            // Cacher le type dropdown et charger les valeurs
+            typeDropdown.classList.add('hidden');
+            loadFilterValues(endpoint);
+
+            // Nettoyer l'input pour la recherche de valeur
+            searchInput.value = '';
+            searchInput.placeholder = `Rechercher dans ${label}...`;
+            searchInput.focus();
+        });
+    });
+
+    function loadFilterValues(endpoint) {
+        valueList.innerHTML = '<div class="dropdown-item">Chargement...</div>';
+        valueDropdown.classList.remove('hidden');
+
+        fetch(endpoint)
+            .then(r => r.json())
+            .then(data => {
+                valueList.innerHTML = '';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.textContent = item.name || item.username; // S'adapte aux différents formats JSON
+                    div.dataset.value = item.id;
+                    div.dataset.display = item.name || item.username;
+
+                    div.addEventListener('click', function () {
+                        addFilter(currentFilterType.type, currentFilterType.label, this.dataset.value, this.dataset.display);
+                        hideDropdowns();
+                        currentFilterType = null;
+                        searchInput.value = '';
+                        searchInput.placeholder = 'Rechercher une question... (tapez @ pour filtrer)';
+                        triggerSearch();
+                    });
+
+                    valueList.appendChild(div);
+                });
+                // Sélectionner le premier par défaut
+                if (valueList.firstChild) valueList.firstChild.classList.add('selected');
+            });
+    }
+
+    function filterValueList(text) {
+        const items = valueList.querySelectorAll('.dropdown-item');
+        let hasVisible = false;
+        items.forEach(item => {
+            if (item.textContent.toLowerCase().includes(text.toLowerCase())) {
+                item.classList.remove('hidden');
+                hasVisible = true;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+        // Resélectionner le premier visible
+        const visible = valueList.querySelectorAll('.dropdown-item:not(.hidden)');
+        selectDropdownItem(visible, 0);
+    }
+
+    function addFilter(type, label, value, display) {
+        // Éviter les doublons du même type
+        activeFilters = activeFilters.filter(f => f.type !== type);
+
+        activeFilters.push({ type, label, value, display });
+        renderChips();
+    }
+
+    function removeFilter(index) {
+        activeFilters.splice(index, 1);
+        renderChips();
+        triggerSearch();
+    }
+
+    function renderChips() {
+        chipsContainer.innerHTML = '';
+        activeFilters.forEach((filter, index) => {
+            const chip = document.createElement('div');
+            chip.className = 'search-chip';
+            chip.innerHTML = `
+                <span>${filter.label}: ${filter.display}</span>
+                <span class="remove-chip" onclick="removeFilter(${index})">×</span>
+            `;
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    function hideDropdowns() {
+        typeDropdown.classList.add('hidden');
+        valueDropdown.classList.add('hidden');
+    }
+
+    // Fermer les dropdowns si on clique ailleurs
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.search-container')) {
+            hideDropdowns();
+            currentFilterType = null;
+        }
+    });
+
+    function triggerSearch() {
+        const searchValue = searchInput.value.trim().replace('@', ''); // Nettoyer si reste un @
+
+        let url = `/questions?view=${currentView}`;
+        if (searchValue) {
+            url = `/api/questions/search?q=${encodeURIComponent(searchValue)}&view=${currentView}`;
+        } else if (activeFilters.length > 0) {
+            url = `/api/questions/search?view=${currentView}`; // Endpoint de recherche de base
+        }
+
+        // Ajouter les filtres actifs à l'URL
+        activeFilters.forEach(filter => {
+            url += `&${filter.type}=${filter.value}`;
+        });
+
+        htmx.ajax('GET', url, { target: '#questions-list' });
+    }
+
+    // --- Fin Gestion Recherche Avancée ---
 
     function toggleView(viewType) {
         currentView = viewType;
@@ -161,18 +478,8 @@
         // Sauvegarder la préférence dans le localStorage
         localStorage.setItem('questionsView', viewType);
 
-        // Recharger la liste avec la nouvelle vue
-        const searchInput = document.getElementById('search-input');
-        const searchValue = searchInput.value.trim();
-
-        let url;
-        if (searchValue) {
-            url = `/api/questions/search?q=${encodeURIComponent(searchValue)}&view=${viewType}`;
-        } else {
-            url = `/questions?view=${viewType}`;
-        }
-
-        htmx.ajax('GET', url, { target: '#questions-list' });
+        // Relancer la recherche avec la nouvelle vue
+        triggerSearch();
     }
 
     // Après chaque requête HTMX qui met à jour la liste, s'assurer que la vue reste cohérente
