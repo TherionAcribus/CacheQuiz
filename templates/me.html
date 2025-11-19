@@ -4,11 +4,42 @@
 <div class="me-page">
   <h2>Mon profil</h2>
   <div class="summary-cards">
-    <div class="card"><div class="label">Total réponses</div><div class="value">{{ total_answers }}</div></div>
-    <div class="card"><div class="label">Total réussites</div><div class="value">{{ total_success }}</div></div>
-    <div class="card"><div class="label">Taux global</div><div class="value">{% if total_answers %}{{ ((total_success/total_answers)*100)|round(1) }}%{% else %}0%{% endif %}</div></div>
-    <div class="card"><div class="label">Sessions complétées</div><div class="value">{{ sessions_completed or 0 }}</div></div>
-    <div class="card"><div class="label">Abandons</div><div class="value">{{ sessions_abandoned or 0 }}</div></div>
+    <div class="card">
+      <div class="label">Total réponses</div>
+      <div class="value">{{ total_answers }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Total réussites</div>
+      <div class="value">{{ total_success }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Taux global</div>
+      <div class="value">{% if total_answers %}{{ ((total_success/total_answers)*100)|round(1) }}%{% else %}0%{% endif
+        %}</div>
+    </div>
+    <div class="card">
+      <div class="label">Sessions complétées</div>
+      <div class="value">{{ sessions_completed or 0 }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Abandons</div>
+      <div class="value">{{ sessions_abandoned or 0 }}</div>
+    </div>
+  </div>
+
+  <div class="charts-container">
+    <div class="chart-wrapper">
+      <h3>Répartition par Thème</h3>
+      <canvas id="broadThemeDistChart"></canvas>
+    </div>
+    <div class="chart-wrapper">
+      <h3>Réussite par Thème</h3>
+      <canvas id="broadThemeSuccessChart"></canvas>
+    </div>
+    <div class="chart-wrapper">
+      <h3>Réussite par Difficulté</h3>
+      <canvas id="difficultySuccessChart"></canvas>
+    </div>
   </div>
 
   <h3>Par thématique large</h3>
@@ -100,15 +131,184 @@
   </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Data preparation
+    const broadData = {{ agg_by_broad| tojson
+  }};
+  const diffData = {{ agg_by_difficulty| tojson }};
+
+  // 1. Broad Theme Distribution (Doughnut)
+  const broadLabels = broadData.map(d => d.theme_name);
+  const broadCounts = broadData.map(d => d.answered);
+  const broadColors = [
+    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+    '#C9CBCF', '#FF6384', '#36A2EB', '#FFCE56'
+  ];
+
+  new Chart(document.getElementById('broadThemeDistChart'), {
+    type: 'doughnut',
+    data: {
+      labels: broadLabels,
+      datasets: [{
+        data: broadCounts,
+        backgroundColor: broadColors,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+
+  // 2. Broad Theme Success Rate (Radar)
+  const broadRates = broadData.map(d => d.rate);
+
+  new Chart(document.getElementById('broadThemeSuccessChart'), {
+    type: 'radar',
+    data: {
+      labels: broadLabels,
+      datasets: [{
+        label: 'Taux de réussite (%)',
+        data: broadRates,
+        fill: true,
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgb(54, 162, 235)',
+        pointBackgroundColor: 'rgb(54, 162, 235)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgb(54, 162, 235)'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          angleLines: { display: false },
+          suggestedMin: 0,
+          suggestedMax: 100
+        }
+      }
+    }
+  });
+
+  // 3. Difficulty Success Rate (Bar)
+  const diffLabels = diffData.map(d => d.difficulty !== null ? 'Niveau ' + d.difficulty : 'N/A');
+  const diffRates = diffData.map(d => d.rate);
+
+  new Chart(document.getElementById('difficultySuccessChart'), {
+    type: 'bar',
+    data: {
+      labels: diffLabels,
+      datasets: [{
+        label: 'Taux de réussite (%)',
+        data: diffRates,
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+  });
+</script>
+
 <style>
-.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.5rem;margin-bottom:1rem}
-.summary-cards .card{border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--card-bg)}
-.summary-cards .label{color:var(--muted-color);font-size:.9rem}
-.summary-cards .value{font-size:1.25rem;font-weight:700}
-.me-page h3{margin-top:1rem}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{border-bottom:1px solid var(--border-color);padding:.5rem;text-align:left}
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: .5rem;
+    margin-bottom: 2rem;
+  }
+
+  .summary-cards .card {
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+    padding: .75rem;
+    background: var(--card-bg);
+    text-align: center;
+  }
+
+  .summary-cards .label {
+    color: var(--muted-color);
+    font-size: .9rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .summary-cards .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+
+  .charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .chart-wrapper {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .chart-wrapper h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+  }
+
+  .me-page h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    background: var(--card-bg);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .table th,
+  .table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: .75rem 1rem;
+    text-align: left;
+  }
+
+  .table th {
+    background-color: rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+  }
+
+  .table tr:last-child td {
+    border-bottom: none;
+  }
 </style>
 {% endblock %}
-
-
