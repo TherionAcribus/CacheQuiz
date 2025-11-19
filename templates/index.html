@@ -24,6 +24,80 @@
     </div>
 </div>
 
+<div class="stats-overview">
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-info">
+            <span class="stat-label">Total Questions</span>
+            <span class="stat-value">{{ total_questions }}</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-info">
+            <span class="stat-label">En ligne</span>
+            <span class="stat-value">{{ online_questions }}</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stats-overview {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon {
+        font-size: 1.5rem;
+        background: rgba(2, 135, 77, 0.1);
+        /* Primary color with opacity */
+        color: var(--primary-color);
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-color);
+        line-height: 1;
+    }
+</style>
+
 <!-- Conteneur pour le formulaire (caché par défaut) -->
 <div id="question-form-container" class="hidden form-modal">
     <!-- Le formulaire sera chargé ici via HTMX -->

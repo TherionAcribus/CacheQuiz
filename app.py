@@ -1471,7 +1471,13 @@ def admin_page():
     resp = _ensure_admin_page_redirect()
     if resp:
         return resp
-    return render_template('index.html')
+    # Calcul des statistiques
+    total_questions = Question.query.count()
+    online_questions = Question.query.filter_by(is_published=True).count()
+
+    return render_template('index.html', 
+                           total_questions=total_questions, 
+                           online_questions=online_questions)
 
 
 @app.route('/questions')
