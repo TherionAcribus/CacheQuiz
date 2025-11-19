@@ -99,7 +99,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+                    <span class="badge badge-difficulty">{{ question.difficulty_level or 'N/A' }}</span>
                 </td>
                 <td>
                     <button class="status-toggle-btn" hx-post="/api/question/{{ question.id }}/toggle-status"
