@@ -588,79 +588,8 @@
     }
 
     function hideRemoveModal() {
-        document.getElementById('remove-modal').style.display = 'none';
-        currentQuestionId = null;
-        currentButton = null;
-    }
-
-    async function confirmRemove() {
-        console.log('confirmRemove called', { currentQuestionId, currentButton });
-
-        if (!currentQuestionId || !currentButton) {
-            console.error('Missing currentQuestionId or currentButton');
-            return;
-        }
-
-        // IMPORTANT: Récupérer l'item AVANT de fermer la modale (qui réinitialise currentButton)
-        const item = currentButton.closest('.question-item');
-        const questionId = currentQuestionId;
-        console.log('Item to remove:', item);
-
-        // Maintenant on peut fermer la modale
         hideRemoveModal();
-
-        try {
-            const url = `/api/questions/${questionId}/save`;
-            console.log('Calling API:', url);
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('Response status:', response.status);
-            const data = await response.json();
-            console.log('Response data:', data);
-
-            if (data.success && data.action === 'removed') {
-                console.log('Success! Removing item...');
-                item.style.transition = 'all 0.3s ease';
-                item.style.opacity = '0';
-                item.style.transform = 'translateX(-20px)';
-
-                setTimeout(() => {
-                    item.remove();
-
-                    const remainingItems = document.querySelectorAll('.question-item');
-                    if (remainingItems.length === 0) {
-                        location.reload();
-                    } else {
-                        const countBadge = document.querySelector('.count-badge');
-                        if (countBadge) {
-                            const newCount = remainingItems.length;
-                            countBadge.textContent = newCount;
-                            const savedCount = document.querySelector('.saved-count');
-                            savedCount.innerHTML = `<span class="count-badge">${newCount}</span> question${newCount > 1 ? 's' : ''} sauvegardée${newCount > 1 ? 's' : ''}`;
-                        }
-                    }
-                }, 300);
-            } else {
-                console.error('Unexpected response:', data);
-            }
-        } catch (error) {
-            console.error('Erreur:', error);
-            alert('Erreur lors de la suppression');
-        }
     }
-
-    // Fermer la modale en cliquant sur l'overlay
-    document.addEventListener('click', function (event) {
-        const modal = document.getElementById('remove-modal');
-        if (event.target === modal) {
-            hideRemoveModal();
-        }
     });
 </script>
 {% endblock %}
