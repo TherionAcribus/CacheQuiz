@@ -45,7 +45,7 @@
   {% endif %}
   <!-- Formulaire de connexion avec mot de passe -->
   <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML"
-    hx-headers='{"HX-Redirect":"{{ next_url or url_for(' play_quiz') }}"}'>
+    hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
     <div class="login-fields">
       <input type="text" name="username" value="{{ login_username }}" placeholder="Votre pseudo" class="pseudo-input"
         readonly>
@@ -60,7 +60,7 @@
   {% else %}
   <!-- Formulaire de connexion rapide -->
   <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML"
-    hx-headers='{"HX-Redirect":"{{ next_url or url_for(' play_quiz') }}"}'>
+    hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
     <input type="text" name="pseudo" placeholder="Votre pseudo" class="pseudo-input" required>
     <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
     <input type="hidden" name="source" value="{{ source or 'widget' }}">
