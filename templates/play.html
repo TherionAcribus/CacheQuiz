@@ -89,8 +89,8 @@ endblock %}
         data-auto-start="{{ 'true' if auto_start else 'false' }}">
         {% if current_user %}
         <button class="btn btn-primary btn-large" hx-get="/api/quiz/next" hx-target="#quiz-stage" hx-swap="innerHTML"
-            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ ' true' if
-            quick_double_click else 'false' }}"}' id="start-quiz-btn">
+            hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ "true" if quick_double_click else "false" }}"}'
+            id="start-quiz-btn">
             🚀 Démarrer le quiz
         </button>
         {% else %}
