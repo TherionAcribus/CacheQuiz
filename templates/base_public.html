@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CacheQuiz{% endblock %}</title>
-    
+
     {% block meta_tags %}
     <!-- Meta tags par défaut -->
-    <meta name="description" content="Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.">
+    <meta name="description"
+        content="Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.">
     <meta property="og:site_name" content="CacheQuiz">
     <meta property="og:type" content="website">
     {% endblock %}
-    
+
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
+
     <!-- Hyperscript -->
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
-    
+
     <!-- Stimulus -->
     <script type="importmap">
     {
@@ -27,28 +29,33 @@
     }
     </script>
     <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
-    
+
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    {% block extra_styles %}{% endblock %}
 </head>
+
 <body>
     <header>
         <div class="container">
             <div class="header-content">
                 <a href="/" class="logo-link">
-                    <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz" style="height: 40px; vertical-align: middle;"> CacheQuiz</h1>
+                    <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz"
+                            style="height: 40px; vertical-align: middle;"> CacheQuiz</h1>
                 </a>
                 {% block auth_widget %}
-                <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
+                <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget"
+                    hx-swap="outerHTML"></div>
                 {% endblock %}
             </div>
         </div>
     </header>
-    
+
     <main class="container">
         {% block content %}{% endblock %}
     </main>
-    
+
     <footer>
         <div class="container">
             <div class="footer-content">
@@ -104,237 +111,243 @@
         </div>
     </div>
     <style>
-    footer {
-        background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-        color: white;
-        margin-top: 3rem;
-        padding: 2rem 0 1rem;
-        border-top: 3px solid var(--primary-color);
-    }
-
-    .footer-content {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .footer-main {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr;
-        gap: 2rem;
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .footer-section {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .footer-title {
-        color: var(--primary-color);
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 0.75rem;
-        letter-spacing: -0.025em;
-    }
-
-    .footer-subtitle {
-        color: #e2e8f0;
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .footer-description {
-        color: #a0aec0;
-        line-height: 1.6;
-        font-size: 0.9rem;
-        margin: 0;
-    }
-
-    .footer-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .footer-link {
-        color: #cbd5e0;
-        text-decoration: none;
-        font-size: 0.9rem;
-        font-weight: 500;
-        padding: 0.25rem 0;
-        transition: all 0.3s ease;
-        border-radius: 0.25rem;
-        position: relative;
-    }
-
-    .footer-link:hover {
-        color: var(--primary-color);
-        transform: translateX(4px);
-        text-decoration: none;
-    }
-
-    .footer-link::before {
-        content: '';
-        position: absolute;
-        left: -8px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 0;
-        height: 2px;
-        background: var(--primary-color);
-        transition: width 0.3s ease;
-    }
-
-    .footer-link:hover::before {
-        width: 6px;
-    }
-
-    .footer-bottom {
-        text-align: center;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .footer-copyright {
-        color: #718096;
-        font-size: 0.875rem;
-        margin: 0;
-        font-weight: 500;
-    }
-
-    @media (max-width: 768px) {
         footer {
-            padding: 1.5rem 0 1rem;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: white;
+            margin-top: 3rem;
+            padding: 2rem 0 1rem;
+            border-top: 3px solid var(--primary-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .footer-main {
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .footer-bottom {
-            padding-top: 1.5rem;
+        .footer-section {
+            display: flex;
+            flex-direction: column;
         }
 
-        .footer-link:hover {
-            transform: none;
-        }
-
-        .footer-link::before {
-            display: none;
-        }
-    }
-
-    @media (max-width: 480px) {
         .footer-title {
-            font-size: 1.25rem;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.025em;
+        }
+
+        .footer-subtitle {
+            color: #e2e8f0;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .footer-description {
-            font-size: 0.85rem;
+            color: #a0aec0;
+            line-height: 1.6;
+            font-size: 0.9rem;
+            margin: 0;
         }
-    }
 
-    .modal-overlay {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.7);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    }
-    .modal-content {
-        background: white;
-        border-radius: 1rem;
-        padding: 0;
-        max-width: 600px;
-        width: 95%;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    /* Styles pour la modale de quitter depuis le header */
-    #header-quit-modal .modal-content {
-        background: var(--card-bg);
-        border-radius: 1rem;
-        padding: 0;
-        max-width: 500px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        animation: slideUp 0.3s ease-out;
-    }
-
-    #header-quit-modal .modal-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    #header-quit-modal .modal-header h3 {
-        margin: 0;
-        color: var(--primary-color);
-    }
-
-    #header-quit-modal .btn-close {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: var(--text-color);
-        padding: 0.25rem;
-        border-radius: 0.25rem;
-        transition: background-color 0.2s;
-    }
-
-    #header-quit-modal .btn-close:hover {
-        background: var(--border-color);
-    }
-
-    #header-quit-modal .modal-body {
-        padding: 1.5rem;
-        text-align: center;
-    }
-
-    #header-quit-modal .modal-body p {
-        margin: 0.5rem 0;
-        color: var(--text-color);
-    }
-
-    #header-quit-modal .modal-footer {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        padding: 1.5rem;
-        border-top: 1px solid var(--border-color);
-    }
-
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
+        .footer-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
+
+        .footer-link {
+            color: #cbd5e0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.25rem 0;
+            transition: all 0.3s ease;
+            border-radius: 0.25rem;
+            position: relative;
         }
-    }
+
+        .footer-link:hover {
+            color: var(--primary-color);
+            transform: translateX(4px);
+            text-decoration: none;
+        }
+
+        .footer-link::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .footer-link:hover::before {
+            width: 6px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-copyright {
+            color: #718096;
+            font-size: 0.875rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            footer {
+                padding: 1.5rem 0 1rem;
+            }
+
+            .footer-main {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+            }
+
+            .footer-bottom {
+                padding-top: 1.5rem;
+            }
+
+            .footer-link:hover {
+                transform: none;
+            }
+
+            .footer-link::before {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .footer-title {
+                font-size: 1.25rem;
+            }
+
+            .footer-description {
+                font-size: 0.85rem;
+            }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 0;
+            max-width: 600px;
+            width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Styles pour la modale de quitter depuis le header */
+        #header-quit-modal .modal-content {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        #header-quit-modal .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #header-quit-modal .modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        #header-quit-modal .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s;
+        }
+
+        #header-quit-modal .btn-close:hover {
+            background: var(--border-color);
+        }
+
+        #header-quit-modal .modal-body {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        #header-quit-modal .modal-body p {
+            margin: 0.5rem 0;
+            color: var(--text-color);
+        }
+
+        #header-quit-modal .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 
     <script>
@@ -368,21 +381,21 @@
 
             // Vérifier s'il y a du contenu de quiz (présence d'éléments spécifiques)
             return quizStage.querySelector('.quiz-progress-bar') !== null ||
-                   quizStage.querySelector('.answers-grid') !== null ||
-                   quizStage.querySelector('.result-status') !== null;
+                quizStage.querySelector('.answers-grid') !== null ||
+                quizStage.querySelector('.result-status') !== null;
         }
 
         // Intercepter les clics sur les liens du header quand un quiz est en cours
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Fermer la modal avec Échap
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && document.getElementById('header-quit-modal').style.display === 'flex') {
                     hideHeaderQuitModal();
                 }
             });
 
             // Intercepter les clics sur les liens du header
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 // Vérifier si c'est un lien dans le header
                 const link = e.target.closest('header a, header form button[type="submit"]');
                 if (!link) return;
@@ -413,7 +426,7 @@
             });
 
             // Gérer la confirmation de quitter
-            document.getElementById('confirm-quit-btn').addEventListener('click', function() {
+            document.getElementById('confirm-quit-btn').addEventListener('click', function () {
                 const targetUrl = this.dataset.targetUrl;
                 if (targetUrl) {
                     hideHeaderQuitModal();
@@ -422,7 +435,7 @@
             });
 
             // Fermer la modal en cliquant sur l'overlay
-            document.getElementById('header-quit-modal').addEventListener('click', function(e) {
+            document.getElementById('header-quit-modal').addEventListener('click', function (e) {
                 if (e.target === this) {
                     hideHeaderQuitModal();
                 }
@@ -430,6 +443,5 @@
         });
     </script>
 </body>
+
 </html>
-
-
