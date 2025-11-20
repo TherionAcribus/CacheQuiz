@@ -11,18 +11,24 @@
     {% if current_user.password_hash %}
     <a class="btn btn-secondary btn-compact" href="/messages" title="Messages">
       <span class="btn-icon" aria-hidden="true">✉️</span>
-      <span class="btn-label">Messages{% if unread_count and unread_count > 0 %} (<span id="unread-count">{{ unread_count }}</span>){% endif %}</span>
+      <span class="btn-label">Messages{% if unread_count and unread_count > 0 %} (<span id="unread-count">{{
+          unread_count }}</span>){% endif %}</span>
     </a>
     <a class="btn btn-secondary btn-compact" href="/preferences" title="Préférences">
       <span class="btn-icon" aria-hidden="true">🛠️</span>
       <span class="btn-label">Préférences</span>
+    </a>
+    <a class="btn btn-secondary btn-compact" href="/saved-questions" title="Questions sauvegardées">
+      <span class="btn-icon" aria-hidden="true">💾</span>
+      <span class="btn-label">Sauvegardées</span>
     </a>
     <a class="btn btn-secondary btn-compact" href="/me" title="Mes statistiques">
       <span class="btn-icon" aria-hidden="true">📊</span>
       <span class="btn-label">Mes stats</span>
     </a>
     {% endif %}
-    <form class="logout-form" hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline" hx-headers='{"HX-Redirect":"/"}'>
+    <form class="logout-form" hx-post="/auth/logout" hx-target="#auth-widget" hx-swap="outerHTML" style="display:inline"
+      hx-headers='{"HX-Redirect":"/"}'>
       <button class="btn btn-secondary btn-compact" type="submit" title="Se déconnecter">
         <span class="btn-icon" aria-hidden="true">🚪</span>
         <span class="btn-label">Se déconnecter</span>
@@ -38,19 +44,23 @@
   <div class="alert alert-danger">{{ error_message }}</div>
   {% endif %}
   <!-- Formulaire de connexion avec mot de passe -->
-  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
+  <form class="password-login" hx-post="/auth/widget-login" hx-target="#auth-widget" hx-swap="outerHTML"
+    hx-headers='{"HX-Redirect":"{{ next_url or url_for(' play_quiz') }}"}'>
     <div class="login-fields">
-      <input type="text" name="username" value="{{ login_username }}" placeholder="Votre pseudo" class="pseudo-input" readonly>
+      <input type="text" name="username" value="{{ login_username }}" placeholder="Votre pseudo" class="pseudo-input"
+        readonly>
       <input type="password" name="password" placeholder="Mot de passe" class="password-input" required>
     </div>
     <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
     <input type="hidden" name="source" value="{{ source or 'widget' }}">
     <button class="btn btn-primary" type="submit">Se connecter</button>
-    <button class="btn btn-secondary" type="button" hx-get="/auth/widget" hx-target="#auth-widget" hx-swap="outerHTML">Annuler</button>
+    <button class="btn btn-secondary" type="button" hx-get="/auth/widget" hx-target="#auth-widget"
+      hx-swap="outerHTML">Annuler</button>
   </form>
   {% else %}
   <!-- Formulaire de connexion rapide -->
-  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML" hx-headers='{"HX-Redirect":"{{ next_url or url_for('play_quiz') }}"}'>
+  <form class="quick-login" hx-post="/auth/quick-login" hx-target="#auth-widget" hx-swap="outerHTML"
+    hx-headers='{"HX-Redirect":"{{ next_url or url_for(' play_quiz') }}"}'>
     <input type="text" name="pseudo" placeholder="Votre pseudo" class="pseudo-input" required>
     <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
     <input type="hidden" name="source" value="{{ source or 'widget' }}">
@@ -62,69 +72,235 @@
 {% endif %}
 
 <style>
-.auth-widget{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-.auth-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-.auth-widget .quick-login{display:flex;gap:.5rem;align-items:center}
-.auth-widget .pseudo-input{padding:.75rem 1rem;font-size:1.1rem;border:2px solid rgba(255,255,255,0.3);border-radius:.5rem;background-color:rgba(255,255,255,0.1);color:white;width:200px;min-width:180px}
-.auth-widget .pseudo-input::placeholder{color:rgba(255,255,255,0.7)}
-.auth-widget .pseudo-input:focus{outline:none;border-color:white;background-color:rgba(255,255,255,0.2)}
-.auth-widget .pseudo-input[readonly]{background-color:rgba(255,255,255,0.15);cursor:not-allowed}
-.auth-widget .password-input{padding:.75rem 1rem;font-size:1.1rem;border:2px solid rgba(255,255,255,0.3);border-radius:.5rem;background-color:rgba(255,255,255,0.1);color:white;width:200px;min-width:180px}
-.auth-widget .password-input::placeholder{color:rgba(255,255,255,0.7)}
-.auth-widget .password-input:focus{outline:none;border-color:white;background-color:rgba(255,255,255,0.2)}
-.auth-widget .login-fields{display:flex;gap:.5rem;align-items:center}
-.auth-widget .password-login{display:flex;gap:.5rem;align-items:center}
-.btn-link{background:transparent;border:none;color:var(--primary-color);text-decoration:underline;padding:0}
-.btn-link:hover{text-decoration:none}
-.admin-btn{background:transparent;border:1px solid rgba(255,255,255,0.3);color:white;padding:0.5rem;border-radius:0.5rem;font-size:0.95rem;text-decoration:none;display:flex;align-items:center;gap:0.35rem}
-.admin-btn:hover{background:rgba(255,255,255,0.1);border-color:white}
-.btn-compact{display:flex;align-items:center;gap:0.4rem;padding:0.6rem 0.95rem;font-size:0.95rem;line-height:1}
-.btn-icon{font-size:1.1rem;display:inline-flex;align-items:center;justify-content:center}
-.btn-label{display:inline-flex;align-items:center;gap:0.25rem}
-.alert{margin-bottom:0.5rem;padding:0.5rem 0.75rem;border-radius:0.25rem;font-size:0.9rem}
-.alert-danger{background-color:#f8d7da;border:1px solid #f5c6cb;color:#721c24}
-@media (max-width:640px){
-  .auth-widget{flex-direction:column;align-items:stretch;width:100%;gap:0.65rem}
-  .auth-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:0.45rem}
-  .auth-widget .quick-login,
-  .auth-widget .password-login{flex-direction:column;align-items:stretch;width:100%}
-  .auth-widget .login-fields{flex-direction:column;align-items:stretch;width:100%}
-  .auth-widget .pseudo-input,
-  .auth-widget .password-input{width:100%;max-width:100%}
-  .auth-widget .quick-login button,
-  .auth-widget .password-login button{width:100%}
-  .btn-compact{justify-content:center;padding:0.55rem;border-radius:0.65rem;width:auto}
-  .auth-actions a.btn,
-  .auth-actions .logout-form{flex:1 0 auto;display:flex;justify-content:center}
-  .auth-actions .logout-form button{width:auto}
-  .btn-label{display:none}
-}
+  .auth-widget {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap
+  }
+
+  .auth-actions {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap
+  }
+
+  .auth-widget .quick-login {
+    display: flex;
+    gap: .5rem;
+    align-items: center
+  }
+
+  .auth-widget .pseudo-input {
+    padding: .75rem 1rem;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: .5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    width: 200px;
+    min-width: 180px
+  }
+
+  .auth-widget .pseudo-input::placeholder {
+    color: rgba(255, 255, 255, 0.7)
+  }
+
+  .auth-widget .pseudo-input:focus {
+    outline: none;
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.2)
+  }
+
+  .auth-widget .pseudo-input[readonly] {
+    background-color: rgba(255, 255, 255, 0.15);
+    cursor: not-allowed
+  }
+
+  .auth-widget .password-input {
+    padding: .75rem 1rem;
+    font-size: 1.1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: .5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    width: 200px;
+    min-width: 180px
+  }
+
+  .auth-widget .password-input::placeholder {
+    color: rgba(255, 255, 255, 0.7)
+  }
+
+  .auth-widget .password-input:focus {
+    outline: none;
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.2)
+  }
+
+  .auth-widget .login-fields {
+    display: flex;
+    gap: .5rem;
+    align-items: center
+  }
+
+  .auth-widget .password-login {
+    display: flex;
+    gap: .5rem;
+    align-items: center
+  }
+
+  .btn-link {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: underline;
+    padding: 0
+  }
+
+  .btn-link:hover {
+    text-decoration: none
+  }
+
+  .admin-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem
+  }
+
+  .admin-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: white
+  }
+
+  .btn-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 0.95rem;
+    font-size: 0.95rem;
+    line-height: 1
+  }
+
+  .btn-icon {
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center
+  }
+
+  .btn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem
+  }
+
+  .alert {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.9rem
+  }
+
+  .alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24
+  }
+
+  @media (max-width:640px) {
+    .auth-widget {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      gap: 0.65rem
+    }
+
+    .auth-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.45rem
+    }
+
+    .auth-widget .quick-login,
+    .auth-widget .password-login {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%
+    }
+
+    .auth-widget .login-fields {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%
+    }
+
+    .auth-widget .pseudo-input,
+    .auth-widget .password-input {
+      width: 100%;
+      max-width: 100%
+    }
+
+    .auth-widget .quick-login button,
+    .auth-widget .password-login button {
+      width: 100%
+    }
+
+    .btn-compact {
+      justify-content: center;
+      padding: 0.55rem;
+      border-radius: 0.65rem;
+      width: auto
+    }
+
+    .auth-actions a.btn,
+    .auth-actions .logout-form {
+      flex: 1 0 auto;
+      display: flex;
+      justify-content: center
+    }
+
+    .auth-actions .logout-form button {
+      width: auto
+    }
+
+    .btn-label {
+      display: none
+    }
+  }
 </style>
 
 <script>
-// Gérer automatiquement le focus (mot de passe si présent, sinon pseudo)
-function focusAuthField() {
+  // Gérer automatiquement le focus (mot de passe si présent, sinon pseudo)
+  function focusAuthField() {
     const passwordInput = document.querySelector('.password-input');
     if (passwordInput) {
-        passwordInput.focus();
-        return;
+      passwordInput.focus();
+      return;
     }
     const pseudoInput = document.querySelector('.quick-login input[name="pseudo"]');
     if (pseudoInput) {
-        pseudoInput.focus();
+      pseudoInput.focus();
     }
-}
+  }
 
-// Focus au chargement initial
-document.addEventListener('DOMContentLoaded', focusAuthField);
+  // Focus au chargement initial
+  document.addEventListener('DOMContentLoaded', focusAuthField);
 
-// Focus après les mises à jour HTMX
-document.addEventListener('htmx:afterSwap', function(evt) {
+  // Focus après les mises à jour HTMX
+  document.addEventListener('htmx:afterSwap', function (evt) {
     if (evt.target.id === 'auth-widget') {
-        focusAuthField();
+      focusAuthField();
     }
-});
+  });
 
 </script>
-
-
