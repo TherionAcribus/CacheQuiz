@@ -1,8 +1,48 @@
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000}
-.modal-content{background:var(--card-bg,#fff);border-radius:1rem;max-width:640px;width:94%;max-height:90vh;overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.3);padding:1rem}
-.input-with-action{display:flex;gap:.5rem;align-items:center}
-.btn-link{background:none;border:none;color:var(--primary-color);cursor:pointer;text-decoration:underline;font-size:.875rem;padding:0;margin:0}
-.btn-link:hover{text-decoration:none}
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, .6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000
+}
+
+.modal-content {
+    background: var(--card-bg, #fff);
+    border-radius: 1rem;
+    max-width: 640px;
+    width: 94%;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, .3);
+    padding: 1rem
+}
+
+.input-with-action {
+    display: flex;
+    gap: .5rem;
+    align-items: center
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: .875rem;
+    padding: 0;
+    margin: 0
+}
+
+.btn-link:hover {
+    text-decoration: none
+}
+
 /* Variables CSS */
 :root {
     --primary-color: #02874d;
@@ -542,6 +582,7 @@ main {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -564,6 +605,7 @@ main {
         transform: translateY(20px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -720,7 +762,7 @@ footer p {
     .questions-grid {
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     }
-    
+
     .form-grid {
         grid-template-columns: 1fr;
     }
@@ -740,34 +782,34 @@ footer p {
     header h1 {
         font-size: 1.5rem;
     }
-    
+
     .page-header {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .header-actions {
         width: 100%;
         flex-direction: column;
     }
-    
+
     #search-input {
         width: 100%;
     }
-    
+
     .questions-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .form-wrapper {
         padding: 1.5rem;
     }
-    
+
     .answer-input-group {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .answer-input-group input.answer-image {
         flex: 1;
     }
@@ -935,4 +977,3 @@ footer p {
         width: 70px;
     }
 }
-

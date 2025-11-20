@@ -1,104 +1,122 @@
 {% if not question %}
 <div class="quiz-empty">
     <p>Aucune question disponible avec ces filtres. Essayez d'élargir la recherche.</p>
-    <button class="btn" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Modifier les filtres</button>
-    <style>.quiz-empty{padding:1rem;border:2px dashed var(--border-color);border-radius:.5rem;color:var(--muted-color)}</style>
-{% else %}
-<div class="quiz-game-container">
-    <!-- Barre de progression et score -->
-    {% if rule_set %}
-    <div class="quiz-progress-bar">
-        <div class="progress-info">
-            <div class="progress-info-left">
-                <span class="question-counter">Question {{ current_question_num }} / {{ total_questions }}</span>
-                <span class="score-display">Score: {{ total_score }} pts</span>
-            </div>
-            <div class="progress-info-right">
-                {% if current_user and current_user.password_hash %}
-                <button class="btn btn-outline btn-report" type="button"
-                        hx-get="/api/report/form?question_id={{ question.id }}{% if rule_set %}&rule_set={{ rule_set.slug }}{% endif %}"
-                        hx-target="#modal-root"
-                        hx-swap="outerHTML">
-                    Signaler
-                </button>
-                {% endif %}
-                <button class="btn btn-danger btn-quit" type="button" onclick="showQuitModal()">Quitter</button>
-            </div>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: {{ (current_question_num / total_questions * 100) if total_questions > 0 else 0 }}%"></div>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if rule_set and rule_set.timer_seconds %}
-    <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
-        <div class="timer-row">
-            <span class="timer-label">⏱ Temps restant:</span>
-            <span class="timer-value" id="timer-value-{{ question.id }}">{{ rule_set.timer_seconds }}s</span>
-        </div>
-        <div class="timer-bar">
-            <div class="timer-fill" id="timer-fill-{{ question.id }}" style="width: 100%"></div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- En-tête avec badges -->
-    <div class="quiz-header">
-        {% if question.theme %}
-        <span class="badge" {% if question.theme.color %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"{% endif %}>
-            {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
-        </span>
-        {% endif %}
-        <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
-    </div>
-
-    <!-- Cadre principal de la question -->
-    <div class="question-frame">
-        <div class="question-content">
-            <h3 class="quiz-question">{{ question.question_text }}</h3>
-            {% if question.images %}
-            <div class="quiz-images">
-                {% for img in question.images %}
-                <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}" title="{{ img.title }}">
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Grille des réponses -->
-    {% set answers = question._shuffled_answers if question._shuffled_answers else question.possible_answers.split('|||') %}
-    <form class="answers-grid" hx-post="/api/quiz/answer" hx-target="#quiz-stage" hx-swap="innerHTML">
-        <input type="hidden" name="question_id" value="{{ question.id }}">
-        <input type="hidden" name="history" value="{{ history or '' }}">
+    <button class="btn" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Modifier les
+        filtres</button>
+    <style>
+        .quiz-empty {
+            padding: 1rem;
+            border: 2px dashed var(--border-color);
+            border-radius: .5rem;
+            color: var(--muted-color)
+        }
+    </style>
+    {% else %}
+    <div class="quiz-game-container">
+        <!-- Barre de progression et score -->
         {% if rule_set %}
-        <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
+        <div class="quiz-progress-bar">
+            <div class="progress-info">
+                <div class="progress-info-left">
+                    <span class="question-counter">Question {{ current_question_num }} / {{ total_questions }}</span>
+                    <span class="score-display">Score: {{ total_score }} pts</span>
+                </div>
+                <div class="progress-info-right">
+                    {% if current_user %}
+                    {% include 'components/save_button.html' %}
+                    {% endif %}
+                    {% if current_user and current_user.password_hash %}
+                    <button class="btn btn-outline btn-report" type="button"
+                        hx-get="/api/report/form?question_id={{ question.id }}{% if rule_set %}&rule_set={{ rule_set.slug }}{% endif %}"
+                        hx-target="#modal-root" hx-swap="outerHTML">
+                        Signaler
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-danger btn-quit" type="button" onclick="showQuitModal()">Quitter</button>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"
+                    style="width: {{ (current_question_num / total_questions * 100) if total_questions > 0 else 0 }}%">
+                </div>
+            </div>
+        </div>
         {% endif %}
-        <input type="hidden" name="quick_double_click" value="{{ 'true' if (quick_double_click or (current_user and current_user.get_preferences().get('double_click_validation', False))) else 'false' }}">
-        {% for answer in answers %}
-        <label class="answer-frame">
-            <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
-            <div class="answer-content">
-                {% set original_index = question._original_indices[loop.index - 1] + 1 if (question._original_indices and loop.index <= question._original_indices|length) else loop.index %}
-                {% set link = (question.answer_image_links | selectattr('answer_index','equalto', original_index) | list) %}
-                {% if link and link[0] and link[0].image %}
-                <div class="answer-image-container">
-                    <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}" alt="{{ link[0].image.alt_text or link[0].image.title }}">
+
+        {% if rule_set and rule_set.timer_seconds %}
+        <div class="quiz-timer" id="quiz-timer-{{ question.id }}">
+            <div class="timer-row">
+                <span class="timer-label">⏱ Temps restant:</span>
+                <span class="timer-value" id="timer-value-{{ question.id }}">{{ rule_set.timer_seconds }}s</span>
+            </div>
+            <div class="timer-bar">
+                <div class="timer-fill" id="timer-fill-{{ question.id }}" style="width: 100%"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- En-tête avec badges -->
+        <div class="quiz-header">
+            {% if question.theme %}
+            <span class="badge" {% if question.theme.color
+                %}style="background-color: {{ question.theme.color }}20; color: {{ question.theme.color }}; border: 1px solid {{ question.theme.color }}"
+                {% endif %}>
+                {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+            </span>
+            {% endif %}
+            <span class="badge">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+        </div>
+
+        <!-- Cadre principal de la question -->
+        <div class="question-frame">
+            <div class="question-content">
+                <h3 class="quiz-question">{{ question.question_text }}</h3>
+                {% if question.images %}
+                <div class="quiz-images">
+                    {% for img in question.images %}
+                    <img src="/uploads/{{ img.filename }}" alt="{{ img.alt_text or img.title }}"
+                        title="{{ img.title }}">
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grille des réponses -->
+        {% set answers = question._shuffled_answers if question._shuffled_answers else
+        question.possible_answers.split('|||') %}
+        <form class="answers-grid" hx-post="/api/quiz/answer" hx-target="#quiz-stage" hx-swap="innerHTML">
+            <input type="hidden" name="question_id" value="{{ question.id }}">
+            <input type="hidden" name="history" value="{{ history or '' }}">
+            {% if rule_set %}
+            <input type="hidden" name="rule_set" value="{{ rule_set.slug }}">
+            {% endif %}
+            <input type="hidden" name="quick_double_click"
+                value="{{ 'true' if (quick_double_click or (current_user and current_user.get_preferences().get('double_click_validation', False))) else 'false' }}">
+            {% for answer in answers %}
+            <label class="answer-frame">
+                <input type="radio" name="selected_answer" value="{{ loop.index }}" required>
+                <div class="answer-content">
+                    {% set original_index = question._original_indices[loop.index - 1] + 1 if
+                    (question._original_indices and loop.index <= question._original_indices|length) else loop.index %}
+                        {% set link=(question.answer_image_links | selectattr('answer_index','equalto', original_index)
+                        | list) %} {% if link and link[0] and link[0].image %} <div class="answer-image-container">
+                        <img class="answer-thumb" src="/uploads/{{ link[0].image.filename }}"
+                            alt="{{ link[0].image.alt_text or link[0].image.title }}">
                 </div>
                 {% endif %}
                 <div class="answer-text-container">
                     <span class="answer-index">{{ loop.index }}</span>
                     <span class="answer-text">{{ answer }}</span>
                 </div>
-            </div>
-        </label>
-        {% endfor %}
+    </div>
+    </label>
+    {% endfor %}
 
-        <!-- Bouton de validation -->
-        <div class="validation-frame">
-            <button class="btn btn-primary btn-large" type="submit">Valider ma réponse</button>
-        </div>
+    <!-- Bouton de validation -->
+    <div class="validation-frame">
+        <button class="btn btn-primary btn-large" type="submit">Valider ma réponse</button>
+    </div>
     </form>
 
     {% if question.hint %}
@@ -549,7 +567,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -565,7 +583,7 @@
         width: 90%;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         animation: slideUp 0.3s ease-out;
     }
 
@@ -616,8 +634,13 @@
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
     }
 
     @keyframes slideUp {
@@ -625,6 +648,7 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -633,11 +657,12 @@
 </style>
 
 <script>
-(function() {
-    // Préférence utilisateur pour la validation en double-clic
-    const doubleClickValidationEnabled = {{ (current_user.get_preferences().get('double_click_validation', false) if current_user else false)|tojson }};
+    (function () {
+        // Préférence utilisateur pour la validation en double-clic
+        const doubleClickValidationEnabled = {{ (current_user.get_preferences().get('double_click_validation', false) if current_user else false)| tojson
+    }};
     // Option temporaire pour cette session (prise en compte si définie explicitement)
-    const quickDoubleClickEnabled = {{ quick_double_click|default(false)|tojson }};
+    const quickDoubleClickEnabled = {{ quick_double_click|default (false) | tojson }};
     // Activation effective : préférence permanente OU option temporaire
     const sessionDoubleClick = typeof quickDoubleClickEnabled === 'boolean' ? quickDoubleClickEnabled : false;
     const prefDoubleClick = typeof doubleClickValidationEnabled === 'boolean' ? doubleClickValidationEnabled : false;
@@ -656,13 +681,14 @@
     if (quickDoubleClickInput) {
         quickDoubleClickInput.value = doubleClickEnabled ? 'true' : 'false';
     }
-})();
+}) ();
 </script>
 
 {% if rule_set and rule_set.timer_seconds %}
 <script>
-(function(){
-    var duration = {{ rule_set.timer_seconds|int }};
+    (function () {
+        var duration = {{ rule_set.timer_seconds| int
+    }};
     if (!duration || duration <= 0) return;
     var remaining = duration;
     var valueEl = document.getElementById('timer-value-{{ question.id }}');
@@ -685,7 +711,7 @@
         if (formEl) {
             // retirer la contrainte required pour permettre l'envoi sans réponse
             var radios = formEl.querySelectorAll('input[type="radio"][name="selected_answer"]');
-            radios.forEach(function(r){ r.removeAttribute('required'); });
+            radios.forEach(function (r) { r.removeAttribute('required'); });
         }
 
         // Récupérer la réponse sélectionnée si elle existe
@@ -701,9 +727,9 @@
             values: {
                 question_id: '{{ question.id }}',
                 history: '{{ history or '' }}',
-                {% if rule_set %}rule_set: '{{ rule_set.slug }}',{% endif %}
-                selected_answer: selectedAnswer,
-                timeout: '1'
+                {% if rule_set %} rule_set: '{{ rule_set.slug }}', {% endif %}
+    selected_answer: selectedAnswer,
+        timeout: '1'
             }
         });
     }
@@ -711,13 +737,13 @@
     // Stopper le timer si l'utilisateur soumet une réponse
     if (formEl) {
         formEl.addEventListener('submit', cleanup, { once: true });
-        document.addEventListener('htmx:beforeRequest', function(evt){
+        document.addEventListener('htmx:beforeRequest', function (evt) {
             if (evt.target === formEl) cleanup();
         });
     }
 
     updateUI();
-    intervalId = setInterval(function(){
+    intervalId = setInterval(function () {
         remaining -= 1;
         if (remaining <= 0) {
             remaining = 0;
@@ -727,86 +753,86 @@
             updateUI();
         }
     }, 1000);
-})();
+}) ();
 </script>
 {% endif %}
 
 <script>
-// Gestion de la validation en double-clic sur les réponses
-(function() {
-    const doubleClickConfig = window.quickDoubleClickConfig || {};
-    const doubleClickEnabled = Boolean(doubleClickConfig.doubleClickEnabled);
-    if (!doubleClickEnabled) return;
+    // Gestion de la validation en double-clic sur les réponses
+    (function () {
+        const doubleClickConfig = window.quickDoubleClickConfig || {};
+        const doubleClickEnabled = Boolean(doubleClickConfig.doubleClickEnabled);
+        if (!doubleClickEnabled) return;
 
-    const answerFrames = document.querySelectorAll('.answer-frame');
-    const form = document.querySelector('.answers-grid');
+        const answerFrames = document.querySelectorAll('.answer-frame');
+        const form = document.querySelector('.answers-grid');
 
-    if (!form || !answerFrames.length) return;
+        if (!form || !answerFrames.length) return;
 
-    const DOUBLE_TAP_DELAY = 350;
-    let lastTapTime = 0;
-    let lastTapTarget = null;
+        const DOUBLE_TAP_DELAY = 350;
+        let lastTapTime = 0;
+        let lastTapTarget = null;
 
-    function ensureSelection(frame) {
-        const radio = frame.querySelector('input[type="radio"]');
-        if (radio && !radio.checked) {
-            radio.checked = true;
-            radio.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-        return radio;
-    }
-
-    function submitForm() {
-        setTimeout(() => {
-            if (typeof form.requestSubmit === 'function') {
-                form.requestSubmit();
-            } else {
-                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        function ensureSelection(frame) {
+            const radio = frame.querySelector('input[type="radio"]');
+            if (radio && !radio.checked) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
             }
-        }, 100);
-    }
+            return radio;
+        }
 
-    function handleQuickValidation(frame) {
-        const radio = ensureSelection(frame);
-        if (!radio) return;
-        submitForm();
-    }
+        function submitForm() {
+            setTimeout(() => {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                } else {
+                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                }
+            }, 100);
+        }
 
-    answerFrames.forEach(frame => {
-        frame.addEventListener('dblclick', function(e) {
-            e.preventDefault();
-            handleQuickValidation(frame);
-        });
+        function handleQuickValidation(frame) {
+            const radio = ensureSelection(frame);
+            if (!radio) return;
+            submitForm();
+        }
 
-        frame.addEventListener('touchend', function(e) {
-            const now = performance.now();
-            const isSameTarget = lastTapTarget === frame;
-            if (isSameTarget && (now - lastTapTime) <= DOUBLE_TAP_DELAY) {
+        answerFrames.forEach(frame => {
+            frame.addEventListener('dblclick', function (e) {
                 e.preventDefault();
                 handleQuickValidation(frame);
-                lastTapTime = 0;
-                lastTapTarget = null;
-            } else {
-                lastTapTime = now;
-                lastTapTarget = frame;
-                ensureSelection(frame);
-            }
-        }, { passive: false });
+            });
 
-        // Ajouter un indicateur visuel pour montrer que le double-clic est disponible
-        frame.style.position = 'relative';
-        frame.title = frame.title ? frame.title + ' (Double-clic pour valider)' : 'Double-clic pour valider';
-    });
+            frame.addEventListener('touchend', function (e) {
+                const now = performance.now();
+                const isSameTarget = lastTapTarget === frame;
+                if (isSameTarget && (now - lastTapTime) <= DOUBLE_TAP_DELAY) {
+                    e.preventDefault();
+                    handleQuickValidation(frame);
+                    lastTapTime = 0;
+                    lastTapTarget = null;
+                } else {
+                    lastTapTime = now;
+                    lastTapTarget = frame;
+                    ensureSelection(frame);
+                }
+            }, { passive: false });
 
-    // Empêcher la validation automatique si l'utilisateur clique sur le bouton de validation
-    const submitButton = form.querySelector('button[type="submit"]');
-    if (submitButton) {
-        submitButton.addEventListener('click', function() {
-            // Marquer que c'est une soumission manuelle
-            form.setAttribute('data-manual-submit', 'true');
+            // Ajouter un indicateur visuel pour montrer que le double-clic est disponible
+            frame.style.position = 'relative';
+            frame.title = frame.title ? frame.title + ' (Double-clic pour valider)' : 'Double-clic pour valider';
         });
-    }
-})();
+
+        // Empêcher la validation automatique si l'utilisateur clique sur le bouton de validation
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.addEventListener('click', function () {
+                // Marquer que c'est une soumission manuelle
+                form.setAttribute('data-manual-submit', 'true');
+            });
+        }
+    })();
 </script>
 
 <script>
@@ -822,17 +848,17 @@
     }
 
     // Fermer la modal en cliquant sur l'overlay
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('quit-modal');
         if (modal) {
-            modal.addEventListener('click', function(e) {
+            modal.addEventListener('click', function (e) {
                 if (e.target === modal) {
                     hideQuitModal();
                 }
             });
 
             // Fermer avec la touche Échap
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && modal.style.display === 'flex') {
                     hideQuitModal();
                 }
@@ -842,5 +868,3 @@
 </script>
 
 {% endif %}
-
-

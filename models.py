@@ -1058,3 +1058,49 @@ class QuizShareLink(db.Model):
             'click_count': self.click_count,
             'url': f'/share/{self.uuid}'
         }
+
+
+# ===================== Questions sauvegardées par utilisateur =====================
+
+class SavedQuestion(db.Model):
+    """
+    Modèle pour stocker les questions sauvegardées par les utilisateurs.
+    Permet aux utilisateurs de bookmarker des questions pendant un quiz pour les consulter plus tard.
+    """
+    __tablename__ = 'saved_questions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Liens
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
+    
+    # Dates
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Notes optionnelles de l'utilisateur
+    notes = db.Column(db.Text, nullable=True)
+    
+    # Contrainte d'unicité: un utilisateur ne peut sauvegarder qu'une seule fois la même question
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'question_id', name='uq_user_saved_question'),
+    )
+    
+    # Relations
+    user = db.relationship('User', backref=db.backref('saved_questions', lazy='dynamic'))
+    question = db.relationship('Question')
+    
+    def __repr__(self):
+        return f"<SavedQuestion user={self.user_id} question={self.question_id}>"
+    
+    def to_dict(self):
+        """Convertit l'objet en dictionnaire pour l'API."""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'question_id': self.question_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'notes': self.notes,
+            'question': self.question.to_dict() if self.question else None
+        }
+

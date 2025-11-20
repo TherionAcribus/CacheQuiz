@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
-from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage, Keyword, QuizShareLink
+from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage, Keyword, QuizShareLink, SavedQuestion
 from datetime import datetime
 import random
 import os
@@ -606,6 +606,76 @@ def me_page():
                            agg_by_difficulty=agg_by_difficulty,
                            sessions_completed=sessions_completed,
                            sessions_abandoned=sessions_abandoned)
+
+
+# ================== Questions sauvegardées ==================
+
+@app.route('/api/questions/<int:question_id>/save', methods=['POST'])
+def toggle_save_question(question_id: int):
+    """Toggle (sauvegarder / désauvegarder) une question pour l'utilisateur connecté."""
+    if not g.current_user:
+        return {'success': False, 'error': 'Connexion requise'}, 401
+    
+    question = Question.query.get_or_404(question_id)
+    
+    # Vérifier si la question est déjà sauvegardée
+    existing = SavedQuestion.query.filter_by(
+        user_id=g.current_user.id,
+        question_id=question_id
+    ).first()
+    
+    if existing:
+        # Désauvegarder
+        db.session.delete(existing)
+        db.session.commit()
+        return {
+            'success': True,
+            'action': 'removed',
+            'message': 'Question retirée des favoris'
+        }
+    else:
+        # Sauvegarder
+        saved_q = SavedQuestion(
+            user_id=g.current_user.id,
+            question_id=question_id
+        )
+        db.session.add(saved_q)
+        db.session.commit()
+        return {
+            'success': True,
+            'action': 'added',
+            'message': 'Question ajoutée aux favoris'
+        }
+
+
+@app.route('/api/questions/<int:question_id>/is-saved')
+def check_question_saved(question_id: int):
+    """Vérifier si une question est sauvegardée par l'utilisateur connecté."""
+    if not g.current_user:
+        return {'is_saved': False}
+    
+    existing = SavedQuestion.query.filter_by(
+        user_id=g.current_user.id,
+        question_id=question_id
+    ).first()
+    
+    return {'is_saved': existing is not None}
+
+
+@app.route('/saved-questions')
+def saved_questions_page():
+    """Page de consultation des questions sauvegardées par l'utilisateur."""
+    if not g.current_user:
+        return redirect(url_for('play_quiz'))
+    
+    # Récupérer toutes les questions sauvegardées avec join pour optimisation
+    saved_items = (SavedQuestion.query
+                   .filter_by(user_id=g.current_user.id)
+                   .join(Question)
+                   .order_by(SavedQuestion.created_at.desc())
+                   .all())
+    
+    return render_template('saved_questions.html', saved_items=saved_items)
 
 
 @app.route('/preferences', methods=['GET', 'POST'])

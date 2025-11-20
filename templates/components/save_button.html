@@ -1,0 +1,209 @@
+<button class="btn-save-question" data-question-id="{{ question.id }}"
+    onclick="toggleSaveQuestion(this, {{ question.id }})" title="Sauvegarder cette question" type="button">
+    <span class="save-icon">☆</span>
+    <span class="save-text">Sauvegarder</span>
+</button>
+
+<style>
+    .btn-save-question {
+        background: transparent;
+        border: 2px solid #f59e0b;
+        color: #f59e0b;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save-question:hover {
+        background: #fef3c7;
+        border-color: #d97706;
+        color: #92400e;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-save-question.saved {
+        background: #fef3c7;
+        border-color: #d97706;
+        color: #92400e;
+    }
+
+    .btn-save-question.saved:hover {
+        background: #fef3c7;
+        border-color: #b45309;
+        color: #78350f;
+    }
+
+    .save-icon {
+        font-size: 1.2rem;
+        line-height: 1;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save-question.saving .save-icon {
+        animation: pulse 0.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.2);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .save-text {
+            display: none;
+        }
+
+        .btn-save-question {
+            padding: 0.5rem;
+            min-width: 44px;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    // Charger l'état sauvegardé au chargement du bouton
+    document.addEventListener('DOMContentLoaded', function () {
+        loadSaveButtonStates();
+    });
+
+    // Aussi charger après chaque swap HTMX (pour les nouvelles questions)
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        if (evt.target.id === 'quiz-stage') {
+            loadSaveButtonStates();
+        }
+    });
+
+    async function loadSaveButtonStates() {
+        const buttons = document.querySelectorAll('.btn-save-question');
+        for (const button of buttons) {
+            const questionId = button.getAttribute('data-question-id');
+            if (questionId) {
+                try {
+                    const response = await fetch(`/api/questions/${questionId}/is-saved`);
+                    const data = await response.json();
+
+                    if (data.is_saved) {
+                        button.classList.add('saved');
+                        const iconEl = button.querySelector('.save-icon');
+                        const textEl = button.querySelector('.save-text');
+                        if (iconEl) iconEl.textContent = '★';
+                        if (textEl) textEl.textContent = 'Sauvegardée';
+                        button.title = 'Retirer des favoris';
+                    }
+                } catch (error) {
+                    console.error('Error checking saved status:', error);
+                }
+            }
+        }
+    }
+
+    async function toggleSaveQuestion(button, questionId) {
+        // Empêcher les clics multiples
+        if (button.classList.contains('saving')) return;
+
+        button.classList.add('saving');
+        const iconEl = button.querySelector('.save-icon');
+        const textEl = button.querySelector('.save-text');
+
+        try {
+            const response = await fetch(`/api/questions/${questionId}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const isSaved = data.action === 'added';
+
+                // Mettre à jour l'apparence du bouton
+                button.classList.toggle('saved', isSaved);
+                iconEl.textContent = isSaved ? '★' : '☆';
+                if (textEl) {
+                    textEl.textContent = isSaved ? 'Sauvegardée' : 'Sauvegarder';
+                }
+                button.title = isSaved ? 'Retirer des favoris' : 'Ajouter aux favoris';
+
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.error || 'Erreur lors de la sauvegarde', 'error');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            showToast('Erreur de connexion', 'error');
+        } finally {
+            button.classList.remove('saving');
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Ajouter les animations CSS si elles n'existent pas déjà
+    if (!document.querySelector('#toast-animations')) {
+        const style = document.createElement('style');
+        style.id = 'toast-animations';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateY(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateY(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+</script>
