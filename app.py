@@ -1892,11 +1892,15 @@ def question_stats_page(question_id: int):
                 'is_correct': (str(i) == str(q.correct_answer or ''))
             })
 
+    # Nombre de fois que la question est sauvegardée
+    saved_count = SavedQuestion.query.filter_by(question_id=q.id).count()
+
     return render_template('question_stats.html', question=q,
                            total_answers=total_answers,
                            total_success=total_success,
                            success_rate=success_rate,
-                           distribution=distribution)
+                           distribution=distribution,
+                           saved_count=saved_count)
 
 
 @app.route('/question/new')

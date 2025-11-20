@@ -3,7 +3,8 @@
 {% block content %}
 <div class="page-header">
   <h2>Statistiques - Question #{{ question.id }}</h2>
-  <div><small>Thème: {{ question.theme.name if question.theme else 'Sans thème' }} · Difficulté: {{ question.difficulty_level or 'N/A' }}</small></div>
+  <div><small>Thème: {{ question.theme.name if question.theme else 'Sans thème' }} · Difficulté: {{
+      question.difficulty_level or 'N/A' }}</small></div>
   <a href="/admin" class="btn">← Retour aux questions</a>
   <hr>
 </div>
@@ -20,9 +21,22 @@
 </div>
 
 <div class="stats-grid">
-  <div class="card"><div class="label">Nombre de réponses</div><div class="value">{{ total_answers }}</div></div>
-  <div class="card"><div class="label">Bonnes réponses</div><div class="value">{{ total_success }}</div></div>
-  <div class="card"><div class="label">Taux de réussite</div><div class="value">{{ success_rate|round(1) }}%</div></div>
+  <div class="card">
+    <div class="label">Nombre de réponses</div>
+    <div class="value">{{ total_answers }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Bonnes réponses</div>
+    <div class="value">{{ total_success }}</div>
+  </div>
+  <div class="card">
+    <div class="label">Taux de réussite</div>
+    <div class="value">{{ success_rate|round(1) }}%</div>
+  </div>
+  <div class="card">
+    <div class="label">💾 Sauvegardée par</div>
+    <div class="value">{{ saved_count }} utilisateur{{ 's' if saved_count > 1 else '' }}</div>
+  </div>
 </div>
 
 <h3>Répartition des réponses</h3>
@@ -49,21 +63,62 @@
   </tbody>
   {% if not distribution %}
   <tbody>
-    <tr><td colspan="5" class="muted">Aucune donnée de distribution pour cette question.</td></tr>
+    <tr>
+      <td colspan="5" class="muted">Aucune donnée de distribution pour cette question.</td>
+    </tr>
   </tbody>
   {% endif %}
 </table>
 
 <style>
-.question-block{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.5rem;padding:1rem;margin:.5rem 0}
-.images-row{display:flex;gap:.5rem;flex-wrap:wrap}
-.images-row img{max-width:140px;max-height:140px;object-fit:cover;border:1px solid var(--border-color);border-radius:.25rem}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin:1rem 0}
-.card{border:1px solid var(--border-color);border-radius:.5rem;padding:.75rem;background:var(--card-bg)}
-.label{color:var(--muted-color);font-size:.9rem}
-.value{font-size:1.25rem;font-weight:700}
-.muted{color:var(--muted-color)}
+  .question-block {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+    padding: 1rem;
+    margin: .5rem 0
+  }
+
+  .images-row {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap
+  }
+
+  .images-row img {
+    max-width: 140px;
+    max-height: 140px;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+    border-radius: .25rem
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .75rem;
+    margin: 1rem 0
+  }
+
+  .card {
+    border: 1px solid var(--border-color);
+    border-radius: .5rem;
+    padding: .75rem;
+    background: var(--card-bg)
+  }
+
+  .label {
+    color: var(--muted-color);
+    font-size: .9rem
+  }
+
+  .value {
+    font-size: 1.25rem;
+    font-weight: 700
+  }
+
+  .muted {
+    color: var(--muted-color)
+  }
 </style>
 {% endblock %}
-
-
