@@ -145,3 +145,8 @@
         font-weight: 500;
     }
 </style>
+
+<!-- Mise à jour du compteur de questions via HTMX OOB -->
+{% if filtered_count is defined and total_count is defined %}
+<span id="total-questions-count" hx-swap-oob="true" class="stat-value">{{ filtered_count }} / {{ total_count }}</span>
+{% endif %}

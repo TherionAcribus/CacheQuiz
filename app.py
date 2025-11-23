@@ -1563,7 +1563,11 @@ def list_questions():
     base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
 
     questions = _apply_sorting(base_query, sort_by, sort_order).all()
-    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
+    
+    filtered_count = len(questions)
+    total_count = Question.query.count()
+    
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
 
 # ===== Page d'analyse (Heatmap) =====
@@ -2284,8 +2288,11 @@ def search_questions():
         base_query = base_query.join(Question.keywords).filter(Keyword.id == keyword_id)
 
     questions = _apply_sorting(base_query, sort_by, sort_order).all()
+    
+    filtered_count = len(questions)
+    total_count = Question.query.count()
 
-    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
 
 @app.route('/api/questions/sort')
@@ -2323,8 +2330,11 @@ def sort_questions():
         )
 
     questions = _apply_sorting(base_query, sort_by, sort_order).all()
+    
+    filtered_count = len(questions)
+    total_count = Question.query.count()
 
-    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order)
+    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
 
 # ===== Routes pour les thèmes =====
