@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, g, url_for, make_response, flash
+from flask import render_template, request, redirect, session, g, url_for, make_response
 from models import db, User
 from werkzeug.security import check_password_hash, generate_password_hash
 import json
@@ -204,3 +204,37 @@ def register_page():
         session['user_id'] = user.id
         return redirect(url_for('play_quiz'))
     return render_template('register.html')
+
+
+# Helper functions for permissions
+def _has_perm(perm_attr: str) -> bool:
+    """Check if current user has a specific permission."""
+    user = getattr(g, 'current_user', None)
+    return bool(user and user.has_perm(perm_attr))
+
+
+def _ensure_admin_page_redirect():
+    """Pour les pages complètes: redirige si pas d'accès admin."""
+    if not _has_perm('can_access_admin'):
+        return redirect(url_for('access_denied_page'))
+    return None
+
+
+def _ensure_perm_api(*perm_attrs: str):
+    """Pour endpoints HTMX/API: renvoie (template_html, 200) si refusé, sinon None.
+    Toutes les permissions listées doivent être vraies (ET logique).
+    HTMX traite mieux les 200 avec contenu HTML qu'un 403.
+    """
+    user = getattr(g, 'current_user', None)
+    if not _has_perm('can_access_admin'):
+        return (render_template('access_denied.html', reason="Accès à l'administration requis", current_user=user), 200)
+    for p in perm_attrs:
+        if not _has_perm(p):
+            return (render_template('access_denied.html', reason=f"Permission '{p}' requise", current_user=user), 200)
+    return None
+
+
+def _deny_access(reason: str):
+    """Retourne un template d'accès refusé avec la raison spécifiée."""
+    user = getattr(g, 'current_user', None)
+    return render_template('access_denied.html', reason=reason, current_user=user), 200
