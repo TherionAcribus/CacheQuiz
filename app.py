@@ -22,6 +22,7 @@ from admin_images import images_page, list_images_api, list_images_json, images_
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
 from admin_analyse import analysis_page, heatmap_data, question_stats_page
+from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting
 
 app = Flask(__name__)
 
@@ -184,37 +185,11 @@ def inject_current_user():
 
 # ================== Helpers Permissions ==================
 
-def _has_perm(perm_attr: str) -> bool:
-    user = getattr(g, 'current_user', None)
-    return bool(user and user.has_perm(perm_attr))
-
-
 @app.route('/access-denied')
 def access_denied_page():
     """Page d'explication d'accès refusé."""
     user = getattr(g, 'current_user', None)
     return render_template('access_denied_full.html', current_user=user)
-
-
-def _ensure_admin_page_redirect():
-    """Pour les pages complètes: redirige si pas d'accès admin."""
-    if not _has_perm('can_access_admin'):
-        return redirect(url_for('access_denied_page'))
-    return None
-
-
-def _ensure_perm_api(*perm_attrs: str):
-    """Pour endpoints HTMX/API: renvoie (template_html, 200) si refusé, sinon None.
-    Toutes les permissions listées doivent être vraies (ET logique).
-    HTMX traite mieux les 200 avec contenu HTML qu'un 403.
-    """
-    user = getattr(g, 'current_user', None)
-    if not _has_perm('can_access_admin'):
-        return (render_template('access_denied.html', reason="Accès à l'administration requis", current_user=user), 200)
-    for p in perm_attrs:
-        if not _has_perm(p):
-            return (render_template('access_denied.html', reason=f"Permission '{p}' requise", current_user=user), 200)
-    return None
 
 
 
@@ -319,6 +294,18 @@ app.add_url_rule('/themes', 'themes_unified_page', themes_unified_page)
 app.add_url_rule('/analysis', 'analysis_page', analysis_page)
 app.add_url_rule('/api/heatmap', 'heatmap_data', heatmap_data)
 app.add_url_rule('/question/<int:question_id>/stats', 'question_stats_page', question_stats_page)
+
+# Question routes
+app.add_url_rule('/question/new', 'new_question', new_question)
+app.add_url_rule('/question/<int:question_id>', 'view_question', view_question)
+app.add_url_rule('/question/<int:question_id>/edit', 'edit_question', edit_question, methods=['GET'])
+app.add_url_rule('/api/question', 'create_question', create_question, methods=['POST'])
+app.add_url_rule('/api/question/<int:question_id>', 'get_question_detail', get_question_detail, methods=['GET'])
+app.add_url_rule('/api/question/<int:question_id>', 'update_question', update_question, methods=['POST', 'PUT'])
+app.add_url_rule('/api/question/<int:question_id>', 'delete_question', delete_question, methods=['DELETE'])
+app.add_url_rule('/api/question/<int:question_id>/toggle-status', 'toggle_question_status', toggle_question_status, methods=['POST'])
+app.add_url_rule('/api/questions/search', 'search_questions', search_questions)
+app.add_url_rule('/api/questions/sort', 'sort_questions', sort_questions)
 
 
 def _get_token_serializer():
@@ -1090,7 +1077,6 @@ def admin_page():
                            online_questions=online_questions)
 
 
-@app.route('/questions')
 def list_questions():
     """Retourner la liste des questions en HTML (pour HTMX)"""
     denied = _ensure_perm_api()
@@ -1109,437 +1095,10 @@ def list_questions():
     
     return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
+# Question routes
+app.add_url_rule('/questions', 'list_questions', list_questions)
 
 
-
-@app.route('/question/new')
-def new_question():
-    """Formulaire pour créer une nouvelle question"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_create_question'):
-        return _deny_access("Permission 'can_create_question' requise")
-    themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    countries = Country.query.order_by(Country.name).all()
-    images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
-    return render_template('question_form.html', question=None, themes=themes, specific_themes=specific_themes, countries=countries, images=images)
-
-
-@app.route('/question/<int:question_id>')
-def view_question(question_id):
-    """Voir les détails d'une question"""
-    question = Question.query.get_or_404(question_id)
-    return render_template('question_detail.html', question=question)
-
-
-@app.route('/question/<int:question_id>/edit')
-def edit_question(question_id):
-    """Formulaire pour éditer une question"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    question = Question.query.get_or_404(question_id)
-    can_any = _has_perm('can_update_delete_any_question')
-    can_own = _has_perm('can_update_delete_own_question')
-    if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-        user = getattr(g, 'current_user', None)
-        return render_template('access_denied.html', reason="Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise", current_user=user), 200
-    themes = BroadTheme.query.order_by(BroadTheme.name).all()
-    specific_themes = SpecificTheme.query.join(BroadTheme).order_by(BroadTheme.name, SpecificTheme.name).all()
-    countries = Country.query.order_by(Country.name).all()
-    images = ImageAsset.query.order_by(ImageAsset.created_at.desc()).all()
-    return render_template('question_form.html', question=question, themes=themes, specific_themes=specific_themes, countries=countries, images=images)
-
-
-@app.route('/api/question', methods=['POST'])
-def create_question():
-    """Créer une nouvelle question"""
-    try:
-        denied = _ensure_perm_api('can_create_question')
-        if denied:
-            return denied
-        data = request.form
-        
-        # Traiter les réponses possibles (en conservant l'index des réponses retenues)
-        possible_answers = []
-        answer_images_per_answer = []  # aligné sur possible_answers ('' si pas d'image)
-        links_to_add = []  # liste de tuples (answer_index, image_id)
-        i = 1
-        current_index = 0
-        while f'answer_{i}' in data:
-            answer = (data.get(f'answer_{i}', '') or '').strip()
-            answer_image_token = (data.get(f'answer_image_id_{i}', '') or '').strip()
-            if answer or answer_image_token:
-                current_index += 1
-                possible_answers.append(answer)
-                if answer_image_token.isdigit():
-                    image_id_int = int(answer_image_token)
-                    answer_images_per_answer.append(str(image_id_int))
-                    links_to_add.append((current_index, image_id_int))
-                else:
-                    answer_images_per_answer.append('')
-            i += 1
-        
-        # Attribuer l'auteur en fonction des droits
-        if _has_perm('can_update_delete_any_question') and (data.get('author_id') or '').isdigit():
-            author_id = int(data.get('author_id'))
-        else:
-            author_id = g.current_user.id if getattr(g, 'current_user', None) else None
-
-        question = Question(
-            author_id=author_id,
-            question_text=data.get('question_text'),
-            possible_answers='|||'.join(possible_answers),
-            answer_images='|||'.join(answer_images_per_answer),
-            correct_answer=data.get('correct_answer'),
-            detailed_answer=data.get('detailed_answer'),
-            hint=data.get('hint'),
-            source=data.get('source').strip() if data.get('source') else None,
-            detailed_answer_image_id=int(data.get('detailed_answer_image_id')) if data.get('detailed_answer_image_id') else None,
-            broad_theme_id=int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None,
-            specific_theme_id=int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None,
-            difficulty_level=int(data.get('difficulty_level', 1)),
-            translation_id=int(data.get('translation_id')) if data.get('translation_id') else None,
-            is_published=data.get('is_published') == 'on',
-            is_private=data.get('is_private') == 'on'
-        )
-        
-        # Gérer les pays (relation many-to-many)
-        country_ids = request.form.getlist('countries')
-        if country_ids:
-            countries = Country.query.filter(Country.id.in_(country_ids)).all()
-            question.countries = countries
-
-        # Gérer l'image de la question (relation many-to-many, une seule image)
-        question_image_id = request.form.get('question_image_id')
-        if question_image_id:
-            try:
-                img = ImageAsset.query.get(int(question_image_id))
-                if img:
-                    question.images = [img]
-            except ValueError:
-                pass
-        else:
-            question.images = []
-        
-        # Gérer les mots-clés (relation many-to-many)
-        keyword_ids = request.form.getlist('keywords')
-        if keyword_ids:
-            keywords = Keyword.query.filter(Keyword.id.in_([int(kid) for kid in keyword_ids if kid])).all()
-            question.keywords = keywords
-        
-        db.session.add(question)
-        db.session.flush()
-
-        # Gérer les liens image->réponse (AnswerImageLink) avec index correct
-        for answer_index, image_id in links_to_add:
-            db.session.add(AnswerImageLink(question_id=question.id, answer_index=answer_index, image_id=image_id))
-
-        db.session.commit()
-        
-        # Retourner la liste mise à jour
-        questions = Question.query.order_by(Question.updated_at.desc()).all()
-        return render_template('questions_list.html', questions=questions)
-    
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/question/<int:question_id>', methods=['GET'])
-def get_question_detail(question_id):
-    """Récupérer le détail complet d'une question"""
-    try:
-        question = Question.query.get(question_id)
-        if not question:
-            return {'error': 'Question non trouvée'}, 404
-        
-        return question.to_dict()
-    
-    except Exception as e:
-        print(f"Erreur lors de la récupération de la question {question_id}: {e}")
-        return {'error': str(e)}, 500
-
-
-@app.route('/api/question/<int:question_id>', methods=['PUT', 'POST'])
-def update_question(question_id):
-    """Mettre à jour une question existante"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        question = Question.query.get_or_404(question_id)
-        can_any = _has_perm('can_update_delete_any_question')
-        can_own = _has_perm('can_update_delete_own_question')
-        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
-        data = request.form
-        
-        # Traiter les réponses possibles (en conservant l'index des réponses retenues)
-        possible_answers = []
-        answer_images_per_answer = []  # aligné sur possible_answers ('' si pas d'image)
-        links_to_add = []  # liste de tuples (answer_index, image_id)
-        i = 1
-        current_index = 0
-        while f'answer_{i}' in data:
-            answer = (data.get(f'answer_{i}', '') or '').strip()
-            answer_image_token = (data.get(f'answer_image_id_{i}', '') or '').strip()
-            if answer or answer_image_token:
-                current_index += 1
-                possible_answers.append(answer)
-                if answer_image_token.isdigit():
-                    image_id_int = int(answer_image_token)
-                    answer_images_per_answer.append(str(image_id_int))
-                    links_to_add.append((current_index, image_id_int))
-                else:
-                    answer_images_per_answer.append('')
-            i += 1
-        
-        # Mettre à jour les champs
-        # Changer l'auteur uniquement avec le droit global
-        if can_any and (data.get('author_id') or '').isdigit():
-            question.author_id = int(data.get('author_id'))
-        question.question_text = data.get('question_text')
-        question.possible_answers = '|||'.join(possible_answers)
-        question.answer_images = '|||'.join(answer_images_per_answer)
-        question.correct_answer = data.get('correct_answer')
-        question.detailed_answer = data.get('detailed_answer')
-        question.hint = data.get('hint')
-        question.source = data.get('source').strip() if data.get('source') else None
-        question.detailed_answer_image_id = int(data.get('detailed_answer_image_id')) if data.get('detailed_answer_image_id') else None
-        question.broad_theme_id = int(data.get('broad_theme_id')) if data.get('broad_theme_id') else None
-        question.specific_theme_id = int(data.get('specific_theme_id')) if data.get('specific_theme_id') else None
-        question.difficulty_level = int(data.get('difficulty_level', 1))
-        question.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
-        question.is_published = data.get('is_published') == 'on'
-        question.is_private = data.get('is_private') == 'on'
-        question.updated_at = datetime.utcnow()
-        
-        # Gérer les pays (relation many-to-many)
-        country_ids = request.form.getlist('countries')
-        if country_ids:
-            countries = Country.query.filter(Country.id.in_(country_ids)).all()
-            question.countries = countries
-        else:
-            question.countries = []
-
-        # Gérer l'image de la question (relation many-to-many, une seule image)
-        question_image_id = request.form.get('question_image_id')
-        if question_image_id:
-            try:
-                img = ImageAsset.query.get(int(question_image_id))
-                if img:
-                    question.images = [img]
-            except ValueError:
-                pass
-        else:
-            question.images = []
-        
-        # Gérer les mots-clés (relation many-to-many)
-        keyword_ids = request.form.getlist('keywords')
-        if keyword_ids:
-            keywords = Keyword.query.filter(Keyword.id.in_([int(kid) for kid in keyword_ids if kid])).all()
-            question.keywords = keywords
-        else:
-            question.keywords = []
-        
-        # Réinitialiser les liens image->réponse
-        AnswerImageLink.query.filter_by(question_id=question.id).delete()
-        db.session.flush()
-        for answer_index, image_id in links_to_add:
-            db.session.add(AnswerImageLink(question_id=question.id, answer_index=answer_index, image_id=image_id))
-
-        db.session.commit()
-        
-        # Retourner la liste mise à jour
-        questions = Question.query.order_by(Question.updated_at.desc()).all()
-        return render_template('questions_list.html', questions=questions)
-    
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/question/<int:question_id>', methods=['DELETE'])
-def delete_question(question_id):
-    """Supprimer une question"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        question = Question.query.get_or_404(question_id)
-        can_any = _has_perm('can_update_delete_any_question')
-        can_own = _has_perm('can_update_delete_own_question')
-        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
-        db.session.delete(question)
-        db.session.commit()
-
-        # Retourner la liste mise à jour
-        questions = Question.query.order_by(Question.updated_at.desc()).all()
-        return render_template('questions_list.html', questions=questions)
-
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/question/<int:question_id>/toggle-status', methods=['POST'])
-def toggle_question_status(question_id):
-    """Changer le statut de publication d'une question"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        question = Question.query.get_or_404(question_id)
-        can_any = _has_perm('can_update_delete_any_question')
-        can_own = _has_perm('can_update_delete_own_question')
-        if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
-            return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
-        question.is_published = not question.is_published
-        question.updated_at = datetime.utcnow()
-        db.session.commit()
-
-        # Retourner uniquement le contenu de la cellule statut mis à jour
-        return render_template('question_status_cell.html', question=question)
-
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-def _apply_sorting(query, sort_by, sort_order):
-    """Appliquer le tri à la requête selon les paramètres donnés"""
-    if sort_by == 'question_text':
-        if sort_order == 'asc':
-            return query.order_by(Question.question_text.asc())
-        else:
-            return query.order_by(Question.question_text.desc())
-    elif sort_by == 'broad_theme':
-        if sort_order == 'asc':
-            return query.order_by(BroadTheme.name.asc().nulls_last())
-        else:
-            return query.order_by(BroadTheme.name.desc().nulls_last())
-    elif sort_by == 'specific_theme':
-        if sort_order == 'asc':
-            return query.order_by(SpecificTheme.name.asc().nulls_last())
-        else:
-            return query.order_by(SpecificTheme.name.desc().nulls_last())
-    elif sort_by == 'difficulty_level':
-        if sort_order == 'asc':
-            return query.order_by(Question.difficulty_level.asc())
-        else:
-            return query.order_by(Question.difficulty_level.desc())
-    elif sort_by == 'is_published':
-        if sort_order == 'asc':
-            return query.order_by(Question.is_published.asc())
-        else:
-            return query.order_by(Question.is_published.desc())
-    elif sort_by == 'created_at':
-        if sort_order == 'asc':
-            return query.order_by(Question.created_at.asc())
-        else:
-            return query.order_by(Question.created_at.desc())
-    elif sort_by == 'author':
-        if sort_order == 'asc':
-            return query.order_by(User.username.asc().nulls_last())
-        else:
-            return query.order_by(User.username.desc().nulls_last())
-    else:
-        # Tri par défaut
-        return query.order_by(Question.updated_at.desc())
-
-
-@app.route('/api/questions/search')
-def search_questions():
-    """Rechercher des questions"""
-    denied = _ensure_perm_api()
-    if denied:
-        return denied
-    query_param = request.args.get('q', '').strip()
-    view = request.args.get('view', 'cards')
-    sort_by = request.args.get('sort_by', 'updated_at')
-    sort_order = request.args.get('sort_order', 'desc')
-
-    base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
-
-    if query_param:
-        base_query = base_query.filter(
-            db.or_(
-                Question.question_text.contains(query_param),
-                User.username.contains(query_param),
-                BroadTheme.name.contains(query_param),
-                SpecificTheme.name.contains(query_param)
-            )
-        )
-
-    # Filtres avancés
-    author_id = request.args.get('author_id', type=int)
-    if author_id:
-        base_query = base_query.filter(Question.author_id == author_id)
-
-    broad_theme_id = request.args.get('broad_theme_id', type=int)
-    if broad_theme_id:
-        base_query = base_query.filter(Question.broad_theme_id == broad_theme_id)
-
-    specific_theme_id = request.args.get('specific_theme_id', type=int)
-    if specific_theme_id:
-        base_query = base_query.filter(Question.specific_theme_id == specific_theme_id)
-
-    difficulty_level = request.args.get('difficulty_level', type=int)
-    if difficulty_level:
-        base_query = base_query.filter(Question.difficulty_level == difficulty_level)
-
-    keyword_id = request.args.get('keyword_id', type=int)
-    if keyword_id:
-        base_query = base_query.join(Question.keywords).filter(Keyword.id == keyword_id)
-
-    questions = _apply_sorting(base_query, sort_by, sort_order).all()
-    
-    filtered_count = len(questions)
-    total_count = Question.query.count()
-
-    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
-
-
-@app.route('/api/questions/sort')
-def sort_questions():
-    """Trier les questions"""
-    denied = _ensure_perm_api()
-    if denied:
-        return denied
-    view = request.args.get('view', 'cards')
-    sort_by = request.args.get('sort_by', 'updated_at')
-    query_param = request.args.get('q', '').strip()
-
-    # Déterminer l'ordre de tri : si on clique sur la même colonne, on inverse l'ordre
-    current_sort_by = request.args.get('current_sort_by', '')
-    current_sort_order = request.args.get('current_sort_order', 'desc')
-
-    if sort_by == current_sort_by:
-        # Même colonne, on inverse l'ordre
-        sort_order = 'asc' if current_sort_order == 'desc' else 'desc'
-    else:
-        # Nouvelle colonne, on commence par ascendant
-        sort_order = 'asc'
-
-    base_query = Question.query.join(User, Question.author_id == User.id).join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True).join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
-
-    if query_param:
-        base_query = base_query.filter(
-            db.or_(
-                Question.question_text.contains(query_param),
-                User.username.contains(query_param),
-                User.username.contains(query_param),
-                BroadTheme.name.contains(query_param),
-                SpecificTheme.name.contains(query_param)
-            )
-        )
-
-    questions = _apply_sorting(base_query, sort_by, sort_order).all()
-    
-    filtered_count = len(questions)
-    total_count = Question.query.count()
-
-    return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
 
 
