@@ -26,6 +26,7 @@ from admin_questions import new_question, view_question, edit_question, create_q
 from admin_keywords import list_keywords_json, create_keyword
 from admin_countries import countries, list_countries_api, new_country, edit_country, create_country, update_country, delete_country
 from admin_profiles import profiles_page, list_profiles, new_profile, edit_profile, create_profile, update_profile, delete_profile
+from admin_users import users_page, list_users, new_user, edit_user, create_user, update_user, delete_user
 
 app = Flask(__name__)
 
@@ -331,6 +332,15 @@ app.add_url_rule('/profile/<int:profile_id>/edit', 'edit_profile', edit_profile,
 app.add_url_rule('/api/profile', 'create_profile', create_profile, methods=['POST'])
 app.add_url_rule('/api/profile/<int:profile_id>', 'update_profile', update_profile, methods=['POST', 'PUT'])
 app.add_url_rule('/api/profile/<int:profile_id>', 'delete_profile', delete_profile, methods=['DELETE'])
+
+# Users routes
+app.add_url_rule('/users', 'users_page', users_page)
+app.add_url_rule('/api/users', 'list_users', list_users)
+app.add_url_rule('/user/new', 'new_user', new_user)
+app.add_url_rule('/user/<int:user_id>/edit', 'edit_user', edit_user, methods=['GET'])
+app.add_url_rule('/api/user', 'create_user', create_user, methods=['POST'])
+app.add_url_rule('/api/user/<int:user_id>', 'update_user', update_user, methods=['POST', 'PUT'])
+app.add_url_rule('/api/user/<int:user_id>', 'delete_user', delete_user, methods=['DELETE'])
 
 
 def _get_token_serializer():
@@ -1132,164 +1142,6 @@ app.add_url_rule('/questions', 'list_questions', list_questions)
 
 
 
-# ===== Routes pour les utilisateurs =====
-
-@app.route('/users')
-def users_page():
-    """Page de gestion des utilisateurs"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_users'):
-        return redirect(url_for('play_quiz'))
-    return render_template('users.html')
-
-
-@app.route('/api/users')
-def list_users():
-    """Retourner la liste des utilisateurs en HTML (pour HTMX)"""
-    denied = _ensure_perm_api('can_manage_users')
-    if denied:
-        return denied
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    return render_template('users_list.html', users=users)
-
-
-@app.route('/user/new')
-def new_user():
-    """Formulaire pour créer un nouvel utilisateur"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_users'):
-        return _deny_access("Permission 'can_manage_users' requise")
-    profiles = Profile.query.order_by(Profile.name).all()
-    return render_template('user_form.html', user=None, profiles=profiles)
-
-
-@app.route('/user/<int:user_id>/edit')
-def edit_user(user_id):
-    """Formulaire pour éditer un utilisateur"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_users'):
-        return _deny_access("Permission 'can_manage_users' requise")
-    user = User.query.get_or_404(user_id)
-    profiles = Profile.query.order_by(Profile.name).all()
-    return render_template('user_form.html', user=user, profiles=profiles)
-
-
-@app.route('/api/user', methods=['POST'])
-def create_user():
-    """Créer un nouvel utilisateur"""
-    try:
-        denied = _ensure_perm_api('can_manage_users')
-        if denied:
-            return denied
-        data = request.form
-
-        # Validation du mot de passe pour les profils admin
-        profile_id = data.get('profile_id')
-        password = (data.get('password') or '').strip()
-
-        if profile_id and profile_id.isdigit():
-            profile = Profile.query.get(int(profile_id))
-            if profile and profile.can_access_admin and not password:
-                return "Mot de passe requis pour les utilisateurs avec accès administration", 400
-
-        user = User(
-            username=data.get('username'),
-            email=data.get('email') or None,
-            is_active=data.get('is_active') == 'on',
-            profile_id=(int(profile_id) if profile_id and profile_id.isdigit() else None)
-        )
-
-        # Définir le mot de passe si fourni
-        if password:
-            user.password_hash = generate_password_hash(password)
-
-        db.session.add(user)
-        db.session.commit()
-
-        # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.username).all()
-        return render_template('users_list.html', users=users)
-
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/user/<int:user_id>', methods=['PUT', 'POST'])
-def update_user(user_id):
-    """Mettre à jour un utilisateur existant"""
-    try:
-        denied = _ensure_perm_api('can_manage_users')
-        if denied:
-            return denied
-        user = User.query.get_or_404(user_id)
-        data = request.form
-
-        # Validation du mot de passe pour les profils admin
-        profile_id = data.get('profile_id')
-        password = (data.get('password') or '').strip()
-
-        if profile_id and profile_id.isdigit():
-            profile = Profile.query.get(int(profile_id))
-            if profile and profile.can_access_admin and not password and not user.password_hash:
-                return "Mot de passe requis pour les utilisateurs avec accès administration", 400
-
-        # Validation supplémentaire : si on attribue un profil admin à un utilisateur sans mot de passe
-        new_profile_id = int(profile_id) if profile_id and profile_id.isdigit() else None
-        if new_profile_id and new_profile_id != user.profile_id:
-            new_profile = Profile.query.get(new_profile_id)
-            if new_profile and new_profile.can_access_admin and not user.password_hash and not password:
-                return "Impossible d'attribuer un profil admin sans mot de passe. Définissez d'abord un mot de passe.", 400
-
-        # Mettre à jour les champs
-        user.username = data.get('username')
-        user.email = data.get('email') or None
-        user.is_active = data.get('is_active') == 'on'
-        user.profile_id = new_profile_id
-
-        # Mettre à jour le mot de passe si fourni
-        if password:
-            user.password_hash = generate_password_hash(password)
-
-        db.session.commit()
-
-        # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.username).all()
-        return render_template('users_list.html', users=users)
-
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/user/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    """Désactiver un utilisateur (soft delete)"""
-    try:
-        denied = _ensure_perm_api('can_manage_users')
-        if denied:
-            return denied
-        user = User.query.get_or_404(user_id)
-
-        # Vérifier si l'utilisateur a des questions
-        question_count = user.questions.count()
-        if question_count > 0:
-            return f"Impossible de supprimer cet utilisateur : {question_count} question(s) lui appartiennent encore.", 400
-
-        # Soft delete : désactiver au lieu de supprimer
-        user.is_active = False
-        db.session.commit()
-
-        # Retourner la liste mise à jour
-        users = User.query.filter_by(is_active=True).order_by(User.username).all()
-        return render_template('users_list.html', users=users)
-
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
 
 
 
