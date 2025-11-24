@@ -25,6 +25,7 @@ from admin_analyse import analysis_page, heatmap_data, question_stats_page
 from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting
 from admin_keywords import list_keywords_json, create_keyword
 from admin_countries import countries, list_countries_api, new_country, edit_country, create_country, update_country, delete_country
+from admin_profiles import profiles_page, list_profiles, new_profile, edit_profile, create_profile, update_profile, delete_profile
 
 app = Flask(__name__)
 
@@ -321,6 +322,15 @@ app.add_url_rule('/country/<int:country_id>/edit', 'edit_country', edit_country,
 app.add_url_rule('/api/country', 'create_country', create_country, methods=['POST'])
 app.add_url_rule('/api/country/<int:country_id>', 'update_country', update_country, methods=['POST', 'PUT'])
 app.add_url_rule('/api/country/<int:country_id>', 'delete_country', delete_country, methods=['DELETE'])
+
+# Profiles routes
+app.add_url_rule('/profiles', 'profiles_page', profiles_page)
+app.add_url_rule('/api/profiles', 'list_profiles', list_profiles)
+app.add_url_rule('/profile/new', 'new_profile', new_profile)
+app.add_url_rule('/profile/<int:profile_id>/edit', 'edit_profile', edit_profile, methods=['GET'])
+app.add_url_rule('/api/profile', 'create_profile', create_profile, methods=['POST'])
+app.add_url_rule('/api/profile/<int:profile_id>', 'update_profile', update_profile, methods=['POST', 'PUT'])
+app.add_url_rule('/api/profile/<int:profile_id>', 'delete_profile', delete_profile, methods=['DELETE'])
 
 
 def _get_token_serializer():
@@ -1282,143 +1292,6 @@ def delete_user(user_id):
         return f"Erreur: {str(e)}", 400
 
 
-# ===== Routes pour les profils (permissions) =====
-
-@app.route('/profiles')
-def profiles_page():
-    """Page de gestion des profils"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_profiles'):
-        return redirect(url_for('play_quiz'))
-    return render_template('profiles.html')
-
-
-@app.route('/api/profiles')
-def list_profiles():
-    """Retourner la liste des profils en HTML (pour HTMX)"""
-    denied = _ensure_perm_api('can_manage_profiles')
-    if denied:
-        return denied
-    profiles = Profile.query.order_by(Profile.name).all()
-    return render_template('profiles_list.html', profiles=profiles)
-
-
-@app.route('/profile/new')
-def new_profile():
-    """Formulaire pour créer un nouveau profil"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_profiles'):
-        return _deny_access("Permission 'can_manage_profiles' requise")
-    return render_template('profile_form.html', profile=None)
-
-
-@app.route('/profile/<int:profile_id>/edit')
-def edit_profile(profile_id: int):
-    """Formulaire pour éditer un profil"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    if not _has_perm('can_manage_profiles'):
-        return _deny_access("Permission 'can_manage_profiles' requise")
-    profile = Profile.query.get_or_404(profile_id)
-    return render_template('profile_form.html', profile=profile)
-
-
-def _bool_from_form(key: str) -> bool:
-    return request.form.get(key) == 'on'
-
-
-@app.route('/api/profile', methods=['POST'])
-def create_profile():
-    """Créer un nouveau profil"""
-    try:
-        denied = _ensure_perm_api('can_manage_profiles')
-        if denied:
-            return denied
-        data = request.form
-        name = (data.get('name') or '').strip()
-        if not name:
-            return "Nom requis", 400
-
-        profile = Profile(
-            name=name,
-            description=(data.get('description') or '').strip() or None,
-            can_access_admin=_bool_from_form('can_access_admin'),
-            can_create_question=_bool_from_form('can_create_question'),
-            can_update_delete_own_question=_bool_from_form('can_update_delete_own_question'),
-            can_update_delete_any_question=_bool_from_form('can_update_delete_any_question'),
-            can_create_rule=_bool_from_form('can_create_rule'),
-            can_update_delete_own_rule=_bool_from_form('can_update_delete_own_rule'),
-            can_update_delete_any_rule=_bool_from_form('can_update_delete_any_rule'),
-            can_manage_users=_bool_from_form('can_manage_users'),
-            can_manage_profiles=_bool_from_form('can_manage_profiles'),
-        )
-
-        db.session.add(profile)
-        db.session.commit()
-
-        profiles = Profile.query.order_by(Profile.name).all()
-        return render_template('profiles_list.html', profiles=profiles)
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/profile/<int:profile_id>', methods=['PUT', 'POST'])
-def update_profile(profile_id: int):
-    """Mettre à jour un profil existant"""
-    try:
-        denied = _ensure_perm_api('can_manage_profiles')
-        if denied:
-            return denied
-        profile = Profile.query.get_or_404(profile_id)
-        data = request.form
-
-        name = (data.get('name') or '').strip()
-        if name:
-            profile.name = name
-        profile.description = (data.get('description') or '').strip() or None
-        profile.can_access_admin = _bool_from_form('can_access_admin')
-        profile.can_create_question = _bool_from_form('can_create_question')
-        profile.can_update_delete_own_question = _bool_from_form('can_update_delete_own_question')
-        profile.can_update_delete_any_question = _bool_from_form('can_update_delete_any_question')
-        profile.can_create_rule = _bool_from_form('can_create_rule')
-        profile.can_update_delete_own_rule = _bool_from_form('can_update_delete_own_rule')
-        profile.can_update_delete_any_rule = _bool_from_form('can_update_delete_any_rule')
-        profile.can_manage_users = _bool_from_form('can_manage_users')
-        profile.can_manage_profiles = _bool_from_form('can_manage_profiles')
-        profile.updated_at = datetime.utcnow()
-
-        db.session.commit()
-
-        profiles = Profile.query.order_by(Profile.name).all()
-        return render_template('profiles_list.html', profiles=profiles)
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/profile/<int:profile_id>', methods=['DELETE'])
-def delete_profile(profile_id: int):
-    """Supprimer un profil"""
-    try:
-        denied = _ensure_perm_api('can_manage_profiles')
-        if denied:
-            return denied
-        profile = Profile.query.get_or_404(profile_id)
-        # Empêcher la suppression si des utilisateurs utilisent ce profil
-        if profile.users.count() > 0:
-            return "Impossible de supprimer: des utilisateurs utilisent ce profil.", 400
-
-        db.session.delete(profile)
-        db.session.commit()
-
-        profiles = Profile.query.order_by(Profile.name).all()
-        return render_template('profiles_list.html', profiles=profiles)
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
 
 
 
