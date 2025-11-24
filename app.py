@@ -21,6 +21,7 @@ from auth import quick_login, logout, widget_login, upgrade_account, login_page,
 from admin_images import images_page, list_images_api, list_images_json, images_gallery_fragment, new_image, edit_image, create_image, update_image, delete_image
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
+from admin_analyse import analysis_page, heatmap_data, question_stats_page
 
 app = Flask(__name__)
 
@@ -313,6 +314,11 @@ app.add_url_rule('/api/specific-theme/<int:specific_theme_id>', 'update_specific
 app.add_url_rule('/api/specific-theme/<int:specific_theme_id>', 'delete_specific_theme', delete_specific_theme, methods=['DELETE'])
 app.add_url_rule('/api/specific-themes/for-theme/', 'get_specific_themes_for_broad_theme', get_specific_themes_for_broad_theme)
 app.add_url_rule('/themes', 'themes_unified_page', themes_unified_page)
+
+# Analysis routes
+app.add_url_rule('/analysis', 'analysis_page', analysis_page)
+app.add_url_rule('/api/heatmap', 'heatmap_data', heatmap_data)
+app.add_url_rule('/question/<int:question_id>/stats', 'question_stats_page', question_stats_page)
 
 
 def _get_token_serializer():
@@ -1104,142 +1110,6 @@ def list_questions():
     return render_template('questions_list.html', questions=questions, view=view, sort_by=sort_by, sort_order=sort_order, filtered_count=filtered_count, total_count=total_count)
 
 
-# ===== Page d'analyse (Heatmap) =====
-
-@app.route('/analysis')
-def analysis_page():
-    """Page d'analyse avec heatmap difficultés x thèmes."""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    # Valeurs par défaut de l'affichage
-    default_mode = request.args.get('mode', 'broad')  # 'broad' ou 'specific'
-    return render_template('analysis.html', default_mode=default_mode)
-
-
-@app.route('/api/heatmap')
-def heatmap_data():
-    """Retourne un tableau heatmap HTML (HTMX) des comptes par difficulté x (thème/sous-thème)."""
-    denied = _ensure_perm_api()
-    if denied:
-        return denied
-
-    mode = request.args.get('mode', 'broad')  # 'broad' (thèmes) ou 'specific' (sous-thèmes)
-    only_published = request.args.get('only_published') in ('1', 'true', 'yes', 'on')
-
-    # Déterminer la liste des difficultés présentes (1..5 par défaut si vide)
-    diff_query = db.session.query(Question.difficulty_level).distinct()
-    if only_published:
-        diff_query = diff_query.filter(Question.is_published.is_(True))
-    difficulties = sorted({row[0] for row in diff_query.all() if row[0] is not None}) or [1, 2, 3, 4, 5]
-
-    # Colonnes et agrégations
-    if mode == 'specific':
-        # Sous-thèmes
-        join_model = SpecificTheme
-        join_on = Question.specific_theme_id == SpecificTheme.id
-        name_col = SpecificTheme.name
-        id_col = SpecificTheme.id
-        base = db.session.query(
-            Question.difficulty_level.label('difficulty'),
-            id_col.label('theme_id'),
-            name_col.label('theme_name'),
-            func.count(Question.id).label('count')
-        ).outerjoin(join_model, join_on)
-        if only_published:
-            base = base.filter(Question.is_published.is_(True))
-        rows = base.group_by('difficulty', 'theme_id', 'theme_name').all()
-
-        # Récupérer l'ordre des sous-thèmes par nom
-        themes = db.session.query(id_col, name_col).order_by(name_col.asc()).all()
-    else:
-        # Thèmes larges
-        join_model = BroadTheme
-        join_on = Question.broad_theme_id == BroadTheme.id
-        name_col = BroadTheme.name
-        id_col = BroadTheme.id
-        base = db.session.query(
-            Question.difficulty_level.label('difficulty'),
-            id_col.label('theme_id'),
-            name_col.label('theme_name'),
-            func.count(Question.id).label('count')
-        ).outerjoin(join_model, join_on)
-        if only_published:
-            base = base.filter(Question.is_published.is_(True))
-        rows = base.group_by('difficulty', 'theme_id', 'theme_name').all()
-
-        # Récupérer l'ordre des thèmes par nom
-        themes = db.session.query(id_col, name_col).order_by(name_col.asc()).all()
-
-    # Construire le mapping (difficulty -> theme_id -> count)
-    counts = {}
-    max_count = 0
-    for r in rows:
-        d = int(r.difficulty) if r.difficulty is not None else None
-        t_id = r.theme_id
-        c = int(r.count)
-        if d is None or t_id is None:
-            # Ignorer les entrées sans difficulté ou sans thème pour la heatmap
-            continue
-        counts.setdefault(d, {})[t_id] = c
-        if c > max_count:
-            max_count = c
-
-    # Liste ordonnée des colonnes (thèmes) et des lignes (difficultés)
-    theme_columns = [{'id': tid, 'name': tname} for tid, tname in themes]
-    diff_rows = difficulties
-
-    return render_template(
-        'heatmap_table.html',
-        mode=mode,
-        only_published=only_published,
-        theme_columns=theme_columns,
-        diff_rows=diff_rows,
-        counts=counts,
-        max_count=max_count
-    )
-
-
-@app.route('/question/<int:question_id>/stats')
-def question_stats_page(question_id: int):
-    """Page admin des statistiques d'une question."""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    q = Question.query.get_or_404(question_id)
-
-    # Statistiques globales
-    total_answers = q.times_answered or 0
-    total_success = q.success_count or 0
-    success_rate = (total_success / total_answers * 100.0) if total_answers > 0 else 0.0
-
-    # Répartition des réponses
-    distribution = []
-    if q.possible_answers:
-        answers = q.possible_answers.split('|||')
-        # Précharger stats
-        stats_rows = QuestionAnswerStat.query.filter_by(question_id=q.id).all()
-        idx_to_count = {row.answer_index: (row.selected_count or 0) for row in stats_rows}
-        for i, text in enumerate(answers, start=1):
-            count = int(idx_to_count.get(i, 0))
-            pct = (count / total_answers * 100.0) if total_answers > 0 else 0.0
-            distribution.append({
-                'index': i,
-                'text': text,
-                'count': count,
-                'percent': pct,
-                'is_correct': (str(i) == str(q.correct_answer or ''))
-            })
-
-    # Nombre de fois que la question est sauvegardée
-    saved_count = SavedQuestion.query.filter_by(question_id=q.id).count()
-
-    return render_template('question_stats.html', question=q,
-                           total_answers=total_answers,
-                           total_success=total_success,
-                           success_rate=success_rate,
-                           distribution=distribution,
-                           saved_count=saved_count)
 
 
 @app.route('/question/new')
