@@ -24,6 +24,7 @@ from admin_themes import list_themes, list_themes_json, list_subthemes_json, lis
 from admin_analyse import analysis_page, heatmap_data, question_stats_page
 from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting
 from admin_keywords import list_keywords_json, create_keyword
+from admin_countries import countries, list_countries_api, new_country, edit_country, create_country, update_country, delete_country
 
 app = Flask(__name__)
 
@@ -311,6 +312,15 @@ app.add_url_rule('/api/questions/sort', 'sort_questions', sort_questions)
 # Keywords routes
 app.add_url_rule('/api/keywords/json', 'list_keywords_json', list_keywords_json)
 app.add_url_rule('/api/keyword', 'create_keyword', create_keyword, methods=['POST'])
+
+# Countries routes
+app.add_url_rule('/countries', 'countries', countries)
+app.add_url_rule('/api/countries', 'list_countries_api', list_countries_api)
+app.add_url_rule('/country/new', 'new_country', new_country)
+app.add_url_rule('/country/<int:country_id>/edit', 'edit_country', edit_country, methods=['GET'])
+app.add_url_rule('/api/country', 'create_country', create_country, methods=['POST'])
+app.add_url_rule('/api/country/<int:country_id>', 'update_country', update_country, methods=['POST', 'PUT'])
+app.add_url_rule('/api/country/<int:country_id>', 'delete_country', delete_country, methods=['DELETE'])
 
 
 def _get_token_serializer():
@@ -1411,134 +1421,6 @@ def delete_profile(profile_id: int):
         return f"Erreur: {str(e)}", 400
 
 
-# ============ Routes pour la gestion des Pays ============
-
-@app.route('/countries')
-def countries():
-    """Page de gestion des pays"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    return render_template('countries.html')
-
-
-@app.route('/api/countries')
-def list_countries_api():
-    """Retourner la liste des pays en HTML (pour HTMX)"""
-    denied = _ensure_perm_api()
-    if denied:
-        return denied
-    search = request.args.get('search', '')
-    query = Country.query
-    
-    if search:
-        query = query.filter(Country.name.like(f'%{search}%'))
-    
-    countries = query.order_by(Country.name).all()
-    return render_template('countries_list.html', countries=countries)
-
-
-@app.route('/country/new')
-def new_country():
-    """Formulaire pour créer un nouveau pays"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    countries = Country.query.order_by(Country.name).all()
-    return render_template('country_form.html', country=None, countries=countries)
-
-
-@app.route('/country/<int:country_id>/edit')
-def edit_country(country_id):
-    """Formulaire pour éditer un pays"""
-    resp = _ensure_admin_page_redirect()
-    if resp:
-        return resp
-    country = Country.query.get_or_404(country_id)
-    countries = Country.query.order_by(Country.name).all()
-    return render_template('country_form.html', country=country, countries=countries)
-
-
-@app.route('/api/country', methods=['POST'])
-def create_country():
-    """Créer un nouveau pays"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        data = request.form
-        
-        country = Country(
-            name=data.get('name'),
-            code=data.get('code'),
-            flag=data.get('flag'),
-            language=data.get('language', 'fr'),
-            description=data.get('description'),
-            translation_id=int(data.get('translation_id')) if data.get('translation_id') else None
-        )
-        
-        db.session.add(country)
-        db.session.commit()
-        
-        # Retourner la liste mise à jour
-        countries = Country.query.order_by(Country.name).all()
-        return render_template('countries_list.html', countries=countries)
-    
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/country/<int:country_id>', methods=['PUT', 'POST'])
-def update_country(country_id):
-    """Mettre à jour un pays existant"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        country = Country.query.get_or_404(country_id)
-        data = request.form
-        
-        # Mettre à jour les champs
-        country.name = data.get('name')
-        country.code = data.get('code')
-        country.flag = data.get('flag')
-        country.language = data.get('language', 'fr')
-        country.description = data.get('description')
-        country.translation_id = int(data.get('translation_id')) if data.get('translation_id') else None
-        country.updated_at = datetime.utcnow()
-        
-        db.session.commit()
-        
-        # Retourner la liste mise à jour
-        countries = Country.query.order_by(Country.name).all()
-        return render_template('countries_list.html', countries=countries)
-    
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
-
-
-@app.route('/api/country/<int:country_id>', methods=['DELETE'])
-def delete_country(country_id):
-    """Supprimer un pays"""
-    try:
-        denied = _ensure_perm_api()
-        if denied:
-            return denied
-        country = Country.query.get_or_404(country_id)
-        
-        # Vérifier si le pays est utilisé dans des questions
-        question_count = country.questions.count()
-        if question_count > 0:
-            return f"Impossible de supprimer ce pays : {question_count} question(s) l'utilisent encore.", 400
-        
-        db.session.delete(country)
-        db.session.commit()
-        
-        countries = Country.query.order_by(Country.name).all()
-        return render_template('countries_list.html', countries=countries)
-    
-    except Exception as e:
-        return f"Erreur: {str(e)}", 400
 
 
 # ============ Interface de Quiz (Jouer) ============
