@@ -23,6 +23,7 @@ from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
 from admin_analyse import analysis_page, heatmap_data, question_stats_page
 from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting
+from admin_keywords import list_keywords_json, create_keyword
 
 app = Flask(__name__)
 
@@ -306,6 +307,10 @@ app.add_url_rule('/api/question/<int:question_id>', 'delete_question', delete_qu
 app.add_url_rule('/api/question/<int:question_id>/toggle-status', 'toggle_question_status', toggle_question_status, methods=['POST'])
 app.add_url_rule('/api/questions/search', 'search_questions', search_questions)
 app.add_url_rule('/api/questions/sort', 'sort_questions', sort_questions)
+
+# Keywords routes
+app.add_url_rule('/api/keywords/json', 'list_keywords_json', list_keywords_json)
+app.add_url_rule('/api/keyword', 'create_keyword', create_keyword, methods=['POST'])
 
 
 def _get_token_serializer():
@@ -1105,63 +1110,6 @@ app.add_url_rule('/questions', 'list_questions', list_questions)
 
 
 
-# ===== Routes pour les mots-clés (Keywords) =====
-
-@app.route('/api/keywords/json')
-def list_keywords_json():
-    """Retourner la liste de tous les mots-clés en JSON (pour l'autocomplétion)"""
-    try:
-        keywords = Keyword.query.order_by(Keyword.name).all()
-        return [kw.to_dict() for kw in keywords]
-    except Exception as e:
-        return {'error': str(e)}, 500
-
-
-@app.route('/api/keyword', methods=['POST'])
-def create_keyword():
-    """Créer un nouveau mot-clé"""
-    try:
-        # Pas besoin de vérifier les permissions ici car c'est appelé depuis le formulaire de question
-        # qui a déjà ses propres contrôles de permissions
-        name = request.form.get('name', '').strip()
-        language = request.form.get('language', 'fr').strip()
-        description = request.form.get('description', '').strip()
-        
-        # Validation
-        if not name:
-            return {'error': 'Le nom du mot-clé est requis'}, 400
-        
-        # Vérifier si le mot-clé existe déjà (normalisation pour éviter doublons)
-        # Normaliser: enlever accents, espaces, traits d'union, mettre en minuscules
-        normalized_name = unidecode(name.lower()).replace('-', '').replace(' ', '').replace('_', '')
-        
-        existing_keywords = Keyword.query.all()
-        for existing in existing_keywords:
-            existing_normalized = unidecode(existing.name.lower()).replace('-', '').replace(' ', '').replace('_', '')
-            if existing_normalized == normalized_name:
-                return {
-                    'error': 'Un mot-clé similaire existe déjà',
-                    'existing_keyword': existing.to_dict()
-                }, 409
-        
-        # Créer le nouveau mot-clé
-        keyword = Keyword(
-            name=name,
-            language=language,
-            description=description if description else None
-        )
-        db.session.add(keyword)
-        db.session.commit()
-        
-        return {
-            'success': True,
-            'keyword': keyword.to_dict(),
-            'message': f'Mot-clé "{name}" créé avec succès'
-        }, 201
-        
-    except Exception as e:
-        db.session.rollback()
-        return {'error': str(e)}, 500
 
 
 # ===== Routes pour les utilisateurs =====
