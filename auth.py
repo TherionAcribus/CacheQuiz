@@ -238,3 +238,52 @@ def _deny_access(reason: str):
     """Retourne un template d'accès refusé avec la raison spécifiée."""
     user = getattr(g, 'current_user', None)
     return render_template('access_denied.html', reason=reason, current_user=user), 200
+
+
+def access_denied_page():
+    """Page d'explication d'accès refusé."""
+    user = getattr(g, 'current_user', None)
+    return render_template('access_denied_full.html', current_user=user)
+
+
+def auth_widget():
+    """Widget d'authentification qui calcule les messages non lus."""
+    from models import ConversationParticipant, ConversationMessage
+    from sqlalchemy import or_
+    from datetime import datetime
+
+    # Calculer le nombre de messages non lus pour l'utilisateur connecté
+    unread = 0
+    has_messages = False
+    user = getattr(g, 'current_user', None)
+    if user and user.password_hash:
+        try:
+            parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
+            print(f"[WIDGET] User {user.username} has {len(parts)} conversation participations")
+
+            # Vérifier si l'utilisateur a au moins des messages (participations aux conversations)
+            has_messages = len(parts) > 0
+
+            for p in parts:
+                last_read = p.last_read_at or datetime.min
+                # Pour les nouveaux participants (last_read_at=None), compter tous les messages sauf ceux de l'utilisateur
+                if p.last_read_at is None:
+                    count = ConversationMessage.query.filter(
+                        ConversationMessage.conversation_id == p.conversation_id,
+                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                    ).count()
+                    print(f"[WIDGET] Conversation {p.conversation_id}: NEW participant, messages={count}")
+                else:
+                    count = ConversationMessage.query.filter(
+                        ConversationMessage.conversation_id == p.conversation_id,
+                        ConversationMessage.created_at > last_read,
+                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
+                    ).count()
+                    print(f"[WIDGET] Conversation {p.conversation_id}: last_read={p.last_read_at}, messages={count}")
+                unread += count
+            print(f"[WIDGET] Total unread for {user.username}: {unread}")
+        except Exception as e:
+            print(f"[WIDGET] Error calculating unread: {e}")
+            unread = 0
+            has_messages = False
+    return render_template('auth_widget.html', unread_count=unread, has_messages=has_messages)

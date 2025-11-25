@@ -17,7 +17,7 @@ except Exception:
 from unidecode import unidecode
 from email_utils import send_email_optional
 from config import config
-from auth import quick_login, logout, widget_login, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access
+from auth import quick_login, logout, widget_login, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, access_denied_page, auth_widget
 from admin_images import images_page, list_images_api, list_images_json, images_gallery_fragment, new_image, edit_image, create_image, update_image, delete_image
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
@@ -195,53 +195,12 @@ def inject_current_user():
 
 
 # ================== Helpers Permissions ==================
-
-@app.route('/access-denied')
-def access_denied_page():
-    """Page d'explication d'accès refusé."""
-    user = getattr(g, 'current_user', None)
-    return render_template('access_denied_full.html', current_user=user)
+# Fonctions déplacées vers auth.py
 
 
 
 
-@app.route('/auth/widget')
-def auth_widget():
-    # Calculer le nombre de messages non lus pour l'utilisateur connecté
-    unread = 0
-    has_messages = False
-    user = getattr(g, 'current_user', None)
-    if user and user.password_hash:
-        try:
-            parts = ConversationParticipant.query.filter_by(user_id=user.id).all()
-            print(f"[WIDGET] User {user.username} has {len(parts)} conversation participations")
 
-            # Vérifier si l'utilisateur a au moins des messages (participations aux conversations)
-            has_messages = len(parts) > 0
-
-            for p in parts:
-                last_read = p.last_read_at or datetime.min
-                # Pour les nouveaux participants (last_read_at=None), compter tous les messages sauf ceux de l'utilisateur
-                if p.last_read_at is None:
-                    count = ConversationMessage.query.filter(
-                        ConversationMessage.conversation_id == p.conversation_id,
-                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
-                    ).count()
-                    print(f"[WIDGET] Conversation {p.conversation_id}: NEW participant, messages={count}")
-                else:
-                    count = ConversationMessage.query.filter(
-                        ConversationMessage.conversation_id == p.conversation_id,
-                        ConversationMessage.created_at > last_read,
-                        or_(ConversationMessage.sender_id.is_(None), ConversationMessage.sender_id != user.id)
-                    ).count()
-                    print(f"[WIDGET] Conversation {p.conversation_id}: last_read={p.last_read_at}, messages={count}")
-                unread += count
-            print(f"[WIDGET] Total unread for {user.username}: {unread}")
-        except Exception as e:
-            print(f"[WIDGET] Error calculating unread: {e}")
-            unread = 0
-            has_messages = False
-    return render_template('auth_widget.html', unread_count=unread, has_messages=has_messages)
 
 
 
@@ -253,6 +212,8 @@ app.add_url_rule('/auth/widget-login', 'widget_login', widget_login, methods=['P
 app.add_url_rule('/auth/upgrade-account', 'upgrade_account', upgrade_account, methods=['POST'])
 app.add_url_rule('/login', 'login_page', login_page, methods=['GET', 'POST'])
 app.add_url_rule('/register', 'register_page', register_page, methods=['GET', 'POST'])
+app.add_url_rule('/access-denied', 'access_denied_page', access_denied_page)
+app.add_url_rule('/auth/widget', 'auth_widget', auth_widget)
 
 # Image routes
 app.add_url_rule('/images', 'images_page', images_page)
@@ -480,47 +441,6 @@ def list_questions():
 
 # Question routes
 app.add_url_rule('/questions', 'list_questions', list_questions)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ============ Interface de Quiz (Jouer) ============
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
