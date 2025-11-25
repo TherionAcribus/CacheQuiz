@@ -34,6 +34,7 @@ from messaging import messages_home, api_messages_list, api_messages_thread, api
 from user_features import forgot_password, reset_password, me_page, toggle_save_question, check_question_saved, saved_questions_page, preferences, delete_account
 from quiz_playlist_generation import _apply_quiz_filters, _interleave_round_robin, _get_user_answered_keywords, _select_questions_with_keyword_logic, _generate_quiz_playlist
 from quiz_gameplay import next_quiz_question, show_quiz_final, cancel_quiz_session, submit_quiz_answer, _quiz_session_keys, _append_score_breakdown, _get_user_double_click_preference, _calculate_score
+from file_utils import uploaded_file, sounds_file
 
 app = Flask(__name__)
 
@@ -341,6 +342,10 @@ app.add_url_rule('/api/messages/thread/<int:conv_id>', 'api_messages_thread', ap
 app.add_url_rule('/api/messages/mark-unread/<int:conv_id>', 'api_messages_mark_unread', api_messages_mark_unread, methods=['POST'])
 app.add_url_rule('/api/messages/delete/<int:conv_id>', 'api_messages_delete', api_messages_delete, methods=['POST'])
 app.add_url_rule('/api/messages/send', 'api_messages_send', api_messages_send, methods=['POST'])
+
+# File serving routes
+app.add_url_rule('/uploads/<path:filename>', 'uploaded_file', uploaded_file)
+app.add_url_rule('/sounds/<path:filename>', 'sounds_file', sounds_file)
 app.add_url_rule('/contact', 'contact_page', contact_page, methods=['GET', 'POST'])
 app.add_url_rule('/api/report/form', 'report_form', report_form)
 app.add_url_rule('/api/report/submit', 'report_submit', report_submit, methods=['POST'])
@@ -368,18 +373,8 @@ def _get_token_serializer():
 
 
 
-# ================== Fichiers uploadés (serveur) ==================
-
-@app.route('/uploads/<path:filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-
-# ================== Fichiers sons ==================
-@app.route('/sounds/<path:filename>')
-def sounds_file(filename):
-    # Sert les fichiers audio depuis ressources/sounds
-    return send_from_directory(app.config['SOUNDS_FOLDER'], filename)
+# ================== Fichiers uploadés et sons ==================
+# Fonctions déplacées vers file_utils.py
 
 
 @app.route('/')
