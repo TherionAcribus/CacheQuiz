@@ -17,7 +17,7 @@ except Exception:
 from unidecode import unidecode
 from email_utils import send_email_optional
 from config import config
-from auth import quick_login, logout, widget_login, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, access_denied_page, auth_widget
+from auth import quick_login, logout, widget_login, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, access_denied_page, auth_widget, load_current_user, inject_current_user
 from admin_images import images_page, list_images_api, list_images_json, images_gallery_fragment, new_image, edit_image, create_image, update_image, delete_image
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
@@ -47,6 +47,10 @@ app.config['SOUNDS_FOLDER'] = os.path.join(os.getcwd(), 'ressources', 'sounds')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
+
+# Gestion de session utilisateur
+app.before_request(load_current_user)
+app.context_processor(inject_current_user)
 
 # Créer les tables
 with app.app_context():
@@ -180,16 +184,7 @@ with app.app_context():
         print(f"[WARN] Erreur lors de l'initialisation des données: {e}")
 
 # ================== Gestion Session / Utilisateur ==================
-
-@app.before_request
-def load_current_user():
-    user_id = session.get('user_id')
-    g.current_user = db.session.get(User, user_id) if user_id else None
-
-
-@app.context_processor
-def inject_current_user():
-    return { 'current_user': getattr(g, 'current_user', None) }
+# Fonctions déplacées vers auth.py
 
 
 

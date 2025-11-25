@@ -287,3 +287,14 @@ def auth_widget():
             unread = 0
             has_messages = False
     return render_template('auth_widget.html', unread_count=unread, has_messages=has_messages)
+
+
+def load_current_user():
+    """Charge l'utilisateur actuel depuis la session avant chaque requête."""
+    user_id = session.get('user_id')
+    g.current_user = db.session.get(User, user_id) if user_id else None
+
+
+def inject_current_user():
+    """Injecte l'utilisateur actuel dans tous les templates."""
+    return { 'current_user': getattr(g, 'current_user', None) }
