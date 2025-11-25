@@ -31,6 +31,7 @@ from quiz_sharing import create_quiz_share_link, show_share_page, track_share_cl
 from messaging import messages_home, api_messages_list, api_messages_thread, api_messages_mark_unread, api_messages_delete, api_messages_send, contact_page, report_form, report_submit
 from user_features import forgot_password, reset_password, me_page, toggle_save_question, check_question_saved, saved_questions_page, preferences, delete_account
 from quiz_playlist_generation import _apply_quiz_filters, _interleave_round_robin, _get_user_answered_keywords, _select_questions_with_keyword_logic, _generate_quiz_playlist
+from quiz_gameplay import next_quiz_question, show_quiz_final, cancel_quiz_session, submit_quiz_answer, _quiz_session_keys, _append_score_breakdown, _get_user_double_click_preference, _calculate_score
 
 app = Flask(__name__)
 
@@ -351,6 +352,12 @@ app.add_url_rule('/api/quiz/create-share-link', 'create_quiz_share_link', create
 app.add_url_rule('/share/<share_uuid>', 'show_share_page', show_share_page)
 app.add_url_rule('/share/<share_uuid>/click', 'track_share_click', track_share_click)
 
+# Quiz gameplay routes
+app.add_url_rule('/api/quiz/next', 'next_quiz_question', next_quiz_question)
+app.add_url_rule('/api/quiz/final', 'show_quiz_final', show_quiz_final)
+app.add_url_rule('/api/quiz/cancel', 'cancel_quiz_session', cancel_quiz_session, methods=['POST'])
+app.add_url_rule('/api/quiz/answer', 'submit_quiz_answer', submit_quiz_answer, methods=['POST'])
+
 # Messaging routes
 app.add_url_rule('/messages', 'messages_home', messages_home)
 app.add_url_rule('/api/messages/list', 'api_messages_list', api_messages_list)
@@ -480,32 +487,6 @@ def play_quiz_with_rules(slug: str):
 
 
 
-def _quiz_session_keys(rule_set_slug: str):
-    """Construit des clés de session isolées par utilisateur et par set.
-    Retourne (playlist_key, index_key, score_key, correct_key, breakdown_key, streak_key, perfect_key, user_id_str)
-    """
-    user_id_str = str(g.current_user.id) if getattr(g, 'current_user', None) else 'anon'
-    prefix = f"{user_id_str}:{rule_set_slug}"
-    playlist_key = f"quiz_playlist:{prefix}"
-    index_key = f"quiz_playlist_index:{prefix}"
-    score_key = f"quiz_score:{prefix}"
-    correct_key = f"quiz_correct_answers:{prefix}"
-    breakdown_key = f"quiz_score_breakdown:{prefix}"
-    streak_key = f"quiz_combo_streak:{prefix}"
-    perfect_key = f"quiz_perfect_awarded:{prefix}"
-    return playlist_key, index_key, score_key, correct_key, breakdown_key, streak_key, perfect_key, user_id_str
-
-
-def _append_score_breakdown(breakdown_key: str, event: dict):
-    """Ajoute un événement de score dans la liste stockée en session."""
-    try:
-        history = session.get(breakdown_key)
-        if not isinstance(history, list):
-            history = []
-        history.append(event)
-        session[breakdown_key] = history
-    except Exception as exc:
-        print(f"[QUIZ SCORE] Impossible d'ajouter le breakdown: {exc}")
 
 
 
@@ -514,15 +495,8 @@ def _append_score_breakdown(breakdown_key: str, event: dict):
 
 
 
-def _get_user_double_click_preference() -> bool:
-    try:
-        if getattr(g, 'current_user', None):
-            prefs = g.current_user.get_preferences()
-            if 'double_click_validation' in prefs:
-                return bool(prefs.get('double_click_validation'))
-    except Exception:
-        pass
-    return True
+
+
 
 
 @app.route('/play')
@@ -597,8 +571,6 @@ def play_quiz_by_slug(slug):
                            auto_start=auto_start)
 
 
-@app.route('/api/quiz/next')
-def next_quiz_question():
     """Retourne la prochaine question du quiz en consommant une playlist pré-générée.
     Si aucune playlist n'existe encore pour ce set, la génère et la stocke en session.
     """
@@ -895,8 +867,6 @@ def next_quiz_question():
         return f"Erreur: {str(e)}", 400
 
 
-@app.route('/api/quiz/final')
-def show_quiz_final():
     """Affiche le récapitulatif final du quiz (utilisé après l'animation perfect)."""
     try:
         params = request.args
@@ -947,8 +917,6 @@ def show_quiz_final():
         return f"Erreur: {str(e)}", 400
 
 
-@app.route('/api/quiz/cancel', methods=['POST'])
-def cancel_quiz_session():
     """Marque la session de quiz en cours comme abandonnée pour l'utilisateur connecté et le set fourni."""
     try:
         if not getattr(g, 'current_user', None):
@@ -978,50 +946,6 @@ def cancel_quiz_session():
 
 
 
-def _calculate_score(rule_set, question, is_correct):
-    """Calcule le score de la question et retourne le détail du calcul."""
-    breakdown = {
-        'type': 'question',
-        'question_id': question.id if question else None,
-        'question_label': (question.question_text[:120] + '…') if (question and question.question_text and len(question.question_text) > 120) else (question.question_text if question else ''),
-        'difficulty': question.difficulty_level if question else None,
-        'was_correct': bool(is_correct),
-        'base_points': rule_set.scoring_base_points if rule_set and rule_set.scoring_base_points is not None else 0,
-        'difficulty_bonus': 0,
-        'difficulty_multiplier': 1.0,
-        'question_points': 0,
-        'combo_bonus': 0,
-        'total_awarded': 0,
-        'combo_streak': 0,
-        'question_index': None,
-    }
-
-    if not rule_set or not is_correct:
-        return 0, breakdown
-
-    base_points = breakdown['base_points']
-    points = base_points
-
-    if rule_set.scoring_difficulty_bonus_type == 'add':
-        bonus_map = rule_set.get_difficulty_bonus_map()
-        bonus = bonus_map.get(str(question.difficulty_level), 0) if question else 0
-        breakdown['difficulty_bonus'] = bonus
-        points += bonus
-    elif rule_set.scoring_difficulty_bonus_type == 'mult':
-        coeff_map = rule_set.get_difficulty_bonus_map()
-        coeff = coeff_map.get(str(question.difficulty_level), 1.0) if question else 1.0
-        try:
-            coeff = float(coeff)
-        except (TypeError, ValueError):
-            coeff = 1.0
-        points = int(round(base_points * coeff))
-        breakdown['difficulty_multiplier'] = coeff
-        breakdown['difficulty_bonus'] = points - base_points
-
-    breakdown['question_points'] = int(points)
-    breakdown['total_awarded'] = int(points)
-
-    return int(points), breakdown
 
 
 @app.route('/api/debug/quiz-questions')
@@ -1130,8 +1054,6 @@ def debug_quiz_questions():
         return {'error': str(e)}, 400
 
 
-@app.route('/api/quiz/answer', methods=['POST'])
-def submit_quiz_answer():
     """Valider la réponse de l'utilisateur, mettre à jour les stats et retourner le résultat."""
     try:
         question_id_raw = (request.form.get('question_id') or '').strip()

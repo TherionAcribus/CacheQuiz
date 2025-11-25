@@ -202,13 +202,13 @@ def _select_questions_with_keyword_logic(
 
     # Statistiques finales
     if stats['perfect']:
-        stats['conditions_met'] = ['Toutes les conditions respectées ✅']
+        stats['conditions_met'] = ['Toutes les conditions respectées OK']
     else:
         fallback_counts = {}
         for fb in stats['fallback_used']:
             fallback_counts[fb] = fallback_counts.get(fb, 0) + 1
         stats['conditions_met'] = [
-            f"⚠️ {count}x {reason.replace('_', ' ')}"
+            f"ATTENTION {count}x {reason.replace('_', ' ')}"
             for reason, count in fallback_counts.items()
         ]
 
@@ -229,7 +229,7 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
     En mode 'auto': respecte les quotas par difficulté avec gestion keywords.
     """
     try:
-        print(f"\n[QUIZ PLAYLIST] === Génération playlist pour {rule_set.name} ===")
+        print(f"\n[QUIZ PLAYLIST] === Generation playlist pour {rule_set.name} ===")
 
         # Récupérer les IDs déjà vus par l'utilisateur (si connecté)
         seen_ids = set()
@@ -262,9 +262,9 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
 
             # Logs
             if stats['perfect']:
-                print(f"[QUIZ PLAYLIST] ✅ CONDITIONS PARFAITES: {', '.join(stats['conditions_met'])}")
+                print(f"[QUIZ PLAYLIST] CONDITIONS PARFAITES: {', '.join(stats['conditions_met'])}")
             else:
-                print("[QUIZ PLAYLIST] ⚠️ COMPROMIS NÉCESSAIRES:")
+                print("[QUIZ PLAYLIST] COMPROMIS NECESSAIRES:")
                 for condition in stats['conditions_met']:
                     print(f"[QUIZ PLAYLIST]    {condition}")
 
@@ -350,22 +350,22 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         # Vérifier si toutes les conditions sont parfaites
         all_perfect = all(stat['perfect'] for stat in all_stats)
         if all_perfect:
-            print("[QUIZ PLAYLIST] ✅ CONDITIONS PARFAITES pour toutes les questions !")
+            print("[QUIZ PLAYLIST] CONDITIONS PARFAITES pour toutes les questions !")
         else:
-            print("[QUIZ PLAYLIST] ⚠️ COMPROMIS NÉCESSAIRES:")
+            print("[QUIZ PLAYLIST] COMPROMIS NECESSAIRES:")
             for stat in all_stats:
                 if not stat['perfect']:
                     print(f"[QUIZ PLAYLIST]   Difficulté {stat['difficulty']}: {', '.join(stat['conditions'])}")
 
         if len(playlist) < expected_total:
-            print("[QUIZ PLAYLIST] ⚠️ Playlist incomplète. Pool insuffisant pour certains quotas.")
+            print("[QUIZ PLAYLIST] Playlist incomplete. Pool insuffisant pour certains quotas.")
 
         print(f"[QUIZ PLAYLIST] Keywords uniques utilisés: {len(used_keywords_global)}")
         print("[QUIZ PLAYLIST] ==================\n")
 
         return playlist
     except Exception as e:
-        print(f"[QUIZ PLAYLIST] ❌ ERREUR génération playlist: {e}")
+        print(f"[QUIZ PLAYLIST] ERREUR generation playlist: {e}")
         import traceback
         traceback.print_exc()
         return []
