@@ -46,6 +46,66 @@ def _apply_quiz_filters(query, params):
     return query
 
 
+def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None) -> dict:
+    """
+    Calcule les statistiques du pool de questions pour un rule_set donné.
+    Retourne: {
+        'total_pool': int,
+        'questions_per_game': int,
+        'user_seen_count': int, # Seulement si user_id fourni
+        'freshness': str # 'new', 'mixed', 'all_seen', 'unknown'
+    }
+    """
+    stats = {
+        'total_pool': 0,
+        'questions_per_game': 0,
+        'user_seen_count': 0,
+        'freshness': 'unknown'
+    }
+
+    if not rule_set:
+        return stats
+
+    # 1. Calculer le nombre de questions par partie
+    if rule_set.question_selection_mode == 'manual':
+        stats['questions_per_game'] = len(rule_set.selected_questions)
+        # Pour le mode manuel, le pool EST la sélection
+        pool_query = Question.query.filter(Question.id.in_([q.id for q in rule_set.selected_questions if q.is_published]))
+    else:
+        qmap = rule_set.get_questions_per_difficulty()
+        stats['questions_per_game'] = sum(int(v) for v in qmap.values() if v)
+        
+        # 2. Construire la requête du pool
+        base_params = {'rule_set': rule_set.slug}
+        pool_query = _apply_quiz_filters(Question.query.filter(Question.is_published.is_(True)), base_params)
+
+    # Compter le pool total
+    stats['total_pool'] = pool_query.count()
+
+    # 3. Stats utilisateur
+    if user_id:
+        # Récupérer les IDs du pool
+        pool_ids = [r.id for r in pool_query.with_entities(Question.id).all()]
+        
+        if pool_ids:
+            seen_count = UserQuestionStat.query.filter(
+                UserQuestionStat.user_id == user_id,
+                UserQuestionStat.question_id.in_(pool_ids)
+            ).count()
+            stats['user_seen_count'] = seen_count
+            
+            unseen_count = stats['total_pool'] - seen_count
+            
+            if unseen_count == 0:
+                stats['freshness'] = 'all_seen'
+            elif unseen_count >= stats['questions_per_game']:
+                stats['freshness'] = 'new'
+            else:
+                stats['freshness'] = 'mixed'
+    
+    return stats
+
+
 def _interleave_round_robin(lists_by_difficulty):
     """Intercale les listes de questions par difficulté (round-robin) pour varier l'ordre.
     Entrée: dict[int,list[int]]

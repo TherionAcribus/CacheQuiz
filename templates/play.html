@@ -140,6 +140,31 @@ endblock %}
         </label>
     </div>
 
+    {% if rule_set_stats %}
+    <div class="rule-details">
+        <h3>📊 Statistiques du Pool</h3>
+        <ul>
+            <li><strong>Format :</strong> {{ rule_set_stats.questions_requested }} questions tirées aléatoirement parmi {{ rule_set_stats.total_pool }} disponibles</li>
+            
+            {% if current_user and current_user.password_hash %}
+            <li><strong>Votre historique :</strong> {{ rule_set_stats.user_seen_count }} questions déjà jouées sur ce pool</li>
+            <li>
+                <strong>Type de partie :</strong>
+                {% if rule_set_stats.freshness == 'new' %}
+                    <span style="color: #4ade80; font-weight: bold;">✨ 100% Inédit</span> (Questions jamais vues)
+                {% elif rule_set_stats.freshness == 'mixed' %}
+                    <span style="color: #fbbf24; font-weight: bold;">🔀 Mixte</span> (Nouvelles + Révisions)
+                {% elif rule_set_stats.freshness == 'all_seen' %}
+                    <span style="color: #f87171; font-weight: bold;">🔄 Révision</span> (Toutes déjà vues)
+                {% else %}
+                    <span>Inconnu</span>
+                {% endif %}
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
     <div class="rule-details">
         <h3>Règles appliquées</h3>
         <ul>

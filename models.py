@@ -197,6 +197,20 @@ class User(db.Model):
     # Relation inverse avec les questions
     questions = db.relationship('Question', back_populates='author_user', lazy='dynamic')
 
+    @property
+    def is_authenticated(self):
+        """Retourne True car c'est un utilisateur authentifié (par opposition à anonyme)."""
+        return True
+
+    @property
+    def is_anonymous(self):
+        """Retourne False car ce n'est pas un utilisateur anonyme."""
+        return False
+
+    def get_id(self):
+        """Retourne l'identifiant unique sous forme de chaîne."""
+        return str(self.id)
+
     def __repr__(self):
         return f'<User {self.id}: {self.username}>'
 

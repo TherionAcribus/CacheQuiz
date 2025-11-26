@@ -1,7 +1,7 @@
 import random
 from flask import render_template, request, redirect, url_for, session, g
 from models import db, Question, QuizRuleSet, UserQuestionStat, QuestionAnswerStat, UserQuizSession, BroadTheme, SpecificTheme, AnswerImageLink
-from quiz_playlist_generation import _apply_quiz_filters, _generate_quiz_playlist
+from quiz_playlist_generation import _apply_quiz_filters, _generate_quiz_playlist, get_rule_set_stats
 from datetime import datetime
 
 
@@ -256,9 +256,15 @@ def next_quiz_question():
                         history=history_raw or ''
                     )
 
+                rule_set_stats = None
+                if rule_set:
+                    user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
+                    rule_set_stats = get_rule_set_stats(rule_set, user_id)
+
                 return render_template(
                     'quiz_final.html',
                     rule_set=rule_set,
+                    rule_set_stats=rule_set_stats,
                     total_questions=total_questions,
                     total_score=total_score,
                     total_correct_answers=total_correct_answers,
@@ -427,9 +433,15 @@ def show_quiz_final():
 
         quick_double_click = bool(session.get('quick_double_click_enabled', False))
 
+        rule_set_stats = None
+        if rule_set:
+            user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
+            rule_set_stats = get_rule_set_stats(rule_set, user_id)
+
         return render_template(
             'quiz_final.html',
             rule_set=rule_set,
+            rule_set_stats=rule_set_stats,
             total_questions=total_questions,
             total_score=total_score,
             total_correct_answers=total_correct_answers,

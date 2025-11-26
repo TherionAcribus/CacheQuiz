@@ -184,22 +184,6 @@ with app.app_context():
         db.session.rollback()
         print(f"[WARN] Erreur lors de l'initialisation des données: {e}")
 
-# ================== Gestion Session / Utilisateur ==================
-# Fonctions déplacées vers auth.py
-
-
-
-
-# ================== Helpers Permissions ==================
-# Fonctions déplacées vers auth.py
-
-
-
-
-
-
-
-
 
 # Auth routes
 app.add_url_rule('/auth/quick-login', 'quick_login', quick_login, methods=['POST'])
@@ -363,19 +347,6 @@ app.add_url_rule('/delete-account', 'delete_account', delete_account, methods=['
 
 def _get_token_serializer():
     return URLSafeTimedSerializer(app.config['SECRET_KEY'], salt='password-reset')
-
-
-
-
-
-
-
-
-
-
-# ================== Fichiers uploadés et sons ==================
-# Fonctions déplacées vers file_utils.py
-
 
 @app.route('/')
 def index():

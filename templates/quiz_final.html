@@ -179,7 +179,22 @@
         </details>
         {% endif %}
 
-        <div class="final-actions">
+          <div class="final-actions">
+              {% if rule_set_stats and current_user and current_user.password_hash %}
+              <div class="next-quiz-stats" style="margin-bottom: 1rem; font-size: 0.9rem;">
+                {% if rule_set_stats.freshness == 'new' %}
+                    <span style="color: #4ade80;">✨ Prochain quiz 100% inédit possible</span>
+                {% elif rule_set_stats.freshness == 'mixed' %}
+                    <span style="color: #fbbf24;">🔀 Prochain quiz avec mix nouvelles/révisions</span>
+                {% elif rule_set_stats.freshness == 'all_seen' %}
+                    <span style="color: #f87171;">🔄 Prochain quiz en mode révision (toutes vues)</span>
+                {% endif %}
+                <div style="color: var(--muted-color); font-size: 0.8rem;">
+                    (Reste {{ rule_set_stats.total_pool - rule_set_stats.user_seen_count }} questions inédites)
+                </div>
+            </div>
+            {% endif %}
+
             <button class="btn btn-primary btn-large"
                     type="button"
                     hx-get="/api/quiz/next"

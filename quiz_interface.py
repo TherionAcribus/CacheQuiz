@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, session, g
 from models import db, QuizRuleSet, UserQuizSession
 from datetime import datetime
 from quiz_gameplay import _get_user_double_click_preference
+from quiz_playlist_generation import get_rule_set_stats
 
 
 def play_quiz_with_rules(slug: str):
@@ -41,9 +42,15 @@ def play_quiz():
         quick_double_click_enabled = quick_double_click_pref
         session['quick_double_click_enabled'] = quick_double_click_enabled
 
+    rule_set_stats = None
+    if rule_set:
+        user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
+        rule_set_stats = get_rule_set_stats(rule_set, user_id)
+
     return render_template('play.html',
                            rule_sets=rule_sets,
                            rule_set=rule_set,
+                           rule_set_stats=rule_set_stats,
                            quick_double_click=quick_double_click_enabled,
                            auto_start=auto_start)
 
@@ -72,8 +79,12 @@ def play_quiz_by_slug(slug):
     # Auto-démarrage activé par défaut pour cette route
     auto_start = True
 
+    user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
+    rule_set_stats = get_rule_set_stats(rule_set, user_id)
+
     return render_template('play.html',
                            rule_sets=rule_sets,
                            rule_set=rule_set,
+                           rule_set_stats=rule_set_stats,
                            quick_double_click=quick_double_click_enabled,
                            auto_start=auto_start)
