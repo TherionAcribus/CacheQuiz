@@ -13,18 +13,19 @@
     </thead>
     <tbody>
         {% for d in diff_rows %}
-        {% set row_total = 0 %}
         <tr>
             <th class="sticky-col">{{ d }}</th>
+            {% set row_values = [] %}
             {% for col in theme_columns %}
                 {% set val = counts.get(d, {}).get(col.id, 0) %}
-                {% set row_total = row_total + val %}
+                {% set _ = row_values.append(val) %}
                 {% set intensity = (val / max_count) if max_count > 0 else 0 %}
                 {% set alpha = 0.08 + intensity * 0.72 %}
                 <td style="background: rgba(47,126,123, {{ '%.3f' % alpha }}); color: {{ 'white' if intensity > 0.55 else '#123' }};">
                     <span class="cell-count">{{ val }}</span>
                 </td>
             {% endfor %}
+            {% set row_total = row_values | sum %}
             <td class="row-total"><strong>{{ row_total }}</strong></td>
         </tr>
         {% endfor %}
@@ -32,15 +33,17 @@
     <tfoot>
         <tr>
             <th>Total</th>
-            {% set grand_total = 0 %}
+            {% set col_totals = [] %}
             {% for col in theme_columns %}
-                {% set col_total = 0 %}
+                {% set col_values = [] %}
                 {% for d in diff_rows %}
-                    {% set col_total = col_total + (counts.get(d, {}).get(col.id, 0)) %}
+                    {% set _ = col_values.append(counts.get(d, {}).get(col.id, 0)) %}
                 {% endfor %}
-                {% set grand_total = grand_total + col_total %}
+                {% set col_total = col_values | sum %}
+                {% set _ = col_totals.append(col_total) %}
                 <th>{{ col_total }}</th>
             {% endfor %}
+            {% set grand_total = col_totals | sum %}
             <th>{{ grand_total }}</th>
         </tr>
     </tfoot>
