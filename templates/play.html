@@ -1043,9 +1043,24 @@ endblock %}
         document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('upgrade-modal');
             if (modal) {
+                // Empêcher la fermeture quand on clique sur le contenu de la modale
+                const modalContent = modal.querySelector('.modal-content');
+                if (modalContent) {
+                    modalContent.addEventListener('click', function (e) {
+                        e.stopPropagation(); // Empêcher la propagation jusqu'à l'overlay
+                    });
+                }
+
                 modal.addEventListener('click', function (e) {
                     if (e.target === modal) {
-                        hideUpgradeModal();
+                        // Vérifier si l'utilisateur est en train de sélectionner du texte
+                        const selection = window.getSelection();
+                        const hasSelection = selection && selection.toString().length > 0;
+
+                        // Ne fermer que si aucun texte n'est sélectionné
+                        if (!hasSelection) {
+                            hideUpgradeModal();
+                        }
                     }
                 });
 
