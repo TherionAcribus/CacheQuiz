@@ -40,7 +40,7 @@
                 </button>
                 <button class="btn-icon btn-danger" hx-delete="/api/question/{{ question.id }}"
                     hx-target="#questions-list" hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
-                    title="Supprimer">
+                    hx-on::after-request="updateStats()" title="Supprimer">
                     🗑️
                 </button>
             </div>

@@ -22,7 +22,7 @@ from admin_images import images_page, list_images_api, list_images_json, images_
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
 from admin_analyse import analysis_page, heatmap_data, question_stats_page
-from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting
+from admin_questions import new_question, view_question, edit_question, create_question, get_question_detail, update_question, delete_question, toggle_question_status, search_questions, sort_questions, _apply_sorting, get_stats
 from admin_keywords import list_keywords_json, create_keyword
 from admin_countries import countries, list_countries_api, new_country, edit_country, create_country, update_country, delete_country
 from admin_profiles import profiles_page, list_profiles, new_profile, edit_profile, create_profile, update_profile, delete_profile
@@ -258,6 +258,7 @@ app.add_url_rule('/api/question/<int:question_id>', 'delete_question', delete_qu
 app.add_url_rule('/api/question/<int:question_id>/toggle-status', 'toggle_question_status', toggle_question_status, methods=['POST'])
 app.add_url_rule('/api/questions/search', 'search_questions', search_questions)
 app.add_url_rule('/api/questions/sort', 'sort_questions', sort_questions)
+app.add_url_rule('/api/stats', 'get_stats', get_stats)
 
 # Keywords routes
 app.add_url_rule('/api/keywords/json', 'list_keywords_json', list_keywords_json)
@@ -377,8 +378,8 @@ def admin_page():
     total_questions = Question.query.count()
     online_questions = Question.query.filter_by(is_published=True).count()
 
-    return render_template('index.html', 
-                           total_questions=total_questions, 
+    return render_template('index.html',
+                           total_questions=total_questions,
                            online_questions=online_questions)
 
 

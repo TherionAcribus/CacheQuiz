@@ -52,7 +52,7 @@
         <div class="stat-icon">📚</div>
         <div class="stat-info">
             <span class="stat-label">Total Questions</span>
-            <span id="total-questions-count" class="stat-value">{{ total_questions }} / {{ total_questions }}</span>
+            <span id="total-questions-count" class="stat-value">{{ total_questions }}</span>
         </div>
     </div>
     <div class="stat-card">
@@ -497,5 +497,16 @@
         currentView = savedView;
         toggleView(savedView);
     });
+
+    // Fonction pour mettre à jour les statistiques
+    function updateStats() {
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-questions-count').textContent = data.total_questions;
+                document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = data.online_questions;
+            })
+            .catch(error => console.error('Erreur lors de la mise à jour des statistiques:', error));
+    }
 </script>
 {% endblock %}

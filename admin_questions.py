@@ -4,6 +4,21 @@ from auth import _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, _h
 from datetime import datetime
 
 
+def get_stats():
+    """API endpoint pour récupérer les statistiques actuelles"""
+    denied = _ensure_perm_api()
+    if denied:
+        return denied
+
+    total_questions = Question.query.count()
+    online_questions = Question.query.filter_by(is_published=True).count()
+
+    return {
+        'total_questions': total_questions,
+        'online_questions': online_questions
+    }
+
+
 def new_question():
     """Formulaire pour créer une nouvelle question"""
     resp = _ensure_admin_page_redirect()

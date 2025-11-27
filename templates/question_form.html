@@ -7,7 +7,7 @@
 
     <form {% if question %} hx-post="/api/question/{{ question.id }}" {% else %} hx-post="/api/question" {% endif %}
         hx-target="#questions-list" hx-swap="innerHTML"
-        hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden')">
+        hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden'); updateStats()">
 
         <div class="form-grid-rows">
             <div class="form-row">

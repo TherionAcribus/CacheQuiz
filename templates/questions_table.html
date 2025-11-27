@@ -103,7 +103,7 @@
                 </td>
                 <td>
                     <button class="status-toggle-btn" hx-post="/api/question/{{ question.id }}/toggle-status"
-                        hx-target="this" hx-swap="innerHTML" title="Cliquer pour changer le statut">
+                        hx-target="this" hx-swap="innerHTML" hx-on::after-request="updateStats()" title="Cliquer pour changer le statut">
                         {% if question.is_published %}
                         <span class="badge badge-published">En ligne</span>
                         {% else %}
@@ -126,7 +126,7 @@
                     </button>
                     <button class="btn-icon btn-danger" hx-delete="/api/question/{{ question.id }}"
                         hx-target="#questions-list" hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
-                        title="Supprimer">
+                        hx-on::after-request="updateStats()" title="Supprimer">
                         🗑️
                     </button>
                     <a href="/question/{{ question.id }}/stats" class="btn btn-outline btn-small"
