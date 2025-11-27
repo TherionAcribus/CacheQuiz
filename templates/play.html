@@ -209,6 +209,16 @@ endblock %}
         </ul>
     </div>
 
+    <div class="rule-details">
+        <h3>🖥️ Contrôles Clavier</h3>
+        <ul>
+            <li><strong>1, 2, 3, 4 :</strong> Sélectionner une réponse (fonctionne avec le pavé numérique)</li>
+            <li><strong>Double appui (1-4) :</strong> Sélectionner et valider immédiatement (si "Double-clic pour valider" activé)</li>
+            <li><strong>Espace :</strong> Action principale (Valider réponse / Question suivante / Démarrer quiz)</li>
+            <li><strong>Entrée :</strong> Valider la réponse sélectionnée</li>
+        </ul>
+    </div>
+
     <div class="rule-actions">
         <a href="/play" class="btn btn-secondary">Choisir un autre Quiz</a>
     </div>
@@ -1240,6 +1250,106 @@ endblock %}
             });
         });
     </script>
+    
+    <!-- Script de navigation au clavier -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const DOUBLE_TAP_DELAY = 350;
+            let lastKey = null;
+            let lastKeyTime = 0;
+
+            document.addEventListener('keydown', function(e) {
+                // Ignorer si on écrit dans un champ texte (text, password, email, etc.) ou textarea
+                // On laisse passer les inputs type radio/checkbox pour que le jeu fonctionne même avec le focus dessus
+                const target = e.target;
+                if (target.tagName === 'TEXTAREA' || 
+                   (target.tagName === 'INPUT' && !['radio', 'checkbox', 'button', 'submit', 'reset'].includes(target.type)) ||
+                   document.querySelector('.modal-overlay[style*="flex"]')) {
+                    return;
+                }
+
+                const code = e.code;
+                const stage = document.getElementById('quiz-stage');
+                if (!stage) return;
+
+                // Mappage des touches 1-4 (pavé numérique ou rangée du haut)
+                let answerIndex = -1;
+                if (code === 'Digit1' || code === 'Numpad1') answerIndex = 1;
+                else if (code === 'Digit2' || code === 'Numpad2') answerIndex = 2;
+                else if (code === 'Digit3' || code === 'Numpad3') answerIndex = 3;
+                else if (code === 'Digit4' || code === 'Numpad4') answerIndex = 4;
+
+                if (answerIndex > 0) {
+                    const input = stage.querySelector(`input[name="selected_answer"][value="${answerIndex}"]`);
+                    if (input) {
+                        e.preventDefault();
+                        
+                        // Simulation du clic sur le label parent pour déclencher l'UI et la sélection
+                        const label = input.closest('.answer-frame');
+                        if (label) {
+                            label.click(); // Cela coche l'input via le comportement natif du label
+                            
+                            // Gestion du double appui pour valider
+                            const now = performance.now();
+                            const isSameKey = lastKey === code;
+                            
+                            // Vérifier si le double clic est activé (soit via config globale, soit via sessionStorage)
+                            let doubleClickEnabled = false;
+                            if (window.quickDoubleClickEnabled) {
+                                doubleClickEnabled = true;
+                            } else {
+                                try {
+                                    doubleClickEnabled = window.sessionStorage.getItem('quickDoubleClickCheckbox') === 'true';
+                                } catch(err) {}
+                            }
+
+                            if (doubleClickEnabled && isSameKey && (now - lastKeyTime < DOUBLE_TAP_DELAY)) {
+                                // Déclencher la validation
+                                const form = stage.querySelector('form.answers-grid');
+                                if (form) {
+                                    const submitBtn = form.querySelector('button[type="submit"]');
+                                    if (submitBtn) submitBtn.click();
+                                    else if (form.requestSubmit) form.requestSubmit();
+                                }
+                                lastKey = null; // Reset
+                            } else {
+                                lastKey = code;
+                                lastKeyTime = now;
+                            }
+                        }
+                    }
+                }
+                
+                // Touche Espace : Action principale (Suivant / Valider / Démarrer)
+                else if (code === 'Space') {
+                    e.preventDefault(); // Empêcher le scroll
+
+                    // 1. Priorité : Bouton "Question suivante" (dans le résultat)
+                    const nextBtn = stage.querySelector('.result-actions button[hx-get*="/api/quiz/next"]');
+                    if (nextBtn) {
+                        nextBtn.click();
+                        return;
+                    }
+
+                    // 2. Priorité : Bouton "Valider" (dans la question)
+                    // On vérifie d'abord si une réponse est sélectionnée pour éviter un submit invalide qui ne fait rien
+                    const validateBtn = stage.querySelector('.validation-frame button[type="submit"]');
+                    if (validateBtn) {
+                        validateBtn.click();
+                        return;
+                    }
+
+                    // 3. Priorité : Bouton "Démarrer" (écran initial)
+                    const startBtn = document.getElementById('start-quiz-btn');
+                    if (startBtn && startBtn.offsetParent !== null) { // Vérifie s'il est visible
+                        startBtn.click();
+                        return;
+                    }
+                }
+            });
+        });
+    </script>
+
     <!-- Sons du jeu (hors zone swap HTMX) -->
     <audio id="sfx-click" src="/sounds/click.mp3" preload="auto"></audio>
     <audio id="sfx-validate" src="/sounds/validation.mp3" preload="auto"></audio>
