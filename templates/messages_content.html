@@ -18,6 +18,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Modale de confirmation de suppression de conversation -->
+  <div id="deleteConversationModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="padding: 2rem; max-width: 500px;">
+      <h3 style="color: var(--danger-color); margin-bottom: 1rem;">⚠️ Confirmer la suppression</h3>
+      <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+        Vous êtes sur le point de supprimer cette conversation de votre boîte de réception.<br><br>
+        Cette action entraînera :
+      </p>
+      <ul style="margin-bottom: 2rem; color: var(--text-color);">
+        <li>• La suppression définitive de tous les messages</li>
+        <li>• La perte de l'historique de cette conversation</li>
+        <li>• L'impossibilité de récupérer ces données</li>
+      </ul>
+      <p style="color: var(--danger-color); font-weight: bold; margin-bottom: 2rem;">
+        Cette action est IRRÉVERSIBLE !
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="hideDeleteConversationModal()">Annuler</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn" style="min-width: 120px;" onclick="confirmDeleteConversation()">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -260,7 +285,9 @@ function adjustHtmxTargetsForModal() {
 }
 
 // Gestion du clavier virtuel sur mobile
-let originalViewportHeight = window.innerHeight;
+if (typeof originalViewportHeight === 'undefined') {
+  var originalViewportHeight = window.innerHeight;
+}
 function handleVirtualKeyboard() {
   const currentHeight = window.innerHeight;
   const modal = document.getElementById('conversation-modal');
@@ -321,4 +348,72 @@ window.addEventListener('resize', function() {
   }
   adjustLinksForMobile(); // Réajuster les liens après redimensionnement
 });
+
+// Fonctions pour la modale de confirmation de suppression de conversation
+function showDeleteConversationModal(convId) {
+  // Stocker l'ID dans l'attribut data du bouton de confirmation
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  confirmBtn.setAttribute('data-conversation-id', convId);
+  document.getElementById('deleteConversationModal').style.display = 'flex';
+}
+
+function hideDeleteConversationModal() {
+  document.getElementById('deleteConversationModal').style.display = 'none';
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  confirmBtn.removeAttribute('data-conversation-id');
+}
+
+function confirmDeleteConversation() {
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const convId = confirmBtn.getAttribute('data-conversation-id');
+
+  if (!convId) {
+    console.error('Aucun ID de conversation trouvé');
+    return;
+  }
+
+  // Utiliser HTMX pour effectuer la suppression
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Suppression...';
+
+  // Déterminer la target appropriée : #messages-layout pour desktop, #modal-thread pour mobile
+  const isMobileModalOpen = document.getElementById('conversation-modal').style.display !== 'none';
+  const target = isMobileModalOpen ? '#modal-thread' : '#messages-layout';
+
+  // Fermer d'abord la modale de confirmation
+  hideDeleteConversationModal();
+
+  // Créer une requête HTMX manuellement
+  htmx.ajax('POST', `/api/messages/delete/${convId}`, {
+    target: target,
+    swap: 'outerHTML'
+  }).then(() => {
+    // Fermer la modale mobile si elle était ouverte
+    if (isMobileModalOpen) {
+      closeConversationModal();
+    }
+  }).catch(() => {
+    // En cas d'erreur, rouvrir la modale de confirmation
+    showDeleteConversationModal(convId);
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Supprimer';
+    alert('Erreur lors de la suppression. Veuillez réessayer.');
+  });
+}
+
+// Fermer la modale en cliquant sur l'overlay
+document.addEventListener('click', function (event) {
+  const modal = document.getElementById('deleteConversationModal');
+  if (event.target === modal) {
+    hideDeleteConversationModal();
+  }
+});
+
+// Fermer avec Échap
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    hideDeleteConversationModal();
+  }
+});
+
 </script>
