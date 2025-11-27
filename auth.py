@@ -140,7 +140,31 @@ def upgrade_account():
         for error in errors:
             error_html += f"<li>{error}</li>"
         error_html += "</ul></div>"
-        return error_html
+        # Retourner le formulaire complet avec les erreurs
+        return f"""
+        <form id="upgrade-form" hx-post="/auth/upgrade-account" hx-target="#upgrade-form" hx-swap="outerHTML">
+            {error_html}
+            <div class="form-group">
+                <label for="email">Email (optionnel)</label>
+                <input type="email" id="email" name="email" value="{email or ''}" placeholder="votre.email@exemple.com">
+                <small>Pour récupérer votre compte si nécessaire</small>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe *</label>
+                <input type="password" id="password" name="password" value="{password}" required placeholder="Choisissez un mot de passe">
+                <small>Minimum 6 caractères</small>
+            </div>
+            <div class="form-group">
+                <label for="password_confirm">Confirmer le mot de passe *</label>
+                <input type="password" id="password_confirm" name="password_confirm" value="{password_confirm}" required
+                    placeholder="Retapez le mot de passe">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Créer mon compte</button>
+                <button type="button" class="btn btn-secondary" onclick="hideUpgradeModal()">Annuler</button>
+            </div>
+        </form>
+        """
 
     # Mettre à jour l'utilisateur
     user.email = email if email else None
