@@ -258,25 +258,35 @@ def preferences():
         return redirect(url_for('play_quiz'))
 
     if request.method == 'POST':
-        email = (request.form.get('email') or '').strip()
+        print(f"[PREFS] Requête POST reçue, champs: {list(request.form.keys())}")
 
-        # Validation basique de l'email
-        if email and not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
-            flash("Adresse email invalide.", "danger")
-            return render_template('preferences.html', user=g.current_user)
+        # Traiter les mises à jour d'email (premier formulaire)
+        if 'email' in request.form:
+            email = (request.form.get('email') or '').strip()
+            print(f"[PREFS] Mise à jour email: '{g.current_user.email}' -> '{email}'")
 
-        # Mettre à jour l'email
-        g.current_user.email = email
+            # Validation basique de l'email
+            if email and not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+                flash("Adresse email invalide.", "danger")
+                return render_template('preferences.html', user=g.current_user)
 
-        # Traiter les préférences de jeu et de notification
-        prefs = g.current_user.get_preferences()
-        old_notify = prefs.get('notify_email_on_message', False)
-        prefs['double_click_validation'] = (request.form.get('double_click_validation') == '1')
-        prefs['notify_email_on_message'] = (request.form.get('notify_email_on_message') == '1')
-        new_notify = prefs.get('notify_email_on_message', False)
-        print(f"[PREFS] Mise à jour préférences pour {g.current_user.username}: notify_email_on_message {old_notify} -> {new_notify}")
-        print(f"[PREFS] Préférences complètes: {prefs}")
-        g.current_user.set_preferences(prefs)
+            # Mettre à jour l'email
+            g.current_user.email = email
+
+        # Traiter les préférences de jeu (deuxième formulaire)
+        if 'double_click_validation' in request.form or 'notify_email_on_message' in request.form:
+            prefs = g.current_user.get_preferences()
+            old_prefs = prefs.copy()
+            print(f"[PREFS] Anciennes préférences: {old_prefs}")
+
+            # Ne mettre à jour que les champs présents dans la requête
+            if 'double_click_validation' in request.form:
+                prefs['double_click_validation'] = (request.form.get('double_click_validation') == '1')
+            if 'notify_email_on_message' in request.form:
+                prefs['notify_email_on_message'] = (request.form.get('notify_email_on_message') == '1')
+
+            print(f"[PREFS] Nouvelles préférences: {prefs}")
+            g.current_user.set_preferences(prefs)
 
         db.session.commit()
         flash("Préférences mises à jour avec succès.", "success")
