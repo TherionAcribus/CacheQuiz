@@ -126,6 +126,17 @@ endblock %}
                 <button class="btn btn-secondary" type="button" id="password-back-btn">Retour</button>
             </div>
             <p class="error-message" id="password-error" hidden></p>
+            <div id="password-reset-container" style="display: none; width: 100%; text-align: center; margin-top: 0.5rem;">
+                <button type="button" 
+                        id="play-send-reset-btn"
+                        hx-post="/auth/widget-send-reset" 
+                        hx-include="#password-start-username"
+                        hx-target="#password-reset-container"
+                        hx-swap="innerHTML"
+                        style="background: none; border: none; color: rgba(219, 234, 254, 0.7); text-decoration: underline; font-size: 0.85rem; padding: 0; cursor: pointer;">
+                    Mot de passe oublié ?
+                </button>
+            </div>
         </form>
         {% endif %}
     </div>
@@ -872,11 +883,11 @@ endblock %}
             display: none;
             width: 100%;
             max-width: 460px;
-            background: rgba(16, 26, 49, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: linear-gradient(145deg, rgba(2, 60, 35, 0.9) 0%, rgba(6, 78, 59, 0.95) 100%);
+            border: 1px solid rgba(4, 120, 87, 0.4);
             border-radius: 1rem;
             padding: 1.75rem;
-            box-shadow: 0 24px 40px rgba(7, 14, 32, 0.4);
+            box-shadow: 0 24px 40px rgba(7, 32, 14, 0.4);
             flex-direction: column;
             gap: 1.25rem;
         }
@@ -893,7 +904,7 @@ endblock %}
 
         .start-form .form-label {
             font-weight: 600;
-            color: var(--primary-color);
+            color: #e2e8f0;
             font-size: 1.05rem;
         }
 
@@ -901,20 +912,20 @@ endblock %}
         .start-form input[type="password"] {
             padding: 1.05rem 1.35rem;
             border-radius: 0.9rem;
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            background: rgba(10, 18, 35, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             color: white;
             font-size: 1.15rem;
         }
 
         .start-form input::placeholder {
-            color: rgba(255, 255, 255, 0.65);
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .start-form input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(62, 84, 172, 0.22);
+            border-color: #4ade80;
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
         }
 
         .start-form .form-actions {
@@ -1230,6 +1241,17 @@ endblock %}
                 if (passwordError) {
                     passwordError.textContent = detail.message || 'Erreur de connexion';
                     passwordError.hidden = false;
+                }
+                
+                // Afficher le lien de reset si le backend le suggère (ou systématiquement sur erreur mdp si on préfère, mais ici on check si l'user existe côté serveur)
+                // Pour simplifier ici, on l'affiche dès qu'il y a erreur de mot de passe, 
+                // mais le backend ne nous renvoie pas explicitement "show_reset_option" dans le JSON pour l'instant.
+                // On va modifier auth.py pour envoyer l'info dans le header JSON si possible, 
+                // ou simplement l'afficher systématiquement en cas d'erreur.
+                // Le plus simple et cohérent : on l'affiche toujours en cas d'erreur.
+                const resetContainer = document.getElementById('password-reset-container');
+                if (resetContainer) {
+                    resetContainer.style.display = 'block';
                 }
             });
         }
