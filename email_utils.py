@@ -17,6 +17,11 @@ def send_email_optional(to_email: str, subject: str, body: str):
     Envoie un email si la configuration SMTP est présente.
     En cas d'erreur ou d'absence de configuration, log le contenu dans la console.
     """
+    print(f"[EMAIL] Tentative envoi email à {to_email}, sujet: {subject}")
+    if not _smtp_configured():
+        print(f"[EMAIL] Configuration SMTP manquante, email NON envoyé")
+        return
+    print(f"[EMAIL] Configuration SMTP OK, envoi en cours...")
     if not _smtp_configured():
         logger.info(f"SMTP non configuré. Email simulé vers {to_email}:\nSujet: {subject}\nCorps:\n{body}")
         return
@@ -53,12 +58,14 @@ def send_email_optional(to_email: str, subject: str, body: str):
             smtp.login(username, password)
         
         smtp.sendmail(default_sender, [to_email], msg.as_string())
-        
+        print(f"[EMAIL] Email envoyé avec succès à {to_email}")
+
         try:
             smtp.quit()
         except Exception:
             pass
             
     except Exception as e:
+        print(f"[EMAIL] ERREUR lors de l'envoi: {e}")
         logger.error(f"Erreur lors de l'envoi de l'email: {e}")
         logger.info(f"--- EMAIL CONTENU (FALLBACK) ---\nVers: {to_email}\nSujet: {subject}\nCorps:\n{body}\n--------------------------------")

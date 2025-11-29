@@ -187,7 +187,8 @@ def toggle_save_question(question_id: int):
     if not g.current_user:
         return {'success': False, 'error': 'Connexion requise'}, 401
 
-    question = Question.query.get_or_404(question_id)
+    # Vérifier que la question existe
+    Question.query.get_or_404(question_id)
 
     # Vérifier si la question est déjà sauvegardée
     existing = SavedQuestion.query.filter_by(
@@ -269,8 +270,12 @@ def preferences():
 
         # Traiter les préférences de jeu et de notification
         prefs = g.current_user.get_preferences()
+        old_notify = prefs.get('notify_email_on_message', False)
         prefs['double_click_validation'] = (request.form.get('double_click_validation') == '1')
         prefs['notify_email_on_message'] = (request.form.get('notify_email_on_message') == '1')
+        new_notify = prefs.get('notify_email_on_message', False)
+        print(f"[PREFS] Mise à jour préférences pour {g.current_user.username}: notify_email_on_message {old_notify} -> {new_notify}")
+        print(f"[PREFS] Préférences complètes: {prefs}")
         g.current_user.set_preferences(prefs)
 
         db.session.commit()
@@ -308,7 +313,7 @@ def delete_account():
         flash(f"Le compte de {username} a été supprimé définitivement.", "success")
         return redirect(url_for('index'))
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash("Une erreur est survenue lors de la suppression du compte. Veuillez réessayer.", "danger")
         return redirect(url_for('preferences'))

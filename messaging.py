@@ -173,21 +173,34 @@ def api_messages_send():
         db.session.commit()
 
         # Notifier les autres participants
+        print(f"[NOTIFY] Début notification pour conversation {conv_id}, expéditeur: {user.username}")
         other_parts = ConversationParticipant.query.filter(ConversationParticipant.conversation_id == conv_id, ConversationParticipant.user_id != user.id).all()
+        print(f"[NOTIFY] {len(other_parts)} autres participants trouvés")
         if other_parts:
             recipients = User.query.filter(User.id.in_([p.user_id for p in other_parts])).all()
             conv = Conversation.query.get(conv_id)
+            print(f"[NOTIFY] Conversation sujet: {conv.subject if conv else 'N/A'}")
             for r in recipients:
+                print(f"[NOTIFY] Vérification destinataire: {r.username} (id={r.id})")
                 prefs = r.get_preferences()
-                if prefs.get('notify_email_on_message') and r.email:
+                has_email = bool(r.email)
+                notify_enabled = prefs.get('notify_email_on_message', False)
+                print(f"[NOTIFY]   - Email: {r.email if has_email else 'AUCUN'}")
+                print(f"[NOTIFY]   - Notification activée: {notify_enabled}")
+                print(f"[NOTIFY]   - Préférences complètes: {prefs}")
+                if notify_enabled and has_email:
                     try:
+                        print(f"[NOTIFY] Envoi email à {r.email}")
                         send_email_optional(
                             to_email=r.email,
                             subject=f"Nouveau message: {conv.subject or 'Conversation'}",
                             body=f"{user.username} a envoyé un nouveau message.\n\n{content}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
                         )
-                    except Exception:
-                        pass
+                        print(f"[NOTIFY] Email envoyé avec succès à {r.email}")
+                    except Exception as e:
+                        print(f"[NOTIFY] ERREUR envoi email à {r.email}: {e}")
+                else:
+                    print(f"[NOTIFY] Email NON envoyé à {r.username}: notification={notify_enabled}, email={has_email}")
 
         # Réafficher le fil
         messages = ConversationMessage.query.filter_by(conversation_id=conv_id).order_by(ConversationMessage.created_at.asc()).all()
@@ -258,21 +271,27 @@ def contact_page():
                 contact_msg.conversation_id = conv.id
 
                 # Envoyer emails aux admins ayant activé les notifications
+                print(f"[CONTACT] Début envoi emails aux {len(admin_users)} admins")
                 for admin in admin_users:
                     prefs = admin.get_preferences()
                     notify = prefs.get('notify_email_on_message', False)
                     has_email = bool(admin.email)
-                    print(f"[CONTACT] Admin {admin.username}: notify={notify}, has_email={has_email}")
+                    print(f"[CONTACT] Admin {admin.username} (id={admin.id}): notify={notify}, has_email={has_email}")
+                    print(f"[CONTACT]   - Email: {admin.email if has_email else 'AUCUN'}")
+                    print(f"[CONTACT]   - Préférences complètes: {prefs}")
                     if notify and has_email:
                         try:
+                            print(f"[CONTACT] Envoi email de contact à {admin.email}")
                             send_email_optional(
                                 to_email=admin.email,
                                 subject=f"Nouveau message de contact: {subject}",
                                 body=f"Un nouveau message de contact a été reçu de {name}.\n\n{message}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
                             )
-                            print(f"[CONTACT] Email sent to {admin.email}")
+                            print(f"[CONTACT] Email envoyé avec succès à {admin.email}")
                         except Exception as e:
-                            print(f"[CONTACT] Email error for {admin.email}: {e}")
+                            print(f"[CONTACT] ERREUR envoi email à {admin.email}: {e}")
+                    else:
+                        print(f"[CONTACT] Email NON envoyé à {admin.username}: notification={notify}, email={has_email}")
 
             print("[CONTACT] Committing transaction...")
             db.session.commit()
@@ -392,20 +411,32 @@ def report_submit():
         db.session.commit()
 
         # Envoi emails (optionnel)
+        print(f"[REPORT] Début envoi emails pour signalement, {len(recipient_ids)} destinataires")
         # Récupérer préférences des destinataires
         if recipient_ids:
             recips = User.query.filter(User.id.in_(list(recipient_ids))).all()
+            print(f"[REPORT] {len(recips)} utilisateurs destinataires trouvés")
             for r in recips:
+                print(f"[REPORT] Vérification destinataire: {r.username} (id={r.id})")
                 prefs = r.get_preferences()
-                if prefs.get('notify_email_on_message') and r.email:
+                has_email = bool(r.email)
+                notify_enabled = prefs.get('notify_email_on_message', False)
+                print(f"[REPORT]   - Email: {r.email if has_email else 'AUCUN'}")
+                print(f"[REPORT]   - Notification activée: {notify_enabled}")
+                print(f"[REPORT]   - Préférences complètes: {prefs}")
+                if notify_enabled and has_email:
                     try:
+                        print(f"[REPORT] Envoi email de signalement à {r.email}")
                         send_email_optional(
                             to_email=r.email,
                             subject=f"Nouveau message: {subject}",
                             body=f"Un nouveau signalement a été créé par {user.username}.\n\n{details}\n\nAccéder à la conversation: {request.host_url.rstrip('/')}/messages"
                         )
-                    except Exception:
-                        pass
+                        print(f"[REPORT] Email envoyé avec succès à {r.email}")
+                    except Exception as e:
+                        print(f"[REPORT] ERREUR envoi email à {r.email}: {e}")
+                else:
+                    print(f"[REPORT] Email NON envoyé à {r.username}: notification={notify_enabled}, email={has_email}")
 
         html = (
             "<div id='modal-root' class='modal-overlay' style='display:flex'>"
