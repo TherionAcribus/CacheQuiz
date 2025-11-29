@@ -3,9 +3,6 @@
 {% block content %}
 <div class="preferences-page">
   <h2>Mes préférences</h2>
-  <a class="btn btn-secondary btn-compact" href="/saved-questions" title="Questions sauvegardées"><span class="btn-icon"
-      aria-hidden="true">💾</span>
-    <span class="btn-label">Sauvegardées</span></a>
 
   <!-- Afficher les messages flash -->
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -75,7 +72,9 @@
   </div>
 
   <div class="preferences-actions">
-    <a href="/me" class="btn btn-secondary">Voir mes statistiques</a>
+    <a href="/me" class="btn btn-primary">Voir mes statistiques</a>
+    <a class="btn btn-primary btn-compact" href="/saved-questions" title="Questions sauvegardées">
+    <span class="btn-label">Voir mes questions sauvegardées</span></a>
   </div>
 
   <div class="danger-zone">
@@ -247,6 +246,10 @@
 
   .preferences-actions {
     text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
   .alert {
