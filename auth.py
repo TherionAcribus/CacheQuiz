@@ -3,6 +3,7 @@ from models import db, User
 from werkzeug.security import check_password_hash, generate_password_hash
 import json
 import re
+from user_features import send_reset_email_logic
 
 
 def quick_login():
@@ -85,16 +86,29 @@ def widget_login():
         )
 
     user = User.query.filter_by(username=username).first()
-    if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
+    
+    # Vérification du mot de passe
+    is_password_wrong = False
+    if user and user.password_hash and not check_password_hash(user.password_hash, password):
+        is_password_wrong = True
+        
+    if not user or not user.password_hash or is_password_wrong:
+        # Déterminer si on propose la réinitialisation (seulement si user existe, a un email et mot de passe faux)
+        show_reset_option = False
+        if is_password_wrong and user.email:
+            show_reset_option = True
+            
         if source == 'play-start':
             resp = make_response('')
             resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': "Identifiants invalides"}})
             return resp
+            
         return render_template(
             'auth_widget.html',
             login_username=username,
             show_password_form=True,
             error_message="Identifiants invalides",
+            show_reset_option=show_reset_option,
             next_url=next_url,
             source=source,
         )
@@ -106,6 +120,22 @@ def widget_login():
     resp.headers['HX-Redirect'] = next_url
     resp.headers['HX-Trigger'] = json.dumps({'quiz-login-success': {'source': source, 'username': user.username}})
     return resp
+
+
+def widget_send_reset():
+    """Envoie un email de réinitialisation depuis le widget (HTMX)."""
+    username = (request.form.get('username') or '').strip()
+    if username:
+        user = User.query.filter_by(username=username).first()
+        if user and user.email:
+            send_reset_email_logic(user)
+    
+    # Retourne un message de succès (remplace le bouton/conteneur erreur)
+    return """
+    <div class="alert alert-success mt-2" style="font-size: 0.9em;">
+        Si un email est associé à ce compte, un lien de réinitialisation a été envoyé.
+    </div>
+    """
 
 
 def upgrade_account():

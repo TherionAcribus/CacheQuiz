@@ -17,7 +17,7 @@ except Exception:
 from unidecode import unidecode
 from email_utils import send_email_optional
 from config import config
-from auth import quick_login, logout, widget_login, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, access_denied_page, auth_widget, load_current_user, inject_current_user
+from auth import quick_login, logout, widget_login, widget_send_reset, upgrade_account, login_page, register_page, _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, access_denied_page, auth_widget, load_current_user, inject_current_user
 from admin_images import images_page, list_images_api, list_images_json, images_gallery_fragment, new_image, edit_image, create_image, update_image, delete_image
 from admin_export import export_page, export_download
 from admin_themes import list_themes, list_themes_json, list_subthemes_json, list_authors_json, list_difficulties_json, new_theme, edit_theme, create_theme, update_theme, delete_theme, specific_themes_page, list_specific_themes, new_specific_theme, edit_specific_theme, create_specific_theme, update_specific_theme, delete_specific_theme, get_specific_themes_for_broad_theme, themes_unified_page
@@ -189,6 +189,7 @@ with app.app_context():
 app.add_url_rule('/auth/quick-login', 'quick_login', quick_login, methods=['POST'])
 app.add_url_rule('/auth/logout', 'logout', logout, methods=['POST'])
 app.add_url_rule('/auth/widget-login', 'widget_login', widget_login, methods=['POST'])
+app.add_url_rule('/auth/widget-send-reset', 'widget_send_reset', widget_send_reset, methods=['POST'])
 app.add_url_rule('/auth/upgrade-account', 'upgrade_account', upgrade_account, methods=['POST'])
 app.add_url_rule('/login', 'login_page', login_page, methods=['GET', 'POST'])
 app.add_url_rule('/register', 'register_page', register_page, methods=['GET', 'POST'])

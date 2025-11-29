@@ -74,6 +74,18 @@
         readonly>
       <input type="password" name="password" placeholder="Mot de passe" class="password-input" required>
     </div>
+    {% if show_reset_option %}
+    <div style="width: 100%; text-align: right; margin-bottom: 0.25rem;">
+      <button type="button" 
+              hx-post="/auth/widget-send-reset" 
+              hx-include="closest form" 
+              hx-target="this" 
+              hx-swap="outerHTML"
+              style="background: none; border: none; color: rgba(255,255,255,0.8); text-decoration: underline; font-size: 0.8rem; padding: 0; cursor: pointer;">
+        Mot de passe oublié ?
+      </button>
+    </div>
+    {% endif %}
     <input type="hidden" name="next" value="{{ next_url or url_for('play_quiz') }}">
     <input type="hidden" name="source" value="{{ source or 'widget' }}">
     <button class="btn btn-primary" type="submit">Se connecter</button>

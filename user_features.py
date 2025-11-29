@@ -4,11 +4,38 @@ from werkzeug.security import generate_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from sqlalchemy import func
 import re
+from email_utils import send_email_optional
 
 
 def _get_token_serializer():
     """Retourne le serializer pour les tokens de reset de mot de passe."""
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+
+
+def send_reset_email_logic(user):
+    """Logique métier pour envoyer l'email de réinitialisation."""
+    if not user or not user.email:
+        return False
+        
+    s = _get_token_serializer()
+    token = s.dumps({'uid': user.id})
+    reset_link = url_for('reset_password', token=token, _external=True)
+    
+    subject = "Réinitialisation de votre mot de passe - CacheQuiz"
+    body = f"""Bonjour {user.username},
+
+Vous avez demandé la réinitialisation de votre mot de passe.
+Cliquez sur le lien suivant pour choisir un nouveau mot de passe :
+
+{reset_link}
+
+Ce lien est valide pour 1 heure.
+Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
+
+L'équipe CacheQuiz
+"""
+    send_email_optional(user.email, subject, body)
+    return True
 
 
 def forgot_password():
@@ -19,11 +46,8 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         # Toujours indiquer que l'email a été envoyé pour éviter la fuite d'existence
         if user:
-            s = _get_token_serializer()
-            token = s.dumps({'uid': user.id})
-            # Ici on simule l'envoi: on rend la page avec le lien (POC). En prod, envoyer un email.
-            reset_link = url_for('reset_password', token=token, _external=True)
-            return render_template('forgot_password.html', info="Un email a été envoyé.", reset_link=reset_link)
+            send_reset_email_logic(user)
+            return render_template('forgot_password.html', info="Un email a été envoyé.")
         return render_template('forgot_password.html', info="Un email a été envoyé.")
     return render_template('forgot_password.html')
 
