@@ -29,10 +29,18 @@ def send_email_optional(to_email: str, subject: str, body: str):
     msg['From'] = default_sender
     msg['To'] = to_email
 
-    smtp = smtplib.SMTP(server, port)
+    # Utiliser SSL direct pour le port 465, sinon SMTP avec starttls
+    if port == 465:
+        smtp = smtplib.SMTP_SSL(server, port)
+    else:
+        smtp = smtplib.SMTP(server, port)
+        try:
+            if use_tls:
+                smtp.starttls()
+        except Exception:
+            pass  # Certains serveurs n'ont pas besoin de starttls explicite
+
     try:
-        if use_tls:
-            smtp.starttls()
         if username and password:
             smtp.login(username, password)
         smtp.sendmail(default_sender, [to_email], msg.as_string())

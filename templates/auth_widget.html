@@ -23,7 +23,8 @@
         <button class="btn-close-menu" onclick="toggleUserMenu(event)">×</button>
       </div>
       
-      {% if current_user.password_hash and has_messages %}
+      {% if current_user.password_hash %}
+      {% if has_messages %}
       <a class="dropdown-item" href="/messages">
         <span class="item-icon">✉️</span>
         <span class="item-label">Messages</span>
@@ -31,6 +32,7 @@
         <span class="badge badge-notification">{{ unread_count }}</span>
         {% endif %}
       </a>
+      {% endif %}
       <a class="dropdown-item" href="/preferences">
         <span class="item-icon">🛠️</span>
         <span class="item-label">Préférences</span>
