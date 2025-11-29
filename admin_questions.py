@@ -1,5 +1,5 @@
 from flask import render_template, request, g
-from models import db, Question, User, BroadTheme, SpecificTheme, Country, ImageAsset, AnswerImageLink, Keyword
+from models import db, Question, User, BroadTheme, SpecificTheme, Country, ImageAsset, AnswerImageLink, Keyword, QuestionAnswerStat, UserQuestionStat, SavedQuestion
 from auth import _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, _has_perm
 from datetime import datetime
 
@@ -268,19 +268,50 @@ def delete_question(question_id):
         if denied:
             return denied
         question = Question.query.get_or_404(question_id)
+        
+        # Vérification si la question est utilisée dans des règles de quiz
+        # (exemple fictif, ajustez selon votre modèle de données réel si nécessaire)
+        # if question.quiz_rules:
+        #    return "Impossible de supprimer cette question car elle est utilisée dans des règles de quiz.", 400
+
         can_any = _has_perm('can_update_delete_any_question')
         can_own = _has_perm('can_update_delete_own_question')
         if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
             return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
+        
+        # Supprimer d'abord les liens AnswerImageLink
+        AnswerImageLink.query.filter_by(question_id=question.id).delete()
+        
+        # Supprimer les statistiques de réponses associées (QuestionAnswerStat)
+        QuestionAnswerStat.query.filter_by(question_id=question.id).delete()
+        
+        # Supprimer les statistiques utilisateurs associées (UserQuestionStat)
+        UserQuestionStat.query.filter_by(question_id=question.id).delete()
+        
+        # Supprimer les sauvegardes utilisateurs associées (SavedQuestion)
+        SavedQuestion.query.filter_by(question_id=question.id).delete()
+        
+        # Supprimer les liens many-to-many si nécessaire (géré automatiquement par SQLAlchemy si configuré, sinon manuel)
+        question.countries = []
+        question.keywords = []
+        question.images = []
+
         db.session.delete(question)
         db.session.commit()
 
         # Retourner la liste mise à jour
         questions = Question.query.order_by(Question.updated_at.desc()).all()
-        return render_template('questions_list.html', questions=questions)
+        
+        # Compter pour mettre à jour les stats
+        filtered_count = len(questions)
+        total_count = Question.query.count()
+        
+        return render_template('questions_list.html', questions=questions, filtered_count=filtered_count, total_count=total_count)
 
     except Exception as e:
-        return f"Erreur: {str(e)}", 400
+        import traceback
+        traceback.print_exc()
+        return f"Erreur lors de la suppression: {str(e)}", 400
 
 
 def toggle_question_status(question_id):

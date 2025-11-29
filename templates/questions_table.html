@@ -124,9 +124,9 @@
                         hx-swap="innerHTML" title="Éditer">
                         ✏️
                     </button>
-                    <button class="btn-icon btn-danger" hx-delete="/api/question/{{ question.id }}"
-                        hx-target="#questions-list" hx-confirm="Êtes-vous sûr de vouloir supprimer cette question ?"
-                        hx-on::after-request="updateStats()" title="Supprimer">
+                    <button class="btn-icon btn-danger" type="button" 
+                        onclick="openDeleteModal('{{ question.id }}')" 
+                        title="Supprimer">
                         🗑️
                     </button>
                     <a href="/question/{{ question.id }}/stats" class="btn btn-outline btn-small"

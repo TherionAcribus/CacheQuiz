@@ -263,6 +263,147 @@
     }
 </style>
 
+<!-- Modale de confirmation de suppression -->
+<div id="delete-modal" class="delete-modal-overlay hidden" onclick="if(event.target === this) closeDeleteModal()">
+    <div class="delete-modal-content">
+        <div class="delete-modal-header">
+            <h3>Confirmer la suppression</h3>
+            <button class="delete-close-modal-btn" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="delete-modal-body">
+            <p>Êtes-vous sûr de vouloir supprimer cette question ?</p>
+            <p class="text-warning"><small>Cette action est irréversible.</small></p>
+        </div>
+        <div class="delete-modal-footer">
+            <button class="btn btn-outline" onclick="closeDeleteModal()">Annuler</button>
+            <button id="confirm-delete-btn" class="btn btn-danger" 
+                    hx-target="#questions-list" 
+                    hx-on::after-request="updateStats(); closeDeleteModal()"
+                    hx-swap="innerHTML">
+                Supprimer
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openDeleteModal(questionId) {
+        console.log('Ouverture modale suppression pour id:', questionId);
+        const modal = document.getElementById('delete-modal');
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+        
+        if (!modal || !confirmBtn) {
+            console.error('Elements modale introuvables');
+            return;
+        }
+
+        // Mettre à jour l'URL de suppression HTMX
+        confirmBtn.setAttribute('hx-delete', '/api/question/' + questionId);
+        
+        // Important : dire à HTMX de scanner le nouvel attribut pour l'activer
+        if (typeof htmx !== 'undefined') {
+            htmx.process(confirmBtn);
+        } else {
+            console.error('HTMX non défini');
+        }
+        
+        modal.classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('delete-modal').classList.add('hidden');
+    }
+    
+    // Fermer avec la touche Echap
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            closeDeleteModal();
+        }
+    });
+</script>
+
+<style>
+    .delete-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000; /* Z-index supérieur pour être sûr */
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+    
+    .delete-modal-overlay.hidden {
+        display: none;
+        opacity: 0;
+        pointer-events: none;
+    }
+    
+    .delete-modal-content {
+        background-color: white;
+        padding: 0;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        max-width: 500px;
+        width: 90%;
+        transform: scale(1);
+        transition: transform 0.3s ease;
+    }
+    
+    .delete-modal-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .delete-modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .delete-close-modal-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+    }
+    
+    .delete-close-modal-btn:hover {
+        color: #374151;
+    }
+    
+    .delete-modal-body {
+        padding: 1.5rem;
+        color: #4b5563;
+    }
+    
+    .text-warning {
+        color: #b91c1c;
+        margin-top: 0.5rem;
+    }
+    
+    .delete-modal-footer {
+        padding: 1rem 1.5rem;
+        background-color: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        border-bottom-left-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+    }
+</style>
+
 <script>
     let currentView = localStorage.getItem('questionsView') || 'cards';
     let activeFilters = []; // { type: 'author_id', label: 'Auteur', value: 1, display: 'Admin' }
