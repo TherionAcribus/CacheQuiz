@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, session, g, flash
-from models import db, QuizRuleSet, Question, BroadTheme, SpecificTheme, Country, ImageAsset, User, UserQuizSession
+from models import db, QuizRuleSet, Question, BroadTheme, SpecificTheme, Country, ImageAsset, User, UserQuizSession, Keyword
 from auth import _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access
 from unidecode import unidecode
 from collections import Counter
@@ -530,6 +530,14 @@ def get_questions_for_selection():
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
 
+    # Paramètres de recherche
+    search_query = request.args.get('q', '').strip()
+    author_id = request.args.get('author_id', type=int)
+    keyword_id = request.args.get('keyword_id', type=int)
+    filter_broad_theme_id = request.args.get('broad_theme_id', type=int)
+    filter_specific_theme_id = request.args.get('specific_theme_id', type=int)
+    filter_difficulty_level = request.args.get('difficulty_level', type=int)
+
     if not specific_theme_ids or not difficulty_levels:
         return {'questions': [], 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
 
@@ -549,6 +557,37 @@ def get_questions_for_selection():
             else:
                 # Aucun pays sélectionné = seulement les questions générales (sans pays)
                 query = query.filter(~Question.countries.any())
+
+        # Filtres de recherche avancée
+        if search_query:
+            # Jointures nécessaires pour la recherche textuelle
+            query = query.join(User, Question.author_id == User.id, isouter=True)\
+                         .join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True)\
+                         .join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
+            
+            query = query.filter(
+                db.or_(
+                    Question.question_text.contains(search_query),
+                    User.username.contains(search_query),
+                    BroadTheme.name.contains(search_query),
+                    SpecificTheme.name.contains(search_query)
+                )
+            )
+
+        if author_id:
+            query = query.filter(Question.author_id == author_id)
+        
+        if keyword_id:
+            query = query.join(Question.keywords).filter(Keyword.id == keyword_id)
+
+        if filter_broad_theme_id:
+            query = query.filter(Question.broad_theme_id == filter_broad_theme_id)
+
+        if filter_specific_theme_id:
+            query = query.filter(Question.specific_theme_id == filter_specific_theme_id)
+
+        if filter_difficulty_level:
+            query = query.filter(Question.difficulty_level == filter_difficulty_level)
 
         questions = query.order_by(Question.specific_theme_id, Question.difficulty_level, Question.id).all()
 

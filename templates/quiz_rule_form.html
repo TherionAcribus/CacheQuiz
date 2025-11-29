@@ -136,6 +136,28 @@
                                 <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
                             </div>
 
+                            <!-- Recherche locale dans la sélection -->
+                            <div class="search-container" style="width: 100%; margin-bottom: 1rem;">
+                                <div class="search-wrapper">
+                                    <div id="search-chips" class="search-chips"></div>
+                                    <input type="text" id="search-input" placeholder="Rechercher une question... (tapez @ pour filtrer)" autocomplete="off">
+                                </div>
+                                <!-- Dropdown pour le type de filtre -->
+                                <div id="filter-type-dropdown" class="search-dropdown hidden">
+                                    <div class="dropdown-header">Filtrer par...</div>
+                                    <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="/api/themes/json">📂 Thème</div>
+                                    <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="/api/subthemes/json">ue Sous-thème</div>
+                                    <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
+                                    <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
+                                    <div class="dropdown-item" data-type="difficulty_level" data-endpoint="/api/difficulties/json">⭐ Niveau</div>
+                                </div>
+                                <!-- Dropdown pour les valeurs de filtre -->
+                                <div id="filter-value-dropdown" class="search-dropdown hidden">
+                                    <div class="dropdown-header">Sélectionner...</div>
+                                    <div id="filter-value-list"></div>
+                                </div>
+                            </div>
+
                             {% set order_mode = rule.question_order_mode if rule else defaults.get('question_order_mode', 'difficulty_ascending') %}
                             <div class="form-group question-order-group">
                                 <label>Ordre des questions (mode automatique)</label>
@@ -1294,6 +1316,190 @@ function initThemeCheckboxes() {
 }
 
 // Charger les questions disponibles pour la sélection
+let activeFilters = []; // { type: 'author_id', label: 'Auteur', value: 1, display: 'Admin' }
+let searchTimeout;
+let currentFilterType = null;
+
+function initSearchFeatures() {
+    const searchInput = document.getElementById('search-input');
+    const typeDropdown = document.getElementById('filter-type-dropdown');
+    const valueDropdown = document.getElementById('filter-value-dropdown');
+    const valueList = document.getElementById('filter-value-list');
+    const chipsContainer = document.getElementById('search-chips');
+
+    if (!searchInput) return;
+
+    // Reset variables on init
+    activeFilters = [];
+    currentFilterType = null;
+    
+    // Initial render of empty chips
+    renderChips();
+
+    searchInput.addEventListener('input', function (e) {
+        const val = this.value;
+
+        // Détection du déclencheur '@'
+        if (val.endsWith('@')) {
+            showTypeDropdown();
+        } else if (currentFilterType) {
+            filterValueList(val);
+        } else {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadQuestionsForSelection, 500);
+        }
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+        const activeDropdown = !typeDropdown.classList.contains('hidden') ? typeDropdown :
+            (!valueDropdown.classList.contains('hidden') ? valueDropdown : null);
+
+        if (activeDropdown) {
+            const items = activeDropdown.querySelectorAll('.dropdown-item:not(.hidden)');
+            let currentIndex = Array.from(items).findIndex(item => item.classList.contains('selected'));
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextIndex = (currentIndex + 1) % items.length;
+                selectDropdownItem(items, nextIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                selectDropdownItem(items, prevIndex);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentIndex >= 0) items[currentIndex].click();
+            } else if (e.key === 'Escape') {
+                hideDropdowns();
+                currentFilterType = null;
+            }
+        } else if (e.key === 'Backspace' && this.value === '' && activeFilters.length > 0) {
+            removeFilter(activeFilters.length - 1);
+        }
+    });
+
+    // Helper functions for search
+    function selectDropdownItem(items, index) {
+        items.forEach(item => item.classList.remove('selected'));
+        if (items[index]) {
+            items[index].classList.add('selected');
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function showTypeDropdown() {
+        typeDropdown.classList.remove('hidden');
+        valueDropdown.classList.add('hidden');
+    }
+
+    function hideDropdowns() {
+        typeDropdown.classList.add('hidden');
+        valueDropdown.classList.add('hidden');
+    }
+
+    function filterValueList(text) {
+        const items = valueList.querySelectorAll('.dropdown-item');
+        let hasVisible = false;
+        items.forEach(item => {
+            if (item.textContent.toLowerCase().includes(text.toLowerCase())) {
+                item.classList.remove('hidden');
+                hasVisible = true;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+        const visible = valueList.querySelectorAll('.dropdown-item:not(.hidden)');
+        selectDropdownItem(visible, 0);
+    }
+
+    // Event listeners for dropdown items
+    typeDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+        item.addEventListener('click', function () {
+            const type = this.dataset.type;
+            const endpoint = this.dataset.endpoint;
+            const label = this.textContent;
+
+            currentFilterType = { type, endpoint, label };
+
+            typeDropdown.classList.add('hidden');
+            loadFilterValues(endpoint);
+
+            searchInput.value = '';
+            searchInput.placeholder = `Rechercher dans ${label}...`;
+            searchInput.focus();
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.search-container')) {
+            hideDropdowns();
+            currentFilterType = null;
+            if (searchInput.value === '') {
+                 searchInput.placeholder = 'Rechercher une question... (tapez @ pour filtrer)';
+            }
+        }
+    });
+
+    window.loadFilterValues = function(endpoint) {
+        valueList.innerHTML = '<div class="dropdown-item">Chargement...</div>';
+        valueDropdown.classList.remove('hidden');
+
+        fetch(endpoint)
+            .then(r => r.json())
+            .then(data => {
+                valueList.innerHTML = '';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item';
+                    div.textContent = item.name || item.username; 
+                    div.dataset.value = item.id;
+                    div.dataset.display = item.name || item.username;
+
+                    div.addEventListener('click', function () {
+                        addFilter(currentFilterType.type, currentFilterType.label, this.dataset.value, this.dataset.display);
+                        hideDropdowns();
+                        currentFilterType = null;
+                        searchInput.value = '';
+                        searchInput.placeholder = 'Rechercher une question... (tapez @ pour filtrer)';
+                        loadQuestionsForSelection();
+                    });
+
+                    valueList.appendChild(div);
+                });
+                if (valueList.firstChild) valueList.firstChild.classList.add('selected');
+            });
+    };
+}
+
+function addFilter(type, label, value, display) {
+    activeFilters = activeFilters.filter(f => f.type !== type);
+    activeFilters.push({ type, label, value, display });
+    renderChips();
+}
+
+function removeFilter(index) {
+    activeFilters.splice(index, 1);
+    renderChips();
+    loadQuestionsForSelection();
+}
+
+function renderChips() {
+    const chipsContainer = document.getElementById('search-chips');
+    if (!chipsContainer) return;
+    
+    chipsContainer.innerHTML = '';
+    activeFilters.forEach((filter, index) => {
+        const chip = document.createElement('div');
+        chip.className = 'search-chip';
+        chip.innerHTML = `
+            <span>${filter.label}: ${filter.display}</span>
+            <span class="remove-chip" onclick="removeFilter(${index})">×</span>
+        `;
+        chipsContainer.appendChild(chip);
+    });
+}
+
 function loadQuestionsForSelection() {
     // Récupérer les pays cochés (si "Tous les pays" n'est pas coché)
     const useAllCountries = document.getElementById('use_all_countries').checked;
@@ -1319,14 +1525,24 @@ function loadQuestionsForSelection() {
     // Construire les paramètres pour la requête
     const params = new URLSearchParams();
     if (!useAllCountries) {
-        // Quand "Tous les pays" n'est pas coché, on passe toujours country_ids[],
-        // même si vide (ce qui signifie "aucun pays sélectionné = 0 questions")
         selectedCountries.forEach(id => params.append('country_ids[]', id));
-        // Ajouter un paramètre pour indiquer qu'on veut filtrer par pays
         params.append('filter_by_countries', '1');
     }
     selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
     selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
+
+    // Ajouter les paramètres de recherche
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && searchInput.value.trim()) {
+        params.append('q', searchInput.value.trim().replace('@', ''));
+    }
+    
+    // Ajouter les filtres actifs (activeFilters)
+    if (typeof activeFilters !== 'undefined') {
+        activeFilters.forEach(filter => {
+            params.append(filter.type, filter.value);
+        });
+    }
 
     // Afficher un message de chargement
     tableBody.innerHTML = '<tr><td colspan="6" class="loading-message">Chargement des questions...</td></tr>';
@@ -1337,6 +1553,15 @@ function loadQuestionsForSelection() {
             if (data.questions && data.questions.length > 0) {
                 tableBody.innerHTML = '';
                 data.questions.forEach(question => {
+                    // Checkbox is checked if it was already in selected_question_ids inputs OR if we are in "Select All" mode
+                    // Actually, we must preserve selection state if possible, but here we are reloading the list.
+                    // The standard behavior for this form seems to be: re-render list with checkboxes checked by default (mode auto)
+                    // unless we track what was unchecked.
+                    // BUT: The form submits "selected_question_ids". If we filter the list, we might lose the "checked" status of hidden items?
+                    // In this implementation, the backend says "Mode auto" if all available questions are selected.
+                    // If we filter, we only see a subset.
+                    // The simple approach for now: render them checked by default as per original code
+                    
                     const row = document.createElement('tr');
                     row.classList.add('question-row');
                     row.dataset.questionId = question.id;
@@ -1349,7 +1574,6 @@ function loadQuestionsForSelection() {
                         <td class="difficulty-badge difficulty-${question.difficulty_level}">${question.difficulty_level}</td>
                     `;
                     
-                    // Ajouter l'événement de clic sur la ligne (sauf sur le checkbox)
                     row.addEventListener('click', function(e) {
                         if (e.target.type !== 'checkbox') {
                             showQuestionDetail(question.id);
@@ -1576,7 +1800,11 @@ document.addEventListener('htmx:afterSwap', function(evt) {
 document.addEventListener('click', function(e) {
     const tab = e.target.closest('.tab[data-tab="questions"]');
     if (tab) {
-        setTimeout(loadQuestionsForSelection, 100);
+        setTimeout(function() {
+            // Initialiser la recherche si pas encore fait
+            initSearchFeatures();
+            loadQuestionsForSelection();
+        }, 100);
         // Initialiser la checkbox "Tout sélectionner" après le chargement des questions
         setTimeout(function() {
             initSelectAllQuestions();
@@ -1862,7 +2090,99 @@ select.answer-image-select option {
 /* Score maximum */
 .score-summary{margin-top:1rem;padding:1rem;border:1px solid var(--border-color);border-radius:.5rem;background:#f8f9fa}
 .score-line{font-size:1rem;margin-bottom:.25rem}
-.score-breakdown{color:var(--text-light)}
+    .score-breakdown{color:var(--text-light)}
+
+    /* Styles pour la recherche */
+    .search-container {
+        position: relative;
+    }
+
+    .search-wrapper {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 4px 8px;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        background: #fff;
+        transition: border-color 0.2s;
+    }
+
+    .search-wrapper:focus-within {
+        border-color: var(--primary-color);
+    }
+
+    #search-input {
+        border: none;
+        outline: none;
+        padding: 4px;
+        flex: 1;
+        min-width: 150px;
+        background: transparent;
+        color: var(--text-color);
+    }
+
+    .search-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        background: rgba(2, 135, 77, 0.15);
+        color: var(--primary-color);
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .search-chip .remove-chip {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.6;
+    }
+
+    .search-chip .remove-chip:hover {
+        opacity: 1;
+    }
+
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 100;
+        margin-top: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .dropdown-header {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        color: var(--text-light);
+        font-weight: 600;
+        background: rgba(0, 0, 0, 0.02);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-color);
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item.selected {
+        background: rgba(2, 135, 77, 0.1);
+        color: var(--primary-color);
+    }
 </style>
 
 
