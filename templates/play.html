@@ -1158,6 +1158,7 @@ endblock %}
             }
 
             function resetForms() {
+                const pseudoForm = document.getElementById('pseudo-start-form');
                 pseudoForm.classList.remove('active');
                 pseudoForm.reset();
                 pseudoForm.querySelector('input[name="pseudo"]').focus();
@@ -1262,39 +1263,37 @@ endblock %}
             const checkbox = document.getElementById('quick-double-click');
 
             if (startBtn && checkbox) {
-                // Mettre à jour les valeurs HTMX quand la checkbox change
-                checkbox.addEventListener('change', function () {
+                // Fonction pour synchroniser les valeurs HTMX
+                function syncHmxValues() {
                     const currentVals = startBtn.getAttribute('hx-vals') || '{}';
                     let vals = {};
                     try {
                         vals = JSON.parse(currentVals);
                     } catch (e) { }
 
-                    vals.quick_double_click = this.checked ? 'true' : 'false';
+                    vals.quick_double_click = checkbox.checked ? 'true' : 'false';
                     startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+                    
+                    // Sauvegarder dans sessionStorage
                     try {
-                        window.sessionStorage.setItem('quickDoubleClickCheckbox', this.checked ? 'true' : 'false');
+                        window.sessionStorage.setItem('quickDoubleClickCheckbox', vals.quick_double_click);
                     } catch (err) { }
-                });
+                }
+
+                // Mettre à jour les valeurs HTMX quand la checkbox change
+                checkbox.addEventListener('change', syncHmxValues);
 
                 // Initialiser avec la valeur actuelle
-                const currentVals = startBtn.getAttribute('hx-vals') || '{}';
-                let vals = {};
-                try {
-                    vals = JSON.parse(currentVals);
-                } catch (e) { }
+                syncHmxValues();
 
-                vals.quick_double_click = checkbox.checked ? 'true' : 'false';
-                startBtn.setAttribute('hx-vals', JSON.stringify(vals));
-
+                // Restaurer depuis sessionStorage si disponible
                 try {
                     const stored = window.sessionStorage.getItem('quickDoubleClickCheckbox');
                     if (stored !== null) {
                         const shouldCheck = stored === 'true';
                         if (checkbox.checked !== shouldCheck) {
                             checkbox.checked = shouldCheck;
-                            vals.quick_double_click = shouldCheck ? 'true' : 'false';
-                            startBtn.setAttribute('hx-vals', JSON.stringify(vals));
+                            syncHmxValues();
                         }
                     }
                 } catch (err) { }
@@ -1359,15 +1358,11 @@ endblock %}
                             const now = performance.now();
                             const isSameKey = lastKey === code;
                             
-                            // Vérifier si le double clic est activé (soit via config globale, soit via sessionStorage)
+                            // Vérifier si le double clic est activé (via sessionStorage)
                             let doubleClickEnabled = false;
-                            if (window.quickDoubleClickEnabled) {
-                                doubleClickEnabled = true;
-                            } else {
-                                try {
-                                    doubleClickEnabled = window.sessionStorage.getItem('quickDoubleClickCheckbox') === 'true';
-                                } catch(err) {}
-                            }
+                            try {
+                                doubleClickEnabled = window.sessionStorage.getItem('quickDoubleClickCheckbox') === 'true';
+                            } catch(err) {}
 
                             if (doubleClickEnabled && isSameKey && (now - lastKeyTime < DOUBLE_TAP_DELAY)) {
                                 // Déclencher la validation
