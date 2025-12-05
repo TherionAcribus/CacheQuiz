@@ -90,8 +90,8 @@ body {
     position: relative;
     padding: 2.5rem;
     border-radius: 1.25rem;
-    background: linear-gradient(160deg, rgba(16, 44, 33, 0.9) 0%, rgba(15, 32, 26, 0.6) 100%);
-    border: 1px solid rgba(4, 120, 87, 0.25);
+    background: linear-gradient(160deg, rgba(27, 40, 69, 0.9) 0%, rgba(15, 23, 42, 0.6) 100%);
+    border: 1px solid rgba(62, 84, 172, 0.25);
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
     overflow: hidden;
 }
@@ -100,7 +100,7 @@ body {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(4, 170, 109, 0.18), rgba(15, 23, 42, 0));
+    background: linear-gradient(135deg, rgba(62, 84, 172, 0.18), rgba(15, 23, 42, 0));
     pointer-events: none;
 }
 
@@ -116,7 +116,7 @@ body {
     width: 64px;
     height: 4px;
     border-radius: 999px;
-    background: linear-gradient(90deg, rgba(45, 212, 191, 0.65), rgba(16, 185, 129, 0));
+    background: linear-gradient(90deg, rgba(62, 84, 172, 0.65), rgba(27, 40, 69, 0));
 }
 
 .about-section-title {
@@ -145,8 +145,8 @@ body {
     gap: 1rem;
     padding: 1.5rem;
     border-radius: 1rem;
-    background: rgba(13, 42, 34, 0.8);
-    border: 1px solid rgba(45, 212, 191, 0.1);
+    background: rgba(27, 40, 69, 0.8);
+    border: 1px solid rgba(62, 84, 172, 0.1);
 }
 
 .about-roadmap-list li {
@@ -161,8 +161,8 @@ body {
     height: 10px;
     margin-top: 0.35rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, rgba(45, 212, 191, 0.9), rgba(34, 197, 94, 0.5));
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.45);
+    background: linear-gradient(135deg, rgba(62, 84, 172, 0.9), rgba(27, 40, 69, 0.5));
+    box-shadow: 0 0 15px rgba(62, 84, 172, 0.45);
 }
 
 .about-summary-list {
@@ -187,13 +187,13 @@ body {
     width: 10px;
     height: 10px;
     border-radius: 999px;
-    background: rgba(34, 197, 94, 0.7);
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+    background: rgba(62, 84, 172, 0.7);
+    box-shadow: 0 0 10px rgba(62, 84, 172, 0.35);
 }
 
 .about-section-note {
     padding: 1rem 1.25rem;
-    border-left: 3px solid rgba(45, 212, 191, 0.6);
+    border-left: 3px solid rgba(62, 84, 172, 0.6);
     background: rgba(15, 23, 42, 0.35);
     border-radius: 0.75rem;
     font-style: italic;
