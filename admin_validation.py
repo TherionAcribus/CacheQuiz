@@ -55,6 +55,17 @@ def _get_or_create_question_publication_conversation(question: Question):
     return conv
 
 
+def _get_or_create_quiz_publication_conversation(rule: QuizRuleSet):
+    conv = Conversation.query.filter_by(context_type='quiz_publication', context_id=rule.id).order_by(Conversation.created_at.desc()).first()
+    if conv:
+        return conv
+    subject = f"Publication quiz: {rule.name} ({rule.slug})"
+    conv = Conversation(subject=subject, context_type='quiz_publication', context_id=rule.id)
+    db.session.add(conv)
+    db.session.flush()
+    return conv
+
+
 def _get_hx_prompt_text() -> str | None:
     """HTMX hx-prompt envoie la valeur dans l'en-tête HX-Prompt (pas forcément dans request.form)."""
     raw = (request.form.get('prompt') or request.form.get('note') or request.headers.get('HX-Prompt') or '').strip()
@@ -95,6 +106,122 @@ def confirm_reject_question_validation(question_id: int):
         note_placeholder="Ex: La source est manquante / La réponse semble incorrecte / ...",
     )
     return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
+def confirm_approve_quiz_rule_validation(rule_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    inner = render_template(
+        'admin_confirm_modal.html',
+        title="Valider la publication du quiz",
+        message="Vous pouvez ajouter un message optionnel qui sera envoyé au créateur dans la messagerie.",
+        action_url=f"/api/admin/validation/quiz-rule/{rule.id}/approve",
+        target_selector="#pending-quiz-rules",
+        confirm_label="✅ Publier",
+        show_note=True,
+        note_placeholder="Ex: Merci ! Petite remarque: ...",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
+def confirm_reject_quiz_rule_validation(rule_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    inner = render_template(
+        'admin_confirm_modal.html',
+        title="Refuser la publication du quiz",
+        message="Ajoutez une raison (optionnel) qui sera envoyée au créateur dans la messagerie.",
+        action_url=f"/api/admin/validation/quiz-rule/{rule.id}/reject",
+        target_selector="#pending-quiz-rules",
+        confirm_label="❌ Refuser",
+        show_note=True,
+        note_placeholder="Ex: Quiz trop vague / contenu douteux / règles incohérentes / ...",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
+def approve_quiz_rule_validation(rule_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    admin = getattr(g, 'current_user', None)
+    note = _get_hx_prompt_text()
+
+    try:
+        rule.visibility_status = 'public'
+        rule.public_reviewed_at = datetime.utcnow()
+        rule.public_reviewed_by_user_id = admin.id if admin else None
+        rule.public_review_note = note
+        rule.updated_at = datetime.utcnow()
+
+        conv = _get_or_create_quiz_publication_conversation(rule)
+
+        if rule.created_by_user_id:
+            existing = ConversationParticipant.query.filter_by(conversation_id=conv.id, user_id=rule.created_by_user_id).first()
+            if not existing:
+                db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rule.created_by_user_id, last_read_at=None))
+
+        msg = f"✅ Publication approuvée. Votre quiz « {rule.name} » est maintenant PUBLIC."
+        if note:
+            msg += f"\n\nMessage de l'équipe:\n{note}"
+
+        db.session.add(ConversationMessage(
+            conversation_id=conv.id,
+            sender_id=admin.id if admin else None,
+            content=msg,
+        ))
+
+        db.session.commit()
+        return list_pending_quiz_rules()
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur: {str(e)}", 400
+
+
+def reject_quiz_rule_validation(rule_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    admin = getattr(g, 'current_user', None)
+    note = _get_hx_prompt_text()
+
+    try:
+        rule.visibility_status = 'rejected'
+        rule.public_reviewed_at = datetime.utcnow()
+        rule.public_reviewed_by_user_id = admin.id if admin else None
+        rule.public_review_note = note
+        rule.updated_at = datetime.utcnow()
+
+        conv = _get_or_create_quiz_publication_conversation(rule)
+
+        if rule.created_by_user_id:
+            existing = ConversationParticipant.query.filter_by(conversation_id=conv.id, user_id=rule.created_by_user_id).first()
+            if not existing:
+                db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rule.created_by_user_id, last_read_at=None))
+
+        msg = f"❌ Publication refusée pour « {rule.name} »."
+        if note:
+            msg += f"\n\nRaison: {note}"
+
+        db.session.add(ConversationMessage(
+            conversation_id=conv.id,
+            sender_id=admin.id if admin else None,
+            content=msg,
+        ))
+
+        db.session.commit()
+        return list_pending_quiz_rules()
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur: {str(e)}", 400
 
 
 def approve_question_validation(question_id: int):

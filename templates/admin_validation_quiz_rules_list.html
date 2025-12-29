@@ -17,15 +17,15 @@
         </div>
         <div class="item-actions">
             <button class="btn btn-outline btn-small"
-                    hx-post="/api/quiz-rule/{{ rule.id }}/review/approve"
-                    hx-target="#pending-quiz-rules"
-                    hx-confirm="Approuver la publication de ce quiz ?">
+                    hx-get="/api/admin/validation/quiz-rule/{{ rule.id }}/approve/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
                 ✅ Approuver
             </button>
             <button class="btn btn-outline btn-small"
-                    hx-post="/api/quiz-rule/{{ rule.id }}/review/reject"
-                    hx-target="#pending-quiz-rules"
-                    hx-prompt="Raison du refus (optionnel)">
+                    hx-get="/api/admin/validation/quiz-rule/{{ rule.id }}/reject/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
                 ❌ Refuser
             </button>
             <button class="btn btn-outline btn-small"

@@ -500,12 +500,13 @@ def approve_quiz_publication(rule_id: int):
 
     rule = QuizRuleSet.query.get_or_404(rule_id)
     admin = getattr(g, 'current_user', None)
+    note = (request.form.get('note') or request.form.get('prompt') or request.headers.get('HX-Prompt') or '').strip() or None
 
     try:
         rule.visibility_status = 'public'
         rule.public_reviewed_at = datetime.utcnow()
         rule.public_reviewed_by_user_id = admin.id if admin else None
-        rule.public_review_note = None
+        rule.public_review_note = note
         rule.updated_at = datetime.utcnow()
 
         conv = _get_or_create_publication_conversation(rule)
@@ -516,11 +517,10 @@ def approve_quiz_publication(rule_id: int):
             if not existing:
                 db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rule.created_by_user_id, last_read_at=None))
 
-        msg = ConversationMessage(
-            conversation_id=conv.id,
-            sender_id=admin.id if admin else None,
-            content=f"✅ Publication approuvée. Votre quiz « {rule.name} » est maintenant PUBLIC.",
-        )
+        msg_txt = f"✅ Publication approuvée. Votre quiz « {rule.name} » est maintenant PUBLIC."
+        if note:
+            msg_txt += f"\n\nMessage de l'équipe:\n{note}"
+        msg = ConversationMessage(conversation_id=conv.id, sender_id=admin.id if admin else None, content=msg_txt)
         db.session.add(msg)
 
         db.session.commit()
