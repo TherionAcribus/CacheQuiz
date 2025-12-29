@@ -4,6 +4,18 @@
     <div class="question-card">
         <div class="question-header">
             <div class="question-meta">
+                {# Badge statut (comme quiz): Public / En attente / Refusé / Privé #}
+                {% set pub_status = question.publication_status if question.publication_status is defined else None %}
+                {% if question.is_published and not question.is_private %}
+                    <span class="badge badge-published">Public</span>
+                {% elif pub_status == 'pending' or ((not question.is_private) and (not question.is_published)) %}
+                    <span class="badge badge-pending">En attente</span>
+                {% elif pub_status == 'rejected' %}
+                    <span class="badge badge-rejected">Refusé</span>
+                {% else %}
+                    <span class="badge badge-private">Privé</span>
+                {% endif %}
+
                 {% if question.theme %}
                 <span class="badge badge-theme">
                     {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
@@ -13,16 +25,6 @@
                 {% endif %}
                 <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
 
-                {% set pub_status = question.publication_status if question.publication_status is defined else None %}
-                {% if question.is_published and not question.is_private %}
-                    <span class="badge badge-published">Validée</span>
-                {% elif pub_status == 'rejected' %}
-                    <span class="badge badge-rejected">Refusée</span>
-                {% elif (not question.is_private) and (not question.is_published) %}
-                    <span class="badge badge-pending">En attente</span>
-                {% else %}
-                    <span class="badge badge-private">Privée</span>
-                {% endif %}
             </div>
             <div class="question-actions">
                 <button class="btn-icon" type="button"

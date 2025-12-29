@@ -71,6 +71,7 @@ from creator_images import (
     create_creator_image,
     update_creator_image,
     delete_creator_image,
+    confirm_delete_creator_image,
 )
 from creator_quiz_rules import (
     creator_quiz_rules_page,
@@ -80,6 +81,7 @@ from creator_quiz_rules import (
     create_creator_quiz_rule,
     update_creator_quiz_rule,
     delete_creator_quiz_rule,
+    confirm_delete_creator_quiz_rule,
     request_quiz_publication,
     creator_quiz_rule_count_questions,
     creator_quiz_rule_get_questions_for_selection,
@@ -318,6 +320,7 @@ def delete_creator_image_wrapper(image_id):
 app.add_url_rule('/api/creator/image', 'create_creator_image', create_creator_image_wrapper, methods=['POST'])
 app.add_url_rule('/api/creator/image/<int:image_id>', 'update_creator_image', update_creator_image_wrapper, methods=['POST', 'PUT'])
 app.add_url_rule('/api/creator/image/<int:image_id>', 'delete_creator_image', delete_creator_image_wrapper, methods=['DELETE'])
+app.add_url_rule('/api/creator/image/<int:image_id>/delete/confirm', 'confirm_delete_creator_image', confirm_delete_creator_image, methods=['GET'])
 
 # Creator quiz rules
 app.add_url_rule('/creator/quiz-rules', 'creator_quiz_rules_page', creator_quiz_rules_page)
@@ -327,6 +330,7 @@ app.add_url_rule('/creator/quiz-rule/<int:rule_id>/edit', 'creator_edit_quiz_rul
 app.add_url_rule('/api/creator/quiz-rule', 'create_creator_quiz_rule', create_creator_quiz_rule, methods=['POST'])
 app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>', 'update_creator_quiz_rule', update_creator_quiz_rule, methods=['POST', 'PUT'])
 app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>', 'delete_creator_quiz_rule', delete_creator_quiz_rule, methods=['DELETE'])
+app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>/delete/confirm', 'confirm_delete_creator_quiz_rule', confirm_delete_creator_quiz_rule, methods=['GET'])
 app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>/request-public', 'request_quiz_publication', request_quiz_publication, methods=['POST'])
 app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>/request-public/confirm', 'confirm_request_quiz_publication', confirm_request_quiz_publication, methods=['GET'])
 app.add_url_rule('/api/creator/quiz-rule/count-questions', 'creator_quiz_rule_count_questions', creator_quiz_rule_count_questions, methods=['GET'])

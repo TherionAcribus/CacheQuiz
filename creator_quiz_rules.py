@@ -410,6 +410,29 @@ def delete_creator_quiz_rule(rule_id: int):
         return f"Erreur: {str(e)}", 400
 
 
+def confirm_delete_creator_quiz_rule(rule_id: int):
+    """Retourne une modale de confirmation (cohérente) pour supprimer un quiz (set de règles)."""
+    denied = _ensure_creator_api()
+    if denied:
+        return denied
+
+    user = g.current_user
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    if rule.created_by_user_id != user.id:
+        return "Accès refusé", 403
+
+    inner = render_template(
+        'creator_confirm_modal.html',
+        title="Supprimer le quiz",
+        message=f"Confirmez la suppression du quiz « {rule.name} ». Cette action est irréversible.",
+        action_url=f"/api/creator/quiz-rule/{rule.id}",
+        action_method="delete",
+        target_selector="#quiz-rules-list",
+        confirm_label="🗑️ Supprimer",
+        confirm_button_class="btn-danger",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
 def _get_admin_users():
     admin_profile = Profile.query.filter_by(name='Administrateur').first()
     if not admin_profile:

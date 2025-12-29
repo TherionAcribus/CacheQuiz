@@ -21,8 +21,11 @@
                 onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
                 hx-get="/creator/quiz-rule/{{ rule.id }}/edit"
                 hx-target="#rule-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
-            <button class="btn-icon btn-danger" hx-delete="/api/creator/quiz-rule/{{ rule.id }}"
-                hx-target="#quiz-rules-list" hx-confirm="Supprimer ce quiz ?" title="Supprimer">🗑️</button>
+            <button class="btn-icon btn-danger"
+                hx-get="/api/creator/quiz-rule/{{ rule.id }}/delete/confirm"
+                hx-target="#modal-root"
+                hx-swap="outerHTML"
+                title="Supprimer">🗑️</button>
             </div>
         </div>
 
@@ -144,7 +147,9 @@
 {% endif %}
 
 <style>
-    .rules-list{display:flex;flex-direction:column;gap:1rem}
+    .rules-list{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width: 900px){.rules-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(min-width: 1300px){.rules-list{grid-template-columns:repeat(3,minmax(0,1fr));}}
     .rule-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.9rem;box-shadow:var(--shadow);padding:1rem}
     .rule-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
     .rule-title{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}

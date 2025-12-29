@@ -12,7 +12,11 @@
                 <button class="btn-icon" type="button"
                         onclick="document.getElementById('image-form-container').classList.remove('hidden')"
                         hx-get="/creator/image/{{ image.id }}/edit" hx-target="#image-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
-                <button class="btn-icon btn-danger" hx-delete="/api/creator/image/{{ image.id }}" hx-target="#images-list" hx-confirm="Supprimer cette image ?" title="Supprimer">🗑️</button>
+                <button class="btn-icon btn-danger"
+                        hx-get="/api/creator/image/{{ image.id }}/delete/confirm"
+                        hx-target="#modal-root"
+                        hx-swap="outerHTML"
+                        title="Supprimer">🗑️</button>
             </div>
         </div>
         <div class="image-preview">

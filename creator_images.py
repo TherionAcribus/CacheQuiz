@@ -365,3 +365,26 @@ def delete_creator_image(image_id: int, app):
         return f"Erreur: {str(e)}", 400
 
 
+def confirm_delete_creator_image(image_id: int):
+    """Retourne une modale de confirmation (cohérente) pour supprimer une image."""
+    denied = _ensure_creator_api()
+    if denied:
+        return denied
+
+    user = g.current_user
+    image = ImageAsset.query.get_or_404(image_id)
+    if not image.created_by_user_id or image.created_by_user_id != user.id:
+        return "Accès refusé", 403
+
+    inner = render_template(
+        'creator_confirm_modal.html',
+        title="Supprimer l’image",
+        message=f"Confirmez la suppression de l’image « {image.title} ». Cette action est irréversible.",
+        action_url=f"/api/creator/image/{image.id}",
+        action_method="delete",
+        target_selector="#images-list",
+        confirm_label="🗑️ Supprimer",
+        confirm_button_class="btn-danger",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
