@@ -1,7 +1,7 @@
 <div class="modal-content">
-  <div class="modal-header">
-    <h3>{{ title }}</h3>
-    <button class="btn-close" onclick="document.getElementById('modal-root').style.display='none'; document.getElementById('modal-root').innerHTML=''">&times;</button>
+  <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+    <h3 style="margin:0">{{ title }}</h3>
+    <button class="btn-close" style="margin-left:auto" onclick="document.getElementById('modal-root').style.display='none'; document.getElementById('modal-root').innerHTML=''">&times;</button>
   </div>
   <div class="modal-body">
     <p style="margin:0 0 1rem 0; color: var(--text-light)">{{ message }}</p>

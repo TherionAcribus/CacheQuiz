@@ -37,7 +37,12 @@
                 {% endif %}
                 <a href="/quiz-rules" class="nav-link">Règles du Quiz</a>
                 {% if current_user and current_user.has_perm('can_manage_profiles') %}
-                <a href="/admin/validation" class="nav-link">Validation</a>
+                <a href="/admin/validation" class="nav-link">
+                    Validation
+                    {% if pending_validation_count and pending_validation_count > 0 %}
+                    <span class="nav-badge">{{ pending_validation_count }}</span>
+                    {% endif %}
+                </a>
                 {% endif %}
                 <a href="/analysis" class="nav-link">Analyse</a>
                 <a href="/export" class="nav-link">Export</a>
@@ -133,6 +138,25 @@
             };
         }
     </script>
+
+    <style>
+        .nav-badge{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:18px;
+            height:18px;
+            padding:0 6px;
+            margin-left:6px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:700;
+            background: var(--danger-color, #e53e3e);
+            color:#fff;
+            border:1px solid rgba(255,255,255,0.65);
+            line-height:1;
+        }
+    </style>
 </body>
 </html>
 

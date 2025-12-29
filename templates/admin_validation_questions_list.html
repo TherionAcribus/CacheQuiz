@@ -26,7 +26,12 @@
                     hx-prompt="Raison du refus (optionnel)">
                 ❌ Refuser
             </button>
-            <a class="btn btn-outline btn-small" href="/question/{{ q.id }}/edit" target="_blank">✏️ Ouvrir</a>
+            <button class="btn btn-outline btn-small"
+                    type="button"
+                    onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>Chargement...</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
+                    hx-get="/question/{{ q.id }}/edit"
+                    hx-target="#question-form-container"
+                    hx-swap="innerHTML">✏️ Ouvrir</button>
         </div>
     </div>
     {% endfor %}

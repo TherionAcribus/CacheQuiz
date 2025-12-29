@@ -47,6 +47,7 @@ from creator_questions import (
     delete_creator_question,
     request_question_validation,
     confirm_request_question_validation,
+    creator_get_specific_themes_for_broad_theme,
 )
 from creator_images import (
     creator_images_page,
@@ -271,6 +272,7 @@ app.add_url_rule('/api/creator/question/<int:question_id>', 'update_creator_ques
 app.add_url_rule('/api/creator/question/<int:question_id>', 'delete_creator_question', delete_creator_question, methods=['DELETE'])
 app.add_url_rule('/api/creator/question/<int:question_id>/request-validation', 'request_question_validation', request_question_validation, methods=['POST'])
 app.add_url_rule('/api/creator/question/<int:question_id>/request-validation/confirm', 'confirm_request_question_validation', confirm_request_question_validation, methods=['GET'])
+app.add_url_rule('/api/creator/specific-themes/for-theme/', 'creator_get_specific_themes_for_broad_theme', creator_get_specific_themes_for_broad_theme)
 
 # Creator images
 app.add_url_rule('/creator/images', 'creator_images_page', creator_images_page)

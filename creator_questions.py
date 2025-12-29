@@ -372,3 +372,16 @@ def confirm_request_question_validation(question_id: int):
     return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
 
 
+def creator_get_specific_themes_for_broad_theme():
+    """Retourne les options HTML des sous-thèmes pour un thème large (mode créateur)."""
+    denied = _ensure_creator_api()
+    if denied:
+        return denied
+    broad_theme_id = (request.args.get('broad_theme_id') or '').strip()
+    if broad_theme_id.isdigit():
+        specific_themes = SpecificTheme.query.filter_by(broad_theme_id=int(broad_theme_id)).order_by(SpecificTheme.name).all()
+    else:
+        specific_themes = []
+    return render_template('specific_theme_options.html', specific_themes=specific_themes)
+
+

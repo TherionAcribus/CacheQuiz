@@ -379,4 +379,19 @@ def load_current_user():
 
 def inject_current_user():
     """Injecte l'utilisateur actuel dans tous les templates."""
-    return { 'current_user': getattr(g, 'current_user', None) }
+    user = getattr(g, 'current_user', None)
+    ctx = {'current_user': user}
+
+    # Badge de validation (admin uniquement)
+    try:
+        if user and user.has_perm('can_manage_profiles'):
+            from models import Question, QuizRuleSet
+            pending_questions = Question.query.filter(Question.is_published.is_(False), Question.is_private.is_(False)).count()
+            pending_quizzes = QuizRuleSet.query.filter(QuizRuleSet.visibility_status == 'pending', QuizRuleSet.is_active.is_(True)).count()
+            ctx['pending_validation_count'] = int(pending_questions) + int(pending_quizzes)
+        else:
+            ctx['pending_validation_count'] = 0
+    except Exception:
+        ctx['pending_validation_count'] = 0
+
+    return ctx

@@ -298,6 +298,7 @@
                     <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a></small>
                     {% endif %}
                 </div>
+                {% if not creator_mode %}
                 <div class="form-group">
                     <label for="translation_id">ID de traduction (question liée)</label>
                     <input type="number" id="translation_id" name="translation_id"
@@ -305,6 +306,7 @@
                         value="{{ question.translation_id if question and question.translation_id else '' }}">
                     <small>Utilisé pour lier des questions dans différentes langues</small>
                 </div>
+                {% endif %}
             </div>
 
             <div class="form-row">
@@ -428,7 +430,7 @@
         }
 
         // Faire une requête pour récupérer les sous-thèmes
-        fetch(`/api/specific-themes/for-theme/?broad_theme_id=${broadThemeId}`)
+        fetch(`{% if creator_mode %}/api/creator/specific-themes/for-theme/{% else %}/api/specific-themes/for-theme/{% endif %}?broad_theme_id=${broadThemeId}`)
             .then(response => response.text())
             .then(html => {
                 specificThemeSelect.innerHTML = html;

@@ -28,7 +28,12 @@
                     hx-prompt="Raison du refus (optionnel)">
                 ❌ Refuser
             </button>
-            <a class="btn btn-outline btn-small" href="/quiz-rule/{{ rule.id }}/edit" target="_blank">✏️ Ouvrir</a>
+            <button class="btn btn-outline btn-small"
+                    type="button"
+                    onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
+                    hx-get="/quiz-rule/{{ rule.id }}/edit"
+                    hx-target="#rule-form-container"
+                    hx-swap="innerHTML">✏️ Ouvrir</button>
         </div>
     </div>
     {% endfor %}

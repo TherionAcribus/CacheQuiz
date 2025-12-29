@@ -33,12 +33,19 @@
     </section>
 </div>
 
+<!-- Conteneurs modales (cohérent avec l'admin classique) -->
+<div id="question-form-container" class="hidden form-modal"></div>
+<div id="rule-form-container" class="hidden form-modal"></div>
+
 <style>
     .text-muted{color:var(--text-light)}
     .validation-grid{display:grid;grid-template-columns:1fr;gap:1rem}
     @media(min-width: 980px){.validation-grid{grid-template-columns:1fr 1fr}}
     .panel{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.9rem;box-shadow:var(--shadow);padding:1rem}
     .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .hidden{display:none}
+    .form-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem;overflow-y:auto}
+    .form-modal.hidden{display:none}
 </style>
 {% endblock %}
 
