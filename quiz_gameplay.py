@@ -284,7 +284,7 @@ def next_quiz_question():
             ).get(next_question_id)
         else:
             # Mode sans set explicite: fallback à l'aléatoire historique (comme avant)
-            query = Question.query.filter(Question.is_published.is_(True))
+            query = Question.query.filter(Question.is_published.is_(True), Question.is_private.is_(False))
             query = _apply_quiz_filters(query, params)
             if history_ids:
                 query = query.filter(~Question.id.in_(history_ids))

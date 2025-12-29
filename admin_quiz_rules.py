@@ -2,7 +2,7 @@ import os
 import json
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, session, g, flash
-from models import db, QuizRuleSet, Question, BroadTheme, SpecificTheme, Country, ImageAsset, User, UserQuizSession, Keyword
+from models import db, QuizRuleSet, Question, BroadTheme, SpecificTheme, Country, ImageAsset, User, UserQuizSession, Keyword, Conversation, ConversationParticipant, ConversationMessage
 from auth import _has_perm, _ensure_admin_page_redirect, _ensure_perm_api, _deny_access
 from unidecode import unidecode
 from collections import Counter
@@ -478,6 +478,102 @@ def check_quiz_rule_slug():
         return f'<span class="field-error">Le slug \'{slug}\' existe déjà</span>'
     else:
         return f'<span style="color: #28a745; font-size: 0.875rem;">✓ Le slug \'{slug}\' est disponible</span>'
+
+
+def _get_or_create_publication_conversation(rule: QuizRuleSet):
+    """Récupère la conversation de demande de publication (si existante), sinon la crée."""
+    conv = Conversation.query.filter_by(context_type='quiz_publication', context_id=rule.id).order_by(Conversation.created_at.desc()).first()
+    if conv:
+        return conv
+    subject = f"Publication quiz: {rule.name} ({rule.slug})"
+    conv = Conversation(subject=subject, context_type='quiz_publication', context_id=rule.id)
+    db.session.add(conv)
+    db.session.flush()
+    return conv
+
+
+def approve_quiz_publication(rule_id: int):
+    """Approuver la publication d'un quiz (set de règles) côté admin."""
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    admin = getattr(g, 'current_user', None)
+
+    try:
+        rule.visibility_status = 'public'
+        rule.public_reviewed_at = datetime.utcnow()
+        rule.public_reviewed_by_user_id = admin.id if admin else None
+        rule.public_review_note = None
+        rule.updated_at = datetime.utcnow()
+
+        conv = _get_or_create_publication_conversation(rule)
+
+        # S'assurer que le créateur est participant
+        if rule.created_by_user_id:
+            existing = ConversationParticipant.query.filter_by(conversation_id=conv.id, user_id=rule.created_by_user_id).first()
+            if not existing:
+                db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rule.created_by_user_id, last_read_at=None))
+
+        msg = ConversationMessage(
+            conversation_id=conv.id,
+            sender_id=admin.id if admin else None,
+            content=f"✅ Publication approuvée. Votre quiz « {rule.name} » est maintenant PUBLIC.",
+        )
+        db.session.add(msg)
+
+        db.session.commit()
+
+        rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+        return render_template('quiz_rules_list.html', rules=rules)
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur: {str(e)}", 400
+
+
+def reject_quiz_publication(rule_id: int):
+    """Refuser la publication d'un quiz (set de règles) côté admin."""
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+
+    rule = QuizRuleSet.query.get_or_404(rule_id)
+    admin = getattr(g, 'current_user', None)
+    note = (request.form.get('prompt') or request.form.get('note') or '').strip() or None
+
+    try:
+        rule.visibility_status = 'rejected'
+        rule.public_reviewed_at = datetime.utcnow()
+        rule.public_reviewed_by_user_id = admin.id if admin else None
+        rule.public_review_note = note
+        rule.updated_at = datetime.utcnow()
+
+        conv = _get_or_create_publication_conversation(rule)
+
+        if rule.created_by_user_id:
+            existing = ConversationParticipant.query.filter_by(conversation_id=conv.id, user_id=rule.created_by_user_id).first()
+            if not existing:
+                db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=rule.created_by_user_id, last_read_at=None))
+
+        msg_txt = f"❌ Publication refusée pour « {rule.name} »."
+        if note:
+            msg_txt += f"\n\nRaison: {note}"
+
+        msg = ConversationMessage(
+            conversation_id=conv.id,
+            sender_id=admin.id if admin else None,
+            content=msg_txt,
+        )
+        db.session.add(msg)
+
+        db.session.commit()
+
+        rules = QuizRuleSet.query.order_by(QuizRuleSet.updated_at.desc()).all()
+        return render_template('quiz_rules_list.html', rules=rules)
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur: {str(e)}", 400
 
 
 def count_questions_for_rule():

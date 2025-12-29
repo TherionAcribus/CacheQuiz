@@ -18,6 +18,11 @@ def play_quiz():
     auto_start = auto_start_param in ('1', 'true', 'yes', 'on')
     if rule_set_slug:
         rule_set = QuizRuleSet.query.filter_by(slug=rule_set_slug, is_active=True).first()
+        if rule_set:
+            user = getattr(g, 'current_user', None)
+            is_owner = bool(user and rule_set.created_by_user_id == user.id)
+            if getattr(rule_set, 'visibility_status', 'public') != 'public' and not is_owner:
+                return redirect(url_for('play_quiz'))
     else:
         # Si on arrive sans set explicite et qu'il existait une session en cours, l'abandonner
         if getattr(g, 'current_user', None):
@@ -32,8 +37,18 @@ def play_quiz():
             except Exception:
                 db.session.rollback()
 
-    # Récupérer tous les sets de règles actifs
-    rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
+    # Récupérer les sets de règles visibles
+    user = getattr(g, 'current_user', None)
+    if user:
+        rule_sets = QuizRuleSet.query.filter(
+            QuizRuleSet.is_active.is_(True),
+            db.or_(
+                QuizRuleSet.visibility_status == 'public',
+                QuizRuleSet.created_by_user_id == user.id
+            )
+        ).order_by(QuizRuleSet.name).all()
+    else:
+        rule_sets = QuizRuleSet.query.filter_by(is_active=True, visibility_status='public').order_by(QuizRuleSet.name).all()
 
     quick_double_click_pref = _get_user_double_click_preference()
     if 'quick_double_click_enabled' in session:
@@ -66,8 +81,22 @@ def play_quiz_by_slug(slug):
         # Redirection vers la page de sélection si le slug n'existe pas
         return redirect(url_for('play_quiz'))
 
+    user = getattr(g, 'current_user', None)
+    is_owner = bool(user and rule_set.created_by_user_id == user.id)
+    if getattr(rule_set, 'visibility_status', 'public') != 'public' and not is_owner:
+        return redirect(url_for('play_quiz'))
+
     # Récupérer tous les sets de règles actifs pour le sélecteur
-    rule_sets = QuizRuleSet.query.filter_by(is_active=True).order_by(QuizRuleSet.name).all()
+    if user:
+        rule_sets = QuizRuleSet.query.filter(
+            QuizRuleSet.is_active.is_(True),
+            db.or_(
+                QuizRuleSet.visibility_status == 'public',
+                QuizRuleSet.created_by_user_id == user.id
+            )
+        ).order_by(QuizRuleSet.name).all()
+    else:
+        rule_sets = QuizRuleSet.query.filter_by(is_active=True, visibility_status='public').order_by(QuizRuleSet.name).all()
 
     quick_double_click_pref = _get_user_double_click_preference()
     if 'quick_double_click_enabled' in session:

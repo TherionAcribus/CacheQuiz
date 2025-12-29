@@ -1,0 +1,35 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🧩 Mes quiz</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+                onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
+                hx-get="/creator/quiz-rule/new"
+                hx-target="#rule-form-container"
+                hx-swap="innerHTML">
+            + Nouveau quiz
+        </button>
+    </div>
+    <p class="text-muted">Les quiz sont privés par défaut. Vous pouvez demander la publication pour relecture admin.</p>
+</div>
+
+<div id="rule-form-container" class="hidden form-modal"></div>
+
+<div id="quiz-rules-list"
+     hx-get="/api/creator/quiz-rules"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <div class="loading">Chargement...</div>
+</div>
+
+<style>
+    .hidden{display:none}
+    .form-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem;overflow:auto}
+    .form-modal.hidden{display:none}
+    .text-muted{color:var(--text-light)}
+</style>
+{% endblock %}
+
+

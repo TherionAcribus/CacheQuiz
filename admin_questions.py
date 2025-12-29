@@ -1,5 +1,5 @@
 from flask import render_template, request, g
-from models import db, Question, User, BroadTheme, SpecificTheme, Country, ImageAsset, AnswerImageLink, Keyword, QuestionAnswerStat, UserQuestionStat, SavedQuestion
+from models import db, Question, User, BroadTheme, SpecificTheme, Country, ImageAsset, AnswerImageLink, Keyword, QuestionAnswerStat, UserQuestionStat, SavedQuestion, Conversation, ConversationParticipant, ConversationMessage
 from auth import _ensure_admin_page_redirect, _ensure_perm_api, _deny_access, _has_perm
 from datetime import datetime
 
@@ -325,8 +325,32 @@ def toggle_question_status(question_id):
         can_own = _has_perm('can_update_delete_own_question')
         if not (can_any or (can_own and getattr(g, 'current_user', None) and question.author_id == g.current_user.id)):
             return _deny_access("Permission 'can_update_delete_own_question' ou 'can_update_delete_any_question' requise")
-        question.is_published = not question.is_published
+        new_val = not question.is_published
+        question.is_published = new_val
+        # Une question publiée ne doit pas rester privée (sinon elle n'entre jamais dans le pool public)
+        if question.is_published:
+            question.is_private = False
         question.updated_at = datetime.utcnow()
+
+        # Si on publie une question, notifier le créateur via la conversation de publication (si applicable)
+        if new_val and question.author_id:
+            try:
+                conv = Conversation.query.filter_by(context_type='question_publication', context_id=question.id).order_by(Conversation.created_at.desc()).first()
+                if conv:
+                    # S'assurer que l'auteur est participant
+                    existing = ConversationParticipant.query.filter_by(conversation_id=conv.id, user_id=question.author_id).first()
+                    if not existing:
+                        db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=question.author_id, last_read_at=None))
+                    admin = getattr(g, 'current_user', None)
+                    db.session.add(ConversationMessage(
+                        conversation_id=conv.id,
+                        sender_id=admin.id if admin else None,
+                        content=f"✅ Question validée et publiée (Q{question.id}).",
+                    ))
+            except Exception:
+                # On ne bloque pas la publication si la messagerie échoue
+                pass
+
         db.session.commit()
 
         # Retourner uniquement le contenu de la cellule statut mis à jour

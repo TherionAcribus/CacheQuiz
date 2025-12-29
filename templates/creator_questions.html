@@ -1,0 +1,30 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>❓ Mes questions</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary"
+            onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>Chargement...</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
+            hx-get="/creator/question/new" hx-target="#question-form-container" hx-swap="innerHTML">
+            + Nouvelle question
+        </button>
+    </div>
+    <p class="text-muted">Vos questions sont privées par défaut. Pour demander une publication, utilisez “Demander validation”.</p>
+</div>
+
+<div id="question-form-container" class="hidden form-modal"></div>
+
+<div id="questions-list" hx-get="/api/creator/questions" hx-trigger="load" hx-swap="innerHTML">
+    <div class="loading">Chargement...</div>
+</div>
+
+<style>
+    .hidden{display:none}
+    .form-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:2rem;overflow-y:auto}
+    .form-modal.hidden{display:none}
+    .text-muted{color:var(--text-light)}
+</style>
+{% endblock %}
+
+

@@ -483,6 +483,10 @@ class ImageAsset(db.Model):
     copyright_link = db.Column(db.Text)  # Lien vers la source/origine de l'image
     copyright_credits = db.Column(db.Text)  # Crédits (nom de l'auteur, source, etc.)
 
+    # Propriétaire (créateur)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_by_user = db.relationship('User', foreign_keys=[created_by_user_id])
+
     # Relations inverses
     questions = db.relationship('Question',
                                 secondary=question_images,
@@ -637,6 +641,18 @@ class QuizRuleSet(db.Model):
     description = db.Column(db.Text)
     comment = db.Column(db.Text)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    # Visibilité / modération (publication contrôlée pour les quizzes créés par les joueurs)
+    # - public: visible par tous et jouable
+    # - private: visible/jouable uniquement par le créateur
+    # - pending: demande de publication en attente de review admin
+    # - rejected: publication refusée (reste non-public)
+    visibility_status = db.Column(db.String(20), nullable=False, default='public')
+    public_requested_at = db.Column(db.DateTime, nullable=True)
+    public_reviewed_at = db.Column(db.DateTime, nullable=True)
+    public_reviewed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    public_reviewed_by_user = db.relationship('User', foreign_keys=[public_reviewed_by_user_id])
+    public_review_note = db.Column(db.Text, nullable=True)
 
     # Auteur / créateur
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

@@ -36,6 +36,9 @@
                 <a href="/profiles" class="nav-link">Profils</a>
                 {% endif %}
                 <a href="/quiz-rules" class="nav-link">Règles du Quiz</a>
+                {% if current_user and current_user.has_perm('can_manage_profiles') %}
+                <a href="/admin/validation" class="nav-link">Validation</a>
+                {% endif %}
                 <a href="/analysis" class="nav-link">Analyse</a>
                 <a href="/export" class="nav-link">Export</a>
             </nav>
@@ -90,6 +93,46 @@
         border-bottom: 1px solid var(--border-color);
     }
     </style>
+
+    <script>
+        // ===== Modales utilitaires (remplace alert()) =====
+        function closeAppModal() {
+            const root = document.getElementById('modal-root');
+            if (!root) return;
+            root.style.display = 'none';
+            root.innerHTML = '';
+        }
+
+        function showAppModal(opts) {
+            const root = document.getElementById('modal-root');
+            if (!root) return;
+            const title = (opts && opts.title) ? String(opts.title) : 'Information';
+            const message = (opts && opts.message) ? String(opts.message) : '';
+            const variant = (opts && opts.variant) ? String(opts.variant) : 'info'; // info|success|warning|danger
+            const border = variant === 'danger' ? 'rgba(229,62,62,.25)' : 'var(--border-color)';
+
+            root.className = 'modal-overlay';
+            root.style.display = 'flex';
+            root.innerHTML = `
+              <div class="modal-content" style="max-width: 560px; width: 92%; border: 1px solid ${border}">
+                <div class="modal-header">
+                  <h3 style="margin:0">${title}</h3>
+                  <button class="btn-close" onclick="closeAppModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 1.25rem">
+                  <div class="alert alert-${variant}" style="margin:0 0 1rem 0">${message}</div>
+                  <div style="display:flex; justify-content:flex-end">
+                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">OK</button>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            root.onclick = function (e) {
+                if (e.target === root) closeAppModal();
+            };
+        }
+    </script>
 </body>
 </html>
 

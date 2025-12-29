@@ -1,0 +1,50 @@
+{% if questions %}
+<div class="pending-list">
+    {% for q in questions %}
+    <div class="item">
+        <div class="item-main">
+            <div class="item-title">
+                <strong>Q{{ q.id }}</strong>
+                <span class="muted">par {{ q.author_user.username if q.author_user else 'N/A' }}</span>
+            </div>
+            <div class="item-text">{{ q.question_text }}</div>
+            <div class="item-meta">
+                <span class="badge">Thème: {{ q.theme.name if q.theme else 'N/A' }}</span>
+                <span class="badge">Diff: {{ q.difficulty_level or 'N/A' }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/admin/validation/question/{{ q.id }}/approve"
+                    hx-target="#pending-questions"
+                    hx-confirm="Valider et publier cette question ?">
+                ✅ Approuver
+            </button>
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/admin/validation/question/{{ q.id }}/reject"
+                    hx-target="#pending-questions"
+                    hx-prompt="Raison du refus (optionnel)">
+                ❌ Refuser
+            </button>
+            <a class="btn btn-outline btn-small" href="/question/{{ q.id }}/edit" target="_blank">✏️ Ouvrir</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty muted">Aucune question en attente.</div>
+{% endif %}
+
+<style>
+    .pending-list{display:flex;flex-direction:column;gap:.75rem}
+    .item{border:1px solid var(--border-color);border-radius:.75rem;padding:.75rem;display:flex;gap:1rem;justify-content:space-between;align-items:flex-start}
+    .item-title{display:flex;gap:.5rem;align-items:baseline}
+    .item-text{margin:.4rem 0 .6rem 0}
+    .item-meta{display:flex;gap:.5rem;flex-wrap:wrap}
+    .item-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+    .badge{background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);border-radius:.5rem;padding:.15rem .45rem;font-size:.8rem}
+    .muted{color:var(--text-light)}
+    .empty{padding:.75rem}
+</style>
+
+

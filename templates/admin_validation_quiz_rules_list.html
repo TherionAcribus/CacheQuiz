@@ -1,0 +1,52 @@
+{% if rules %}
+<div class="pending-list">
+    {% for rule in rules %}
+    <div class="item">
+        <div class="item-main">
+            <div class="item-title">
+                <strong>{{ rule.name }}</strong>
+                <span class="muted">/{{ rule.slug }}</span>
+            </div>
+            {% if rule.description %}
+            <div class="item-text">{{ rule.description }}</div>
+            {% endif %}
+            <div class="item-meta">
+                <span class="badge">Créateur: {{ rule.created_by_user.username if rule.created_by_user else 'N/A' }}</span>
+                <span class="badge">Timer: {{ rule.timer_seconds }}s</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/quiz-rule/{{ rule.id }}/review/approve"
+                    hx-target="#pending-quiz-rules"
+                    hx-confirm="Approuver la publication de ce quiz ?">
+                ✅ Approuver
+            </button>
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/quiz-rule/{{ rule.id }}/review/reject"
+                    hx-target="#pending-quiz-rules"
+                    hx-prompt="Raison du refus (optionnel)">
+                ❌ Refuser
+            </button>
+            <a class="btn btn-outline btn-small" href="/quiz-rule/{{ rule.id }}/edit" target="_blank">✏️ Ouvrir</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty muted">Aucun quiz en attente.</div>
+{% endif %}
+
+<style>
+    .pending-list{display:flex;flex-direction:column;gap:.75rem}
+    .item{border:1px solid var(--border-color);border-radius:.75rem;padding:.75rem;display:flex;gap:1rem;justify-content:space-between;align-items:flex-start}
+    .item-title{display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap}
+    .item-text{margin:.4rem 0 .6rem 0}
+    .item-meta{display:flex;gap:.5rem;flex-wrap:wrap}
+    .item-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}
+    .badge{background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.08);border-radius:.5rem;padding:.15rem .45rem;font-size:.8rem}
+    .muted{color:var(--text-light)}
+    .empty{padding:.75rem}
+</style>
+
+

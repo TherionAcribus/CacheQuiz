@@ -651,7 +651,9 @@
             }
         } catch (error) {
             console.error('Erreur:', error);
-            alert('Erreur lors de la suppression');
+            if (window.showAppModal) {
+                showAppModal({ title: "Erreur", message: "Erreur lors de la suppression.", variant: "danger" });
+            }
         }
     }
 

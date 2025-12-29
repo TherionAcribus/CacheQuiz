@@ -7,6 +7,15 @@
                 <h3>{{ rule.name }}</h3>
                 {% if rule.slug %}<span class="slug">/{{ rule.slug }}</span>{% endif %}
                 {% if rule.is_active %}<span class="badge badge-active">Actif</span>{% else %}<span class="badge badge-inactive">Inactif</span>{% endif %}
+                {% if rule.visibility_status == 'public' %}
+                <span class="badge badge-published">Public</span>
+                {% elif rule.visibility_status == 'pending' %}
+                <span class="badge badge-pending">En attente</span>
+                {% elif rule.visibility_status == 'rejected' %}
+                <span class="badge badge-rejected">Refusé</span>
+                {% elif rule.visibility_status == 'private' %}
+                <span class="badge badge-private">Privé</span>
+                {% endif %}
             </div>
             <div class="rule-actions">
                 <button class="btn-icon" type="button"
@@ -17,6 +26,23 @@
                         hx-target="#quiz-rules-list" hx-confirm="Supprimer ce set de règles ?" title="Supprimer">🗑️</button>
             </div>
         </div>
+
+        {% if current_user and current_user.has_perm('can_manage_profiles') and rule.visibility_status == 'pending' %}
+        <div class="review-actions">
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/quiz-rule/{{ rule.id }}/review/approve"
+                    hx-target="#quiz-rules-list"
+                    hx-confirm="Approuver la publication de ce quiz ?">
+                ✅ Approuver
+            </button>
+            <button class="btn btn-outline btn-small"
+                    hx-post="/api/quiz-rule/{{ rule.id }}/review/reject"
+                    hx-target="#quiz-rules-list"
+                    hx-prompt="Raison du refus (optionnel)">
+                ❌ Refuser
+            </button>
+        </div>
+        {% endif %}
         {% if rule.description %}
         <p class="desc">{{ rule.description }}</p>
         {% endif %}
@@ -66,6 +92,11 @@
 .stat{background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;padding:.1rem .4rem;border-radius:.25rem;font-size:.8rem}
 .badge-active{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
 .badge-inactive{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.badge-private{background:rgba(0,0,0,.06);color:var(--text-color);border:1px solid rgba(0,0,0,.08);padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.badge-published{background:rgba(46,125,50,.12);color:#166534;border:1px solid #bbf7d0;padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.badge-pending{background:rgba(245,158,11,.18);color:#92400e;border:1px solid rgba(245,158,11,.35);padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.badge-rejected{background:rgba(229,62,62,.12);color:#b91c1c;border:1px solid rgba(229,62,62,.25);padding:.1rem .4rem;border-radius:.25rem;font-size:.75rem}
+.review-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0}
 .rule-footer{display:flex;flex-direction:column;gap:.25rem;border-top:1px solid var(--border-color);padding-top:.5rem;color:var(--text-light);font-size:.75rem}
 .rule-url{display:flex;flex-direction:column;gap:.25rem;margin-top:.5rem;border:1px solid #e2e8f0;border-radius:.25rem;padding:.5rem;background:#f8fafc}
 .url-input{width:100%;padding:.25rem;border:1px solid #d1d5db;border-radius:.25rem;background:white;font-family:monospace;font-size:.8rem}

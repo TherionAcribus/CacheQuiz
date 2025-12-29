@@ -1,0 +1,31 @@
+<div class="access-denied">
+    <h3>🚫 Accès refusé</h3>
+    <p>{{ reason }}</p>
+    <p><em>Vous devez être connecté avec un compte protégé par mot de passe.</em></p>
+    <div style="margin-top: 1rem;">
+        <a href="/login?next=/creator" class="btn btn-secondary">Se connecter</a>
+    </div>
+</div>
+
+<style>
+    .access-denied {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 0.75rem;
+        text-align: center;
+        max-width: 520px;
+        margin: 0 auto;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+    .access-denied h3 {
+        color: #e53e3e;
+        margin-bottom: 1rem;
+    }
+    .access-denied p {
+        margin-bottom: 0.75rem;
+        color: var(--text-light);
+    }
+</style>
+
+

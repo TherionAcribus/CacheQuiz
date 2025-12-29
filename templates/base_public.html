@@ -115,6 +115,45 @@
     </div>
 
     <script>
+        // ===== Modales utilitaires (remplace alert()) =====
+        function closeAppModal() {
+            const root = document.getElementById('modal-root');
+            if (!root) return;
+            root.style.display = 'none';
+            root.innerHTML = '';
+        }
+
+        function showAppModal(opts) {
+            const root = document.getElementById('modal-root');
+            if (!root) return;
+            const title = (opts && opts.title) ? String(opts.title) : 'Information';
+            const message = (opts && opts.message) ? String(opts.message) : '';
+            const variant = (opts && opts.variant) ? String(opts.variant) : 'info'; // info|success|warning|danger
+            const border = variant === 'danger' ? 'rgba(229,62,62,.25)' : 'var(--border-color)';
+
+            root.className = 'modal-overlay';
+            root.style.display = 'flex';
+            root.innerHTML = `
+              <div class="modal-content" style="max-width: 560px; width: 92%; border: 1px solid ${border}">
+                <div class="modal-header">
+                  <h3 style="margin:0">${title}</h3>
+                  <button class="btn-close" onclick="closeAppModal()">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 1.25rem">
+                  <div class="alert alert-${variant}" style="margin:0 0 1rem 0">${message}</div>
+                  <div style="display:flex; justify-content:flex-end">
+                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">OK</button>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            // clic sur overlay => fermer
+            root.onclick = function (e) {
+                if (e.target === root) closeAppModal();
+            };
+        }
+
         // Fonctions pour la modale de quitter depuis le header
         function showHeaderQuitModal(targetUrl) {
             const modal = document.getElementById('header-quit-modal');

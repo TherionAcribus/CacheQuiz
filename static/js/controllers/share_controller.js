@@ -219,7 +219,9 @@ export default class extends Controller {
             }, 2000)
         } catch (err) {
             console.error('Erreur lors de la copie', err)
-            alert('Impossible de copier le lien')
+            if (window.showAppModal) {
+                showAppModal({ title: "Erreur", message: "Impossible de copier le lien.", variant: "danger" })
+            }
         }
     }
 

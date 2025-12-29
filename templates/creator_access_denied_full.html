@@ -1,0 +1,62 @@
+{% extends "base_public.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🚫 Accès refusé</h2>
+</div>
+
+<div class="access-denied-container">
+    <div class="access-denied-card">
+        <h3>Espace Créateur</h3>
+        <p>Vous devez être connecté avec un compte protégé par mot de passe pour accéder à cette zone.</p>
+
+        <div class="actions">
+            <a href="/play" class="btn btn-primary">Retour au quiz</a>
+            <a href="/login?next=/creator" class="btn btn-secondary">Se connecter</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .access-denied-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+        padding: 2rem 0;
+    }
+
+    .access-denied-card {
+        background: var(--card-bg);
+        padding: 2.5rem 2rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        text-align: center;
+        max-width: 560px;
+        width: 100%;
+        border: 1px solid var(--border-color);
+    }
+
+    .access-denied-card h3 {
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+        color: var(--text-color);
+    }
+
+    .access-denied-card p {
+        margin-bottom: 1.25rem;
+        color: var(--text-light);
+        font-size: 1.05rem;
+    }
+
+    .actions {
+        margin-top: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+

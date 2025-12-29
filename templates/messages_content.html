@@ -397,7 +397,9 @@ function confirmDeleteConversation() {
     showDeleteConversationModal(convId);
     confirmBtn.disabled = false;
     confirmBtn.textContent = 'Supprimer';
-    alert('Erreur lors de la suppression. Veuillez réessayer.');
+    if (window.showAppModal) {
+      showAppModal({ title: "Erreur", message: "Erreur lors de la suppression. Veuillez réessayer.", variant: "danger" });
+    }
   });
 }
 

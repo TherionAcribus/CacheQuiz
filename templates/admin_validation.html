@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>✅ Validation</h2>
+    <p class="text-muted">Validez les questions et les quiz demandés publics.</p>
+</div>
+
+<div class="validation-grid">
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Questions en attente</h3>
+        </div>
+        <div id="pending-questions"
+             hx-get="/api/admin/validation/questions"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Chargement...</div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <h3>Quiz en attente</h3>
+        </div>
+        <div id="pending-quiz-rules"
+             hx-get="/api/admin/validation/quiz-rules"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="loading">Chargement...</div>
+        </div>
+        <small class="text-muted">Astuce: l’approbation/refus poste un message dans la conversation de publication.</small>
+    </section>
+</div>
+
+<style>
+    .text-muted{color:var(--text-light)}
+    .validation-grid{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width: 980px){.validation-grid{grid-template-columns:1fr 1fr}}
+    .panel{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.9rem;box-shadow:var(--shadow);padding:1rem}
+    .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+</style>
+{% endblock %}
+
+

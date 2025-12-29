@@ -5,9 +5,13 @@
             onclick="document.getElementById('question-form-container').classList.add('hidden')">✕</button>
     </div>
 
+    {% if form_action %}
+    <form hx-post="{{ form_action }}"
+    {% else %}
     <form {% if question %} hx-post="/api/question/{{ question.id }}" {% else %} hx-post="/api/question" {% endif %}
+    {% endif %}
         hx-target="#questions-list" hx-swap="innerHTML"
-        hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden'); updateStats()">
+        hx-on::after-request="document.getElementById('question-form-container').classList.add('hidden'); if (window.updateStats) updateStats()">
 
         <div class="form-grid-rows">
             <div class="form-row">
@@ -41,12 +45,11 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-small"
-                            onclick="openEmbeddedImageModal('question_image_id')">+</button>
-                        <button type="button" class="btn btn-small btn-outline"
-                            onclick="openImageGalleryModal('question_image_id')" title="Ouvrir la galerie">🖼️</button>
-                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
-                            title="Rafraîchir la liste des images">↻</button>
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('question_image_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('question_image_id')" title="Ouvrir la galerie">🖼️</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                        {% endif %}
                     </div>
                     <div id="question-image-preview" class="image-preview"
                         style="{% if question and question.images %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -55,8 +58,11 @@
                             alt="Aperçu">
                     </div>
                     <small>Image illustrative complémentaire pour la question</small>
-                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les
-                            images</a></small>
+                    {% if not creator_mode %}
+                    <small>
+                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a>
+                    </small>
+                    {% endif %}
                 </div>
             </div>
 
@@ -64,8 +70,8 @@
                 <div class="form-group">
                     <label for="broad_theme_id">Thématique large</label>
                     <div class="input-with-action">
-                        <select id="broad_theme_id" name="broad_theme_id" onchange="updateSpecificThemes(this.value)">
-                            <option value="">-- Aucun thème --</option>
+                        <select id="broad_theme_id" name="broad_theme_id" onchange="updateSpecificThemes(this.value)" {% if creator_mode %}required{% endif %}>
+                            <option value="">{% if creator_mode %}-- Choisir un thème --{% else %}-- Aucun thème --{% endif %}</option>
                             {% for theme in themes %}
                             <option value="{{ theme.id }}" {% if question and question.broad_theme_id==theme.id
                                 %}selected{% endif %}>
@@ -74,13 +80,17 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-small"
-                            onclick="openEmbeddedThemeModal('broad_theme_id')">+</button>
-                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()"
-                            title="Rafraîchir la liste des thèmes">↻</button>
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small" onclick="openEmbeddedThemeModal('broad_theme_id')">+</button>
+                        {% endif %}
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                        {% endif %}
                     </div>
                     <small>
+                        {% if not creator_mode %}
                         <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
+                        {% endif %}
                     </small>
                 </div>
                 <div class="form-group">
@@ -98,14 +108,17 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-small"
-                            onclick="openEmbeddedSpecificThemeModal('specific_theme_id')">+</button>
-                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()"
-                            title="Rafraîchir la liste des thèmes">↻</button>
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small" onclick="openEmbeddedSpecificThemeModal('specific_theme_id')">+</button>
+                        {% endif %}
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshThemeSelects()" title="Rafraîchir la liste des thèmes">↻</button>
+                        {% endif %}
                     </div>
                     <small>
-                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les
-                            sous-thèmes</a>
+                        {% if not creator_mode %}
+                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
+                        {% endif %}
                     </small>
                 </div>
             </div>
@@ -164,13 +177,11 @@
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-small"
-                                    onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+</button>
-                                <button type="button" class="btn btn-small btn-outline"
-                                    onclick="openImageGalleryModal('answer_image_id_{{ i }}')"
-                                    title="Ouvrir la galerie">🖼️</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
-                                    title="Rafraîchir la liste des images">↻</button>
+                                {% if not creator_mode %}
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('answer_image_id_{{ i }}')">+</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('answer_image_id_{{ i }}')" title="Ouvrir la galerie">🖼️</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -224,13 +235,11 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <button type="button" class="btn btn-small"
-                            onclick="openEmbeddedImageModal('detailed_answer_image_id')">+</button>
-                        <button type="button" class="btn btn-small btn-outline"
-                            onclick="openImageGalleryModal('detailed_answer_image_id')"
-                            title="Ouvrir la galerie">🖼️</button>
-                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()"
-                            title="Rafraîchir la liste des images">↻</button>
+                        {% if not creator_mode %}
+                        <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('detailed_answer_image_id')">+</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('detailed_answer_image_id')" title="Ouvrir la galerie">🖼️</button>
+                        <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                        {% endif %}
                     </div>
                     <div id="detailed-answer-image-preview" class="image-preview"
                         style="{% if question and question.detailed_answer_image_id %}display: inline-block;{% else %}display: none;{% endif %}">
@@ -239,8 +248,11 @@
                             alt="Aperçu">
                     </div>
                     <small>Image illustrative pour accompagner l'explication détaillée</small>
-                    <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les
-                            images</a></small>
+                    {% if not creator_mode %}
+                    <small>
+                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a>
+                    </small>
+                    {% endif %}
                 </div>
             </div>
 
@@ -282,8 +294,9 @@
                         {% endfor %}
                     </div>
                     <small>Sélectionnez tous les pays concernés par cette question</small>
-                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les
-                            pays</a></small>
+                    {% if not creator_mode %}
+                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a></small>
+                    {% endif %}
                 </div>
                 <div class="form-group">
                     <label for="translation_id">ID de traduction (question liée)</label>
@@ -295,13 +308,15 @@
             </div>
 
             <div class="form-row">
+                {% if not creator_mode %}
                 <div class="form-group">
                     <label class="checkbox-label">
-                        <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{%
-                            endif %}>
+                        <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{% endif %}>
                         Question en ligne (publiée)
                     </label>
                 </div>
+                {% endif %}
+                {% if not creator_mode %}
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_private" {% if question and question.is_private %}checked{%
@@ -310,6 +325,7 @@
                     </label>
                     <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
                 </div>
+                {% endif %}
             </div>
 
             {% if question %}
@@ -492,7 +508,7 @@
     // Fonction pour rafraîchir tous les selects d'images de la page
     function refreshImageSelects() {
         // Faire un appel à une API JSON pour obtenir les données des images
-        fetch('/api/images/json', { headers: { 'HX-Request': 'true' } })
+        fetch('{% if creator_mode %}/api/creator/images/json{% else %}/api/images/json{% endif %}', { headers: { 'HX-Request': 'true' } })
             .then(function (r) {
                 if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
                 return r.json();
@@ -833,7 +849,7 @@
         console.log('[openEmbeddedImageModal] overlay displayed');
 
         // Charger le formulaire d'image en mode embarqué
-        var url = '/image/new?embedded=1&select_id=' + encodeURIComponent(selectId);
+        var url = '{% if creator_mode %}/creator/image/new{% else %}/image/new{% endif %}?embedded=1&select_id=' + encodeURIComponent(selectId);
         console.log('[openEmbeddedImageModal] fetching:', url);
         fetch(url, { headers: { 'HX-Request': 'true' } })
             .then(function (r) {
@@ -1121,7 +1137,9 @@
             })
             .catch(function (err) {
                 console.error('Erreur lors de la création du sous-thème:', err);
-                alert('Erreur lors de la création du sous-thème: ' + err.message);
+                if (window.showAppModal) {
+                    showAppModal({ title: "Erreur", message: "Erreur lors de la création du sous-thème: " + err.message, variant: "danger" });
+                }
             });
 
         // Empêcher toute soumission de formulaire
@@ -1170,7 +1188,9 @@
             })
             .catch(function (err) {
                 console.error('Erreur lors de la création du thème:', err);
-                alert('Erreur lors de la création du thème: ' + err.message);
+                if (window.showAppModal) {
+                    showAppModal({ title: "Erreur", message: "Erreur lors de la création du thème: " + err.message, variant: "danger" });
+                }
             });
 
         // Empêcher toute soumission de formulaire
@@ -1212,7 +1232,9 @@
             })
             .catch(function (err) {
                 console.error('Erreur lors de la création d\'image:', err);
-                alert('Erreur lors de la création de l\'image: ' + err.message);
+                if (window.showAppModal) {
+                    showAppModal({ title: "Erreur", message: "Erreur lors de la création de l'image: " + err.message, variant: "danger" });
+                }
             });
         return false; // Empêcher la soumission par défaut du formulaire
     }
@@ -1684,7 +1706,7 @@
         var sel = document.getElementById(selectId) || document.querySelector('select[name="' + selectId + '"]');
         var selectedId = sel && sel.value ? sel.value : '';
         window.gallerySelectedId = selectedId;
-        var url = '/api/images/gallery?select_id=' + encodeURIComponent(selectId) + (selectedId ? ('&selected_id=' + encodeURIComponent(selectedId)) : '');
+        var url = '{% if creator_mode %}/api/creator/images/gallery{% else %}/api/images/gallery{% endif %}?select_id=' + encodeURIComponent(selectId) + (selectedId ? ('&selected_id=' + encodeURIComponent(selectedId)) : '');
         fetch(url, { headers: { 'HX-Request': 'true' } })
             .then(function (r) { return r.text(); })
             .then(function (html) {
@@ -1750,7 +1772,7 @@
         window.gallerySearchTimeout = setTimeout(function () {
             console.log('[performGallerySearch] executing search for:', searchTerm);
 
-            var url = '/api/images/gallery?search=' + encodeURIComponent(searchTerm) +
+            var url = '{% if creator_mode %}/api/creator/images/gallery{% else %}/api/images/gallery{% endif %}?search=' + encodeURIComponent(searchTerm) +
                 '&selected_id=' + encodeURIComponent(window.gallerySelectedId || '') +
                 '&select_id=' + encodeURIComponent(window.gallerySelectId || '') +
                 '&partial=1';

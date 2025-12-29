@@ -1,0 +1,96 @@
+{% if questions %}
+<div class="questions-grid">
+    {% for question in questions %}
+    <div class="question-card">
+        <div class="question-header">
+            <div class="question-meta">
+                {% if question.theme %}
+                <span class="badge badge-theme">
+                    {% if question.theme.icon %}{{ question.theme.icon }} {% endif %}{{ question.theme.name }}
+                </span>
+                {% else %}
+                <span class="badge badge-theme">Sans thème</span>
+                {% endif %}
+                <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
+
+                {% if question.is_published and not question.is_private %}
+                <span class="badge badge-published">Publiée</span>
+                {% elif (not question.is_private) and (not question.is_published) %}
+                <span class="badge badge-pending">En attente de validation</span>
+                {% else %}
+                <span class="badge badge-private">Privée</span>
+                {% endif %}
+            </div>
+            <div class="question-actions">
+                <button class="btn-icon" type="button"
+                    onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>Chargement...</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
+                    hx-get="/creator/question/{{ question.id }}/edit" hx-target="#question-form-container" hx-swap="innerHTML"
+                    title="Éditer">
+                    ✏️
+                </button>
+                <button class="btn-icon btn-danger" type="button"
+                    hx-delete="/api/creator/question/{{ question.id }}"
+                    hx-target="#questions-list"
+                    hx-confirm="Supprimer cette question ?"
+                    title="Supprimer">
+                    🗑️
+                </button>
+            </div>
+        </div>
+
+        <div class="question-content">
+            <h3>{{ question.question_text }}</h3>
+            {% if question.hint %}
+            <p><strong>Indice:</strong> {{ question.hint }}</p>
+            {% endif %}
+            {% if question.source %}
+            <p><strong>Source:</strong> <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{ question.source }}</a></p>
+            {% endif %}
+        </div>
+
+        <div class="question-footer">
+            <small>Modifié: {{ question.updated_at.strftime('%d/%m/%Y %H:%M') if question.updated_at }}</small>
+            <div class="actions-row">
+                {% if question.is_private %}
+                <button class="btn btn-outline btn-small"
+                    hx-get="/api/creator/question/{{ question.id }}/request-validation/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
+                    ✅ Demander validation
+                </button>
+                {% elif (not question.is_published) %}
+                <span class="text-muted">En attente de relecture admin</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-questions">
+    <p>📋 Aucune question. Commencez par en créer une !</p>
+</div>
+{% endif %}
+
+<style>
+    .questions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem}
+    .question-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:0.9rem;box-shadow:var(--shadow);overflow:hidden}
+    .question-header{display:flex;justify-content:space-between;gap:1rem;padding:1rem 1rem 0.75rem 1rem;border-bottom:1px solid var(--border-color)}
+    .question-meta{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+    .question-actions{display:flex;gap:.4rem}
+    .question-content{padding:1rem}
+    .question-content h3{margin:0 0 .6rem 0;font-size:1.05rem}
+    .question-footer{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 1rem;border-top:1px solid var(--border-color)}
+    .actions-row{display:flex;gap:.5rem;align-items:center}
+    .text-muted{color:var(--text-light)}
+    .badge{display:inline-flex;align-items:center;padding:.15rem .5rem;border-radius:.5rem;font-size:.85rem;border:1px solid rgba(0,0,0,.08)}
+    .badge-theme{background:rgba(2,135,77,.1);color:var(--primary-color)}
+    .badge-difficulty{background:rgba(0,0,0,.04)}
+    .badge-published{background:rgba(46,125,50,.12);color:#2e7d32}
+    .badge-private{background:rgba(0,0,0,.06);color:var(--text-color)}
+    .badge-pending{background:rgba(245,158,11,.18);color:#92400e}
+    .btn-icon{background:none;border:1px solid var(--border-color);border-radius:.5rem;padding:.35rem .5rem;cursor:pointer}
+    .btn-icon.btn-danger{border-color:rgba(229,62,62,.35)}
+</style>
+
+

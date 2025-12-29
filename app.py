@@ -27,7 +27,8 @@ from admin_keywords import list_keywords_json, create_keyword
 from admin_countries import countries, list_countries_api, new_country, edit_country, create_country, update_country, delete_country
 from admin_profiles import profiles_page, list_profiles, new_profile, edit_profile, create_profile, update_profile, delete_profile
 from admin_users import users_page, list_users, new_user, edit_user, create_user, update_user, delete_user
-from admin_quiz_rules import _slugify, quiz_rules_page, list_quiz_rules, quiz_rule_stats_page, _load_quiz_rule_defaults, new_quiz_rule, edit_quiz_rule, create_quiz_rule, update_quiz_rule, delete_quiz_rule, check_quiz_rule_name, check_quiz_rule_slug, count_questions_for_rule, get_questions_for_selection
+from admin_quiz_rules import _slugify, quiz_rules_page, list_quiz_rules, quiz_rule_stats_page, _load_quiz_rule_defaults, new_quiz_rule, edit_quiz_rule, create_quiz_rule, update_quiz_rule, delete_quiz_rule, check_quiz_rule_name, check_quiz_rule_slug, count_questions_for_rule, get_questions_for_selection, approve_quiz_publication, reject_quiz_publication
+from admin_validation import admin_validation_page, list_pending_questions, list_pending_quiz_rules, approve_question_validation, reject_question_validation
 from quiz_interface import play_quiz_with_rules, play_quiz, play_quiz_by_slug
 from quiz_sharing import create_quiz_share_link, show_share_page, track_share_click, _parse_bool_param
 from messaging import messages_home, api_messages_list, api_messages_thread, api_messages_mark_unread, api_messages_delete, api_messages_send, contact_page, report_form, report_submit
@@ -35,6 +36,46 @@ from user_features import forgot_password, reset_password, me_page, toggle_save_
 from quiz_playlist_generation import _apply_quiz_filters, _interleave_round_robin, _get_user_answered_keywords, _select_questions_with_keyword_logic, _generate_quiz_playlist
 from quiz_gameplay import next_quiz_question, show_quiz_final, cancel_quiz_session, submit_quiz_answer, _quiz_session_keys, _append_score_breakdown, _get_user_double_click_preference, _calculate_score
 from file_utils import uploaded_file, sounds_file
+from creator_portal import creator_home, creator_access_denied_page
+from creator_questions import (
+    creator_questions_page,
+    list_creator_questions,
+    creator_new_question,
+    creator_edit_question,
+    create_creator_question,
+    update_creator_question,
+    delete_creator_question,
+    request_question_validation,
+    confirm_request_question_validation,
+)
+from creator_images import (
+    creator_images_page,
+    list_creator_images_api,
+    list_creator_images_json,
+    creator_images_gallery_fragment,
+    creator_new_image,
+    creator_edit_image,
+    create_creator_image,
+    update_creator_image,
+    delete_creator_image,
+)
+from creator_quiz_rules import (
+    creator_quiz_rules_page,
+    list_creator_quiz_rules,
+    creator_new_quiz_rule,
+    creator_edit_quiz_rule,
+    create_creator_quiz_rule,
+    update_creator_quiz_rule,
+    delete_creator_quiz_rule,
+    request_quiz_publication,
+    creator_quiz_rule_count_questions,
+    creator_quiz_rule_get_questions_for_selection,
+    creator_themes_json,
+    creator_subthemes_json,
+    creator_authors_json,
+    creator_difficulties_json,
+    confirm_request_quiz_publication,
+)
 
 app = Flask(__name__)
 
@@ -81,6 +122,28 @@ with app.app_context():
             # is_private (False par défaut = publique)
             if 'is_private' not in existing_cols_questions:
                 db.session.execute(text("ALTER TABLE questions ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT 0"))
+            db.session.commit()
+
+            # Migration pour la table quiz_rule_sets (visibilité/modération)
+            result_rules = db.session.execute(text("PRAGMA table_info(quiz_rule_sets)"))
+            existing_cols_rules = {row[1] for row in result_rules.fetchall()}
+            if 'visibility_status' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN visibility_status TEXT NOT NULL DEFAULT 'public'"))
+            if 'public_requested_at' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_requested_at DATETIME"))
+            if 'public_reviewed_at' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_reviewed_at DATETIME"))
+            if 'public_reviewed_by_user_id' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_reviewed_by_user_id INTEGER"))
+            if 'public_review_note' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_review_note TEXT"))
+            db.session.commit()
+
+            # Migration pour la table images (propriétaire)
+            result_images = db.session.execute(text("PRAGMA table_info(images)"))
+            existing_cols_images = {row[1] for row in result_images.fetchall()}
+            if 'created_by_user_id' not in existing_cols_images:
+                db.session.execute(text("ALTER TABLE images ADD COLUMN created_by_user_id INTEGER"))
             db.session.commit()
     except Exception:
         # Ne bloque pas l'app; pour autres SGBD, utiliser une migration Alembic
@@ -195,6 +258,59 @@ app.add_url_rule('/login', 'login_page', login_page, methods=['GET', 'POST'])
 app.add_url_rule('/register', 'register_page', register_page, methods=['GET', 'POST'])
 app.add_url_rule('/access-denied', 'access_denied_page', access_denied_page)
 app.add_url_rule('/auth/widget', 'auth_widget', auth_widget)
+
+# Creator portal routes
+app.add_url_rule('/creator', 'creator_home', creator_home)
+app.add_url_rule('/creator/access-denied', 'creator_access_denied_page', creator_access_denied_page)
+app.add_url_rule('/creator/questions', 'creator_questions_page', creator_questions_page)
+app.add_url_rule('/api/creator/questions', 'list_creator_questions', list_creator_questions)
+app.add_url_rule('/creator/question/new', 'creator_new_question', creator_new_question)
+app.add_url_rule('/creator/question/<int:question_id>/edit', 'creator_edit_question', creator_edit_question, methods=['GET'])
+app.add_url_rule('/api/creator/question', 'create_creator_question', create_creator_question, methods=['POST'])
+app.add_url_rule('/api/creator/question/<int:question_id>', 'update_creator_question', update_creator_question, methods=['POST', 'PUT'])
+app.add_url_rule('/api/creator/question/<int:question_id>', 'delete_creator_question', delete_creator_question, methods=['DELETE'])
+app.add_url_rule('/api/creator/question/<int:question_id>/request-validation', 'request_question_validation', request_question_validation, methods=['POST'])
+app.add_url_rule('/api/creator/question/<int:question_id>/request-validation/confirm', 'confirm_request_question_validation', confirm_request_question_validation, methods=['GET'])
+
+# Creator images
+app.add_url_rule('/creator/images', 'creator_images_page', creator_images_page)
+app.add_url_rule('/api/creator/images', 'list_creator_images_api', list_creator_images_api)
+app.add_url_rule('/api/creator/images/json', 'list_creator_images_json', list_creator_images_json)
+app.add_url_rule('/api/creator/images/gallery', 'creator_images_gallery_fragment', creator_images_gallery_fragment)
+app.add_url_rule('/creator/image/new', 'creator_new_image', creator_new_image)
+app.add_url_rule('/creator/image/<int:image_id>/edit', 'creator_edit_image', creator_edit_image, methods=['GET'])
+
+def create_creator_image_wrapper():
+    return create_creator_image(app)
+
+def update_creator_image_wrapper(image_id):
+    return update_creator_image(image_id, app)
+
+def delete_creator_image_wrapper(image_id):
+    return delete_creator_image(image_id, app)
+
+app.add_url_rule('/api/creator/image', 'create_creator_image', create_creator_image_wrapper, methods=['POST'])
+app.add_url_rule('/api/creator/image/<int:image_id>', 'update_creator_image', update_creator_image_wrapper, methods=['POST', 'PUT'])
+app.add_url_rule('/api/creator/image/<int:image_id>', 'delete_creator_image', delete_creator_image_wrapper, methods=['DELETE'])
+
+# Creator quiz rules
+app.add_url_rule('/creator/quiz-rules', 'creator_quiz_rules_page', creator_quiz_rules_page)
+app.add_url_rule('/api/creator/quiz-rules', 'list_creator_quiz_rules', list_creator_quiz_rules)
+app.add_url_rule('/creator/quiz-rule/new', 'creator_new_quiz_rule', creator_new_quiz_rule)
+app.add_url_rule('/creator/quiz-rule/<int:rule_id>/edit', 'creator_edit_quiz_rule', creator_edit_quiz_rule, methods=['GET'])
+app.add_url_rule('/api/creator/quiz-rule', 'create_creator_quiz_rule', create_creator_quiz_rule, methods=['POST'])
+app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>', 'update_creator_quiz_rule', update_creator_quiz_rule, methods=['POST', 'PUT'])
+app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>', 'delete_creator_quiz_rule', delete_creator_quiz_rule, methods=['DELETE'])
+app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>/request-public', 'request_quiz_publication', request_quiz_publication, methods=['POST'])
+app.add_url_rule('/api/creator/quiz-rule/<int:rule_id>/request-public/confirm', 'confirm_request_quiz_publication', confirm_request_quiz_publication, methods=['GET'])
+app.add_url_rule('/api/creator/quiz-rule/count-questions', 'creator_quiz_rule_count_questions', creator_quiz_rule_count_questions, methods=['GET'])
+app.add_url_rule('/api/creator/quiz-rule/get-questions', 'creator_quiz_rule_get_questions_for_selection', creator_quiz_rule_get_questions_for_selection, methods=['GET'])
+
+# Creator taxonomy/json endpoints (used by quiz_rule_form in creator mode)
+app.add_url_rule('/api/creator/themes/json', 'creator_themes_json', creator_themes_json)
+app.add_url_rule('/api/creator/subthemes/json', 'creator_subthemes_json', creator_subthemes_json)
+app.add_url_rule('/api/creator/authors/json', 'creator_authors_json', creator_authors_json)
+app.add_url_rule('/api/creator/difficulties/json', 'creator_difficulties_json', creator_difficulties_json)
 
 # Image routes
 app.add_url_rule('/images', 'images_page', images_page)
@@ -320,6 +436,15 @@ app.add_url_rule('/api/quiz-rule/check-name', 'check_quiz_rule_name', check_quiz
 app.add_url_rule('/api/quiz-rule/check-slug', 'check_quiz_rule_slug', check_quiz_rule_slug, methods=['GET'])
 app.add_url_rule('/api/quiz-rule/count-questions', 'count_questions_for_rule', count_questions_for_rule, methods=['GET'])
 app.add_url_rule('/api/quiz-rule/get-questions', 'get_questions_for_selection', get_questions_for_selection, methods=['GET'])
+app.add_url_rule('/api/quiz-rule/<int:rule_id>/review/approve', 'approve_quiz_publication', approve_quiz_publication, methods=['POST'])
+app.add_url_rule('/api/quiz-rule/<int:rule_id>/review/reject', 'reject_quiz_publication', reject_quiz_publication, methods=['POST'])
+
+# Admin validation
+app.add_url_rule('/admin/validation', 'admin_validation_page', admin_validation_page)
+app.add_url_rule('/api/admin/validation/questions', 'list_pending_questions', list_pending_questions)
+app.add_url_rule('/api/admin/validation/quiz-rules', 'list_pending_quiz_rules', list_pending_quiz_rules)
+app.add_url_rule('/api/admin/validation/question/<int:question_id>/approve', 'approve_question_validation', approve_question_validation, methods=['POST'])
+app.add_url_rule('/api/admin/validation/question/<int:question_id>/reject', 'reject_question_validation', reject_question_validation, methods=['POST'])
 
 # Messaging routes
 app.add_url_rule('/messages', 'messages_home', messages_home)

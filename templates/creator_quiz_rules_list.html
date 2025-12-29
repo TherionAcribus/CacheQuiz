@@ -1,0 +1,75 @@
+{% if rules %}
+<div class="rules-list">
+    {% for rule in rules %}
+    <div class="rule-card">
+        <div class="rule-main">
+            <div class="rule-title">
+                <h3>{{ rule.name }}</h3>
+                <span class="badge badge-slug">{{ rule.slug or '-' }}</span>
+                {% if rule.visibility_status == 'public' %}
+                <span class="badge badge-published">Public</span>
+                {% elif rule.visibility_status == 'pending' %}
+                <span class="badge badge-pending">En attente</span>
+                {% elif rule.visibility_status == 'rejected' %}
+                <span class="badge badge-rejected">Refusé</span>
+                {% else %}
+                <span class="badge badge-private">Privé</span>
+                {% endif %}
+            </div>
+            {% if rule.description %}
+            <p class="rule-desc">{{ rule.description }}</p>
+            {% endif %}
+        </div>
+        <div class="rule-actions">
+            <button class="btn-icon" type="button"
+                onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
+                hx-get="/creator/quiz-rule/{{ rule.id }}/edit"
+                hx-target="#rule-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
+            <button class="btn-icon btn-danger" hx-delete="/api/creator/quiz-rule/{{ rule.id }}"
+                hx-target="#quiz-rules-list" hx-confirm="Supprimer ce quiz ?" title="Supprimer">🗑️</button>
+        </div>
+        <div class="rule-footer">
+            <small>Modifié: {{ rule.updated_at.strftime('%d/%m/%Y %H:%M') if rule.updated_at }}</small>
+            <div class="footer-actions">
+                {% if rule.visibility_status in ['private', 'rejected'] %}
+                <button class="btn btn-outline btn-small"
+                    hx-get="/api/creator/quiz-rule/{{ rule.id }}/request-public/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
+                    📣 Demander publication
+                </button>
+                {% elif rule.visibility_status == 'pending' %}
+                <span class="text-muted">En attente de review admin</span>
+                {% endif %}
+                <a class="btn btn-outline btn-small" href="/play/{{ rule.slug }}" title="Tester ce quiz">▶️ Tester</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-rules"><p>Aucun quiz pour le moment.</p></div>
+{% endif %}
+
+<style>
+    .rules-list{display:flex;flex-direction:column;gap:1rem}
+    .rule-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.9rem;box-shadow:var(--shadow);padding:1rem}
+    .rule-title{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+    .rule-title h3{margin:0}
+    .rule-desc{margin:.5rem 0 0 0;color:var(--text-light)}
+    .rule-actions{display:flex;gap:.4rem;justify-content:flex-end;margin-top:-2.2rem}
+    .rule-footer{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border-color)}
+    .footer-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+    .text-muted{color:var(--text-light)}
+    .badge{display:inline-flex;align-items:center;padding:.15rem .5rem;border-radius:.5rem;font-size:.85rem;border:1px solid rgba(0,0,0,.08)}
+    .badge-slug{background:rgba(0,0,0,.04)}
+    .badge-private{background:rgba(0,0,0,.06);color:var(--text-color)}
+    .badge-published{background:rgba(46,125,50,.12);color:#2e7d32}
+    .badge-pending{background:rgba(245,158,11,.18);color:#92400e}
+    .badge-rejected{background:rgba(229,62,62,.12);color:#b91c1c}
+    .btn-icon{background:none;border:1px solid var(--border-color);border-radius:.5rem;padding:.35rem .5rem;cursor:pointer}
+    .btn-icon.btn-danger{border-color:rgba(229,62,62,.35)}
+    .no-rules{text-align:center;padding:2rem;color:var(--text-light)}
+</style>
+
+

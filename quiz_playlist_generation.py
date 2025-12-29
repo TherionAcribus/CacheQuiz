@@ -2,6 +2,61 @@ import random
 from models import db, QuizRuleSet, Question, UserQuestionStat, Country
 
 
+def _public_questions_query():
+    """Pool public strict: uniquement questions publiées et non privées."""
+    return Question.query.filter(Question.is_published.is_(True), Question.is_private.is_(False))
+
+
+def _base_questions_for_rule_set(rule_set: QuizRuleSet, current_user_id: int | None):
+    """Requête de base du pool de questions pour un rule_set et un joueur donné.
+
+    - Quiz public: seulement pool public.
+    - Quiz privé/pending/rejected: si le joueur est le créateur du set, inclure ses questions (même privées/non publiées).
+    """
+    if not rule_set:
+        return _public_questions_query()
+
+    base = _public_questions_query()
+
+    is_owner = bool(current_user_id and rule_set.created_by_user_id == current_user_id)
+    if is_owner and getattr(rule_set, 'visibility_status', 'public') != 'public':
+        base = Question.query.filter(
+            db.or_(
+                db.and_(Question.is_published.is_(True), Question.is_private.is_(False)),
+                Question.author_id == int(current_user_id),
+            )
+        )
+
+    return base
+
+
+def _apply_rule_set_filters(query, rule_set: QuizRuleSet):
+    """Applique les filtres d'un rule_set (thèmes/pays/difficultés) à une requête de questions."""
+    if not rule_set:
+        return query
+
+    allowed_diffs = rule_set.get_allowed_difficulties()
+    if allowed_diffs:
+        query = query.filter(Question.difficulty_level.in_(allowed_diffs))
+
+    if not rule_set.use_all_broad_themes and rule_set.allowed_broad_themes:
+        theme_ids = [t.id for t in rule_set.allowed_broad_themes]
+        query = query.filter(Question.broad_theme_id.in_(theme_ids))
+
+    if not rule_set.use_all_specific_themes and rule_set.allowed_specific_themes:
+        sub_theme_ids = [st.id for st in rule_set.allowed_specific_themes]
+        query = query.filter(Question.specific_theme_id.in_(sub_theme_ids))
+
+    if not rule_set.use_all_countries:
+        c_ids = [c.id for c in (rule_set.allowed_countries or [])]
+        if c_ids:
+            query = query.filter(Question.countries.any(Country.id.in_(c_ids)))
+        else:
+            query = query.filter(~Question.countries.any())
+
+    return query
+
+
 def _apply_quiz_filters(query, params):
     """Appliquer les filtres du quiz (thèmes, pays, difficulté) au query de base."""
     rule_set_slug = (params.get('rule_set') or '').strip()
@@ -24,7 +79,13 @@ def _apply_quiz_filters(query, params):
                 sub_theme_ids = [st.id for st in rule_set.allowed_specific_themes]
                 query = query.filter(Question.specific_theme_id.in_(sub_theme_ids))
 
-            # Note: pas de filtre pays pour l'instant dans les sets de règles
+            # Pays
+            if not rule_set.use_all_countries:
+                c_ids = [c.id for c in (rule_set.allowed_countries or [])]
+                if c_ids:
+                    query = query.filter(Question.countries.any(Country.id.in_(c_ids)))
+                else:
+                    query = query.filter(~Question.countries.any())
     else:
         # Mode manuel - appliquer les filtres classiques
         broad_theme_id = (params.get('broad_theme_id') or '').strip()
@@ -70,14 +131,17 @@ def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None) -> dict:
     if rule_set.question_selection_mode == 'manual':
         stats['questions_per_game'] = len(rule_set.selected_questions)
         # Pour le mode manuel, le pool EST la sélection
-        pool_query = Question.query.filter(Question.id.in_([q.id for q in rule_set.selected_questions if q.is_published]))
+        if user_id and getattr(rule_set, 'visibility_status', 'public') != 'public' and rule_set.created_by_user_id == user_id:
+            pool_ids = [q.id for q in rule_set.selected_questions if (q.author_id == user_id) or (q.is_published and not q.is_private)]
+        else:
+            pool_ids = [q.id for q in rule_set.selected_questions if (q.is_published and not q.is_private)]
+        pool_query = Question.query.filter(Question.id.in_(pool_ids))
     else:
         qmap = rule_set.get_questions_per_difficulty()
         stats['questions_per_game'] = sum(int(v) for v in qmap.values() if v)
         
         # 2. Construire la requête du pool
-        base_params = {'rule_set': rule_set.slug}
-        pool_query = _apply_quiz_filters(Question.query.filter(Question.is_published.is_(True)), base_params)
+        pool_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, user_id), rule_set)
 
     # Compter le pool total
     stats['total_pool'] = pool_query.count()
@@ -304,10 +368,16 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         prevent_duplicate_keywords = rule_set.prevent_duplicate_keywords
         print(f"[QUIZ PLAYLIST] Prévention doublons keywords: {'OUI' if prevent_duplicate_keywords else 'NON'}")
 
+        is_owner = bool(current_user_id and rule_set.created_by_user_id == current_user_id)
+        is_public_quiz = getattr(rule_set, 'visibility_status', 'public') == 'public'
+
         # Mode manuel: partir de la sélection explicite
         if rule_set.question_selection_mode == 'manual' and rule_set.selected_questions:
             print(f"[QUIZ PLAYLIST] Mode MANUEL: {len(rule_set.selected_questions)} questions sélectionnées")
-            selected = [q for q in rule_set.selected_questions if q.is_published]
+            if is_owner and not is_public_quiz:
+                selected = [q for q in rule_set.selected_questions if (q.author_id == current_user_id) or (q.is_published and not q.is_private)]
+            else:
+                selected = [q for q in rule_set.selected_questions if (q.is_published and not q.is_private)]
             candidate_ids = [q.id for q in selected]
 
             # Appliquer la logique keywords sur toute la sélection
@@ -341,8 +411,7 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         print(f"[QUIZ PLAYLIST] Ordre des questions: {order_mode}")
 
         # Construire la requête de base selon le set de règles
-        base_params = {'rule_set': rule_set.slug}
-        base_query = _apply_quiz_filters(Question.query.filter(Question.is_published.is_(True)), base_params)
+        base_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, current_user_id), rule_set)
 
         # Préparer par difficulté avec logique keywords
         per_diff_ids: dict[int, list[int]] = {}

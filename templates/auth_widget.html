@@ -24,6 +24,10 @@
       </div>
       
       {% if current_user.password_hash %}
+      <a class="dropdown-item" href="/creator">
+        <span class="item-icon">🛠️</span>
+        <span class="item-label">Créateur</span>
+      </a>
       {% if has_messages %}
       <a class="dropdown-item" href="/messages">
         <span class="item-icon">✉️</span>

@@ -294,6 +294,34 @@ def _deny_access(reason: str):
     return render_template('access_denied.html', reason=reason, current_user=user), 200
 
 
+def _is_creator_user() -> bool:
+    """Retourne True si l'utilisateur courant peut accéder à l'espace Créateur.
+
+    Règle: utilisateur connecté, actif, avec mot de passe (password_hash).
+    """
+    user = getattr(g, 'current_user', None)
+    return bool(user and getattr(user, 'is_active', False) and getattr(user, 'password_hash', None))
+
+
+def _ensure_creator_page_redirect():
+    """Pour les pages complètes: redirige si pas d'accès Créateur."""
+    if not _is_creator_user():
+        return redirect(url_for('creator_access_denied_page'))
+    return None
+
+
+def _ensure_creator_api():
+    """Pour endpoints HTMX/API Créateur: renvoie (template_html, 200) si refusé, sinon None."""
+    user = getattr(g, 'current_user', None)
+    if not _is_creator_user():
+        return (render_template(
+            'creator_access_denied.html',
+            reason="Accès Créateur requis (compte protégé par mot de passe)",
+            current_user=user
+        ), 200)
+    return None
+
+
 def access_denied_page():
     """Page d'explication d'accès refusé."""
     user = getattr(g, 'current_user', None)
