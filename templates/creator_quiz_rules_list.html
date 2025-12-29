@@ -67,6 +67,34 @@
             <div class="summary-row"><strong>🗂️ Pool :</strong> {{ 'Mes questions' if rule.question_pool_scope == 'mine' else 'Toutes (publiques + mes questions)' }}</div>
         </div>
 
+        <div class="rule-review">
+            {% if rule.visibility_status == 'pending' %}
+                <div class="review-line pending">
+                    ⏳ Soumis{% if rule.public_requested_at %} le {{ rule.public_requested_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+            {% elif rule.visibility_status == 'rejected' %}
+                <div class="review-line ko">
+                    ❌ Refusé{% if rule.public_reviewed_at %} le {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+                {% if rule.public_review_note %}
+                <div class="review-note">
+                    <strong>Motif :</strong> {{ rule.public_review_note }}
+                </div>
+                {% else %}
+                <div class="review-note muted">Motif : (voir la messagerie pour le détail)</div>
+                {% endif %}
+            {% elif rule.visibility_status == 'public' %}
+                <div class="review-line ok">
+                    ✅ Validé{% if rule.public_reviewed_at %} le {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+                {% if rule.public_review_note %}
+                <div class="review-note">
+                    <strong>Message :</strong> {{ rule.public_review_note }}
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
         <div class="rule-share">
             {% set public_url = url_for('play_quiz_by_slug', slug=rule.slug, _external=True) %}
             {% if rule.visibility_status == 'public' %}
@@ -151,6 +179,14 @@
     .share-title{margin-bottom:.5rem}
     .share-row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
     .share-input{flex:1;min-width:280px;padding:.5rem .6rem;border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg)}
+
+    .rule-review{margin-top:.75rem}
+    .review-line{font-size:.9rem;font-weight:700}
+    .review-line.ok{color:#2e7d32}
+    .review-line.ko{color:#b91c1c}
+    .review-line.pending{color:#92400e}
+    .review-note{margin-top:.35rem;font-size:.9rem;color:var(--text-color);background:rgba(0,0,0,.03);border:1px solid var(--border-color);border-radius:.6rem;padding:.5rem .65rem}
+    .review-note.muted{color:var(--text-light)}
 </style>
 
 <script>

@@ -236,6 +236,11 @@ def approve_question_validation(question_id: int):
     try:
         q.is_private = False
         q.is_published = True
+        q.publication_status = 'approved'
+        if not q.publication_requested_at:
+            q.publication_requested_at = q.publication_requested_at or datetime.utcnow()
+        q.publication_reviewed_at = datetime.utcnow()
+        q.publication_review_note = note
         q.updated_at = datetime.utcnow()
 
         conv = _get_or_create_question_publication_conversation(q)
@@ -275,6 +280,11 @@ def reject_question_validation(question_id: int):
     try:
         q.is_published = False
         q.is_private = True  # retour en privé, le créateur pourra redemander
+        q.publication_status = 'rejected'
+        if not q.publication_requested_at:
+            q.publication_requested_at = q.publication_requested_at or datetime.utcnow()
+        q.publication_reviewed_at = datetime.utcnow()
+        q.publication_review_note = note
         q.updated_at = datetime.utcnow()
 
         conv = _get_or_create_question_publication_conversation(q)

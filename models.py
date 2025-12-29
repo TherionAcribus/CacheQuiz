@@ -409,6 +409,17 @@ class Question(db.Model):
     is_published = db.Column(db.Boolean, default=False)
     is_private = db.Column(db.Boolean, default=False)  # False = publique, True = privée (utilisable uniquement par le créateur)
 
+    # Workflow de publication (UI créateur)
+    # Permet d'afficher clairement "refusé/validé" même si is_private repasse à True après refus.
+    # - private: privé (jamais soumis ou remis en privé)
+    # - pending: demande envoyée, en attente
+    # - approved: validé/publié
+    # - rejected: refusé (reste privé)
+    publication_status = db.Column(db.String(20), nullable=False, default='private')
+    publication_requested_at = db.Column(db.DateTime, nullable=True)
+    publication_reviewed_at = db.Column(db.DateTime, nullable=True)
+    publication_review_note = db.Column(db.Text, nullable=True)
+
     # Source (optionnelle) - URL ou référence pour vérifier la réponse
     source = db.Column(db.Text)
 

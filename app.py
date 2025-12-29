@@ -135,6 +135,14 @@ with app.app_context():
             # is_private (False par défaut = publique)
             if 'is_private' not in existing_cols_questions:
                 db.session.execute(text("ALTER TABLE questions ADD COLUMN is_private BOOLEAN NOT NULL DEFAULT 0"))
+            if 'publication_status' not in existing_cols_questions:
+                db.session.execute(text("ALTER TABLE questions ADD COLUMN publication_status TEXT NOT NULL DEFAULT 'private'"))
+            if 'publication_requested_at' not in existing_cols_questions:
+                db.session.execute(text("ALTER TABLE questions ADD COLUMN publication_requested_at DATETIME"))
+            if 'publication_reviewed_at' not in existing_cols_questions:
+                db.session.execute(text("ALTER TABLE questions ADD COLUMN publication_reviewed_at DATETIME"))
+            if 'publication_review_note' not in existing_cols_questions:
+                db.session.execute(text("ALTER TABLE questions ADD COLUMN publication_review_note TEXT"))
             db.session.commit()
 
             # Migration pour la table quiz_rule_sets (visibilité/modération)

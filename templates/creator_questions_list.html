@@ -13,12 +13,15 @@
                 {% endif %}
                 <span class="badge badge-difficulty">Niveau {{ question.difficulty_level or 'N/A' }}</span>
 
+                {% set pub_status = question.publication_status if question.publication_status is defined else None %}
                 {% if question.is_published and not question.is_private %}
-                <span class="badge badge-published">Publiée</span>
+                    <span class="badge badge-published">Validée</span>
+                {% elif pub_status == 'rejected' %}
+                    <span class="badge badge-rejected">Refusée</span>
                 {% elif (not question.is_private) and (not question.is_published) %}
-                <span class="badge badge-pending">En attente de validation</span>
+                    <span class="badge badge-pending">En attente</span>
                 {% else %}
-                <span class="badge badge-private">Privée</span>
+                    <span class="badge badge-private">Privée</span>
                 {% endif %}
             </div>
             <div class="question-actions">
@@ -48,15 +51,47 @@
             {% endif %}
         </div>
 
+        <div class="question-review">
+            {% set pub_status = question.publication_status if question.publication_status is defined else None %}
+            {% if question.is_published and not question.is_private %}
+                <div class="review-line ok">
+                    ✅ Validée{% if question.publication_reviewed_at %} le {{ question.publication_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+            {% elif pub_status == 'rejected' %}
+                <div class="review-line ko">
+                    ❌ Refusée{% if question.publication_reviewed_at %} le {{ question.publication_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+                {% if question.publication_review_note %}
+                <div class="review-note">
+                    <strong>Motif :</strong> {{ question.publication_review_note }}
+                </div>
+                {% else %}
+                <div class="review-note muted">Motif : (voir la messagerie pour le détail)</div>
+                {% endif %}
+            {% elif (not question.is_private) and (not question.is_published) %}
+                <div class="review-line pending">
+                    ⏳ Soumise{% if question.publication_requested_at %} le {{ question.publication_requested_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                </div>
+            {% endif %}
+        </div>
+
         <div class="question-footer">
             <small>Modifié: {{ question.updated_at.strftime('%d/%m/%Y %H:%M') if question.updated_at }}</small>
             <div class="actions-row">
-                {% if question.is_private %}
+                {% set pub_status = question.publication_status if question.publication_status is defined else None %}
+                {% if (question.is_private and pub_status != 'rejected') %}
                 <button class="btn btn-outline btn-small"
                     hx-get="/api/creator/question/{{ question.id }}/request-validation/confirm"
                     hx-target="#modal-root"
                     hx-swap="outerHTML">
                     ✅ Demander validation
+                </button>
+                {% elif pub_status == 'rejected' %}
+                <button class="btn btn-outline btn-small"
+                    hx-get="/api/creator/question/{{ question.id }}/request-validation/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
+                    🔁 Redemander validation
                 </button>
                 {% elif (not question.is_published) %}
                 <span class="text-muted">En attente de relecture admin</span>
@@ -89,8 +124,17 @@
     .badge-published{background:rgba(46,125,50,.12);color:#2e7d32}
     .badge-private{background:rgba(0,0,0,.06);color:var(--text-color)}
     .badge-pending{background:rgba(245,158,11,.18);color:#92400e}
+    .badge-rejected{background:rgba(229,62,62,.12);color:#b91c1c}
     .btn-icon{background:none;border:1px solid var(--border-color);border-radius:.5rem;padding:.35rem .5rem;cursor:pointer}
     .btn-icon.btn-danger{border-color:rgba(229,62,62,.35)}
+
+    .question-review{padding:0 1rem 0.75rem 1rem}
+    .review-line{font-size:.9rem;font-weight:600;margin-top:.2rem}
+    .review-line.ok{color:#2e7d32}
+    .review-line.ko{color:#b91c1c}
+    .review-line.pending{color:#92400e}
+    .review-note{margin-top:.35rem;font-size:.9rem;color:var(--text-color);background:rgba(0,0,0,.03);border:1px solid var(--border-color);border-radius:.6rem;padding:.5rem .65rem}
+    .review-note.muted{color:var(--text-light)}
 </style>
 
 

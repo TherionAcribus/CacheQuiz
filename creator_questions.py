@@ -140,6 +140,10 @@ def create_creator_question():
             translation_id=int(data.get('translation_id')) if (data.get('translation_id') or '').isdigit() else None,
             is_published=False,  # Jamais publié directement côté créateur
             is_private=True,  # Privée par défaut (publication via demande explicite)
+            publication_status='private',
+            publication_requested_at=None,
+            publication_reviewed_at=None,
+            publication_review_note=None,
         )
 
         # Pays (many-to-many)
@@ -304,6 +308,10 @@ def request_question_validation(question_id: int):
     # Autorisation de mise au pool: non privée, mais toujours non publiée tant qu'un admin n'a pas validé.
     q.is_private = False
     q.is_published = False
+    q.publication_status = 'pending'
+    q.publication_requested_at = datetime.utcnow()
+    q.publication_reviewed_at = None
+    q.publication_review_note = None
     q.updated_at = datetime.utcnow()
 
     try:
