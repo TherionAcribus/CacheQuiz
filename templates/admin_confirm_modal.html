@@ -1,0 +1,29 @@
+<div class="modal-content">
+  <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+    <h3 style="margin:0">{{ title }}</h3>
+    <button class="btn-close" style="margin-left:auto" onclick="document.getElementById('modal-root').style.display='none'; document.getElementById('modal-root').innerHTML=''">&times;</button>
+  </div>
+  <div class="modal-body" style="padding: 1.25rem">
+    <p style="margin:0 0 1rem 0; color: var(--text-light)">{{ message }}</p>
+
+    <form hx-post="{{ action_url }}"
+          hx-target="{{ target_selector }}"
+          hx-swap="innerHTML"
+          hx-on::after-request="document.getElementById('modal-root').style.display='none'; document.getElementById('modal-root').innerHTML=''">
+
+      {% if show_note %}
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label for="note" style="display:block; font-weight:600; margin-bottom:.35rem;">Message (optionnel)</label>
+        <textarea id="note" name="note" rows="4" style="width:100%; padding:.75rem; border:1px solid var(--border-color); border-radius:.5rem;" placeholder="{{ note_placeholder or '' }}"></textarea>
+      </div>
+      {% endif %}
+
+      <div class="form-actions" style="display:flex; gap: .5rem; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-root').style.display='none'; document.getElementById('modal-root').innerHTML=''">Annuler</button>
+        <button type="submit" class="btn btn-primary">{{ confirm_label }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+

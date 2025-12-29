@@ -540,7 +540,7 @@ def reject_quiz_publication(rule_id: int):
 
     rule = QuizRuleSet.query.get_or_404(rule_id)
     admin = getattr(g, 'current_user', None)
-    note = (request.form.get('prompt') or request.form.get('note') or '').strip() or None
+    note = (request.form.get('prompt') or request.form.get('note') or request.headers.get('HX-Prompt') or '').strip() or None
 
     try:
         rule.visibility_status = 'rejected'

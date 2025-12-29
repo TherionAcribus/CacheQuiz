@@ -15,15 +15,15 @@
         </div>
         <div class="item-actions">
             <button class="btn btn-outline btn-small"
-                    hx-post="/api/admin/validation/question/{{ q.id }}/approve"
-                    hx-target="#pending-questions"
-                    hx-confirm="Valider et publier cette question ?">
+                    hx-get="/api/admin/validation/question/{{ q.id }}/approve/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
                 ✅ Approuver
             </button>
             <button class="btn btn-outline btn-small"
-                    hx-post="/api/admin/validation/question/{{ q.id }}/reject"
-                    hx-target="#pending-questions"
-                    hx-prompt="Raison du refus (optionnel)">
+                    hx-get="/api/admin/validation/question/{{ q.id }}/reject/confirm"
+                    hx-target="#modal-root"
+                    hx-swap="outerHTML">
                 ❌ Refuser
             </button>
             <button class="btn btn-outline btn-small"

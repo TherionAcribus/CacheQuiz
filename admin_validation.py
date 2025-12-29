@@ -55,6 +55,48 @@ def _get_or_create_question_publication_conversation(question: Question):
     return conv
 
 
+def _get_hx_prompt_text() -> str | None:
+    """HTMX hx-prompt envoie la valeur dans l'en-tête HX-Prompt (pas forcément dans request.form)."""
+    raw = (request.form.get('prompt') or request.form.get('note') or request.headers.get('HX-Prompt') or '').strip()
+    return raw or None
+
+
+def confirm_approve_question_validation(question_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+    q = Question.query.get_or_404(question_id)
+    inner = render_template(
+        'admin_confirm_modal.html',
+        title="Valider la question",
+        message="Vous pouvez ajouter un message optionnel qui sera envoyé au créateur dans la messagerie.",
+        action_url=f"/api/admin/validation/question/{q.id}/approve",
+        target_selector="#pending-questions",
+        confirm_label="✅ Publier",
+        show_note=True,
+        note_placeholder="Ex: Merci ! Petite remarque: ...",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
+def confirm_reject_question_validation(question_id: int):
+    denied = _ensure_perm_api('can_manage_profiles')
+    if denied:
+        return denied
+    q = Question.query.get_or_404(question_id)
+    inner = render_template(
+        'admin_confirm_modal.html',
+        title="Refuser la question",
+        message="Ajoutez une raison (recommandé) qui sera envoyée au créateur dans la messagerie.",
+        action_url=f"/api/admin/validation/question/{q.id}/reject",
+        target_selector="#pending-questions",
+        confirm_label="❌ Refuser",
+        show_note=True,
+        note_placeholder="Ex: La source est manquante / La réponse semble incorrecte / ...",
+    )
+    return f"<div id='modal-root' class='modal-overlay' style='display:flex'>{inner}</div>"
+
+
 def approve_question_validation(question_id: int):
     denied = _ensure_perm_api('can_manage_profiles')
     if denied:
@@ -62,6 +104,7 @@ def approve_question_validation(question_id: int):
 
     q = Question.query.get_or_404(question_id)
     admin = getattr(g, 'current_user', None)
+    note = _get_hx_prompt_text()
 
     try:
         q.is_private = False
@@ -75,10 +118,14 @@ def approve_question_validation(question_id: int):
             if not existing:
                 db.session.add(ConversationParticipant(conversation_id=conv.id, user_id=q.author_id, last_read_at=None))
 
+        msg = f"✅ Question validée et publiée (Q{q.id}). Merci pour votre contribution !"
+        if note:
+            msg += f"\n\nMessage de l'équipe:\n{note}"
+
         db.session.add(ConversationMessage(
             conversation_id=conv.id,
             sender_id=admin.id if admin else None,
-            content=f"✅ Question validée et publiée (Q{q.id}). Merci !",
+            content=msg,
         ))
 
         db.session.commit()
@@ -96,7 +143,7 @@ def reject_question_validation(question_id: int):
 
     q = Question.query.get_or_404(question_id)
     admin = getattr(g, 'current_user', None)
-    note = (request.form.get('prompt') or request.form.get('note') or '').strip() or None
+    note = _get_hx_prompt_text()
 
     try:
         q.is_published = False

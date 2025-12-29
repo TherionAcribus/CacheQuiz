@@ -28,7 +28,7 @@ from admin_countries import countries, list_countries_api, new_country, edit_cou
 from admin_profiles import profiles_page, list_profiles, new_profile, edit_profile, create_profile, update_profile, delete_profile
 from admin_users import users_page, list_users, new_user, edit_user, create_user, update_user, delete_user
 from admin_quiz_rules import _slugify, quiz_rules_page, list_quiz_rules, quiz_rule_stats_page, _load_quiz_rule_defaults, new_quiz_rule, edit_quiz_rule, create_quiz_rule, update_quiz_rule, delete_quiz_rule, check_quiz_rule_name, check_quiz_rule_slug, count_questions_for_rule, get_questions_for_selection, approve_quiz_publication, reject_quiz_publication
-from admin_validation import admin_validation_page, list_pending_questions, list_pending_quiz_rules, approve_question_validation, reject_question_validation
+from admin_validation import admin_validation_page, list_pending_questions, list_pending_quiz_rules, approve_question_validation, reject_question_validation, confirm_approve_question_validation, confirm_reject_question_validation
 from quiz_interface import play_quiz_with_rules, play_quiz, play_quiz_by_slug
 from quiz_sharing import create_quiz_share_link, show_share_page, track_share_click, _parse_bool_param
 from messaging import messages_home, api_messages_list, api_messages_thread, api_messages_mark_unread, api_messages_delete, api_messages_send, contact_page, report_form, report_submit
@@ -447,6 +447,8 @@ app.add_url_rule('/api/admin/validation/questions', 'list_pending_questions', li
 app.add_url_rule('/api/admin/validation/quiz-rules', 'list_pending_quiz_rules', list_pending_quiz_rules)
 app.add_url_rule('/api/admin/validation/question/<int:question_id>/approve', 'approve_question_validation', approve_question_validation, methods=['POST'])
 app.add_url_rule('/api/admin/validation/question/<int:question_id>/reject', 'reject_question_validation', reject_question_validation, methods=['POST'])
+app.add_url_rule('/api/admin/validation/question/<int:question_id>/approve/confirm', 'confirm_approve_question_validation', confirm_approve_question_validation, methods=['GET'])
+app.add_url_rule('/api/admin/validation/question/<int:question_id>/reject/confirm', 'confirm_reject_question_validation', confirm_reject_question_validation, methods=['GET'])
 
 # Messaging routes
 app.add_url_rule('/messages', 'messages_home', messages_home)
