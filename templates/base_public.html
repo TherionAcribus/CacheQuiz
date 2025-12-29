@@ -55,6 +55,24 @@
         </div>
     </header>
 
+    {% if current_user and current_user.password_hash and request.path.startswith('/creator') %}
+    <nav class="creator-nav" aria-label="Navigation créateur">
+        <div class="container">
+            <div class="creator-nav-inner">
+                <div class="creator-nav-left">
+                    <span class="creator-nav-title">Espace créateur</span>
+                </div>
+                <div class="creator-nav-links">
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/questions') %}active{% endif %}" href="/creator/questions">❓ Questions</a>
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/images') %}active{% endif %}" href="/creator/images">🖼️ Images</a>
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/quiz-rules') or request.path.startswith('/creator/quiz-rule') %}active{% endif %}" href="/creator/quiz-rules">🧩 Quiz</a>
+                    <a class="creator-nav-link exit" href="/play">▶️ Retour au jeu</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
     <main class="container">
         {% block content %}{% endblock %}
     </main>

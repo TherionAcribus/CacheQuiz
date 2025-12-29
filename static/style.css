@@ -232,6 +232,86 @@ header {
     box-shadow: var(--shadow);
 }
 
+/* ===================== */
+/* Espace créateur - sous-navigation persistante */
+/* ===================== */
+.creator-nav {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(6px);
+}
+
+.creator-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0;
+}
+
+.creator-nav-title {
+    font-weight: 700;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.creator-nav-links {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.creator-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.02);
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.05s;
+}
+
+.creator-nav-link:hover {
+    background: rgba(2, 135, 77, 0.08);
+    border-color: rgba(2, 135, 77, 0.35);
+    text-decoration: none;
+}
+
+.creator-nav-link:active {
+    transform: translateY(1px);
+}
+
+.creator-nav-link.active {
+    background: rgba(2, 135, 77, 0.14);
+    border-color: rgba(2, 135, 77, 0.45);
+    color: var(--primary-color);
+}
+
+.creator-nav-link.exit {
+    background: rgba(74, 85, 104, 0.06);
+}
+
+@media (max-width: 640px) {
+    .creator-nav-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.6rem 0;
+    }
+    .creator-nav-links {
+        justify-content: flex-start;
+    }
+}
+
 .logo-link {
     color: white;
     text-decoration: none;
