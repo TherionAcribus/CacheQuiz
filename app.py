@@ -138,6 +138,10 @@ with app.app_context():
                 db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_reviewed_by_user_id INTEGER"))
             if 'public_review_note' not in existing_cols_rules:
                 db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN public_review_note TEXT"))
+            if 'question_pool_scope' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN question_pool_scope TEXT NOT NULL DEFAULT 'all'"))
+            if 'private_access_key' not in existing_cols_rules:
+                db.session.execute(text("ALTER TABLE quiz_rule_sets ADD COLUMN private_access_key TEXT"))
             db.session.commit()
 
             # Migration pour la table images (propriétaire)

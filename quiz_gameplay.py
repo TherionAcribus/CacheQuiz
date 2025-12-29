@@ -44,6 +44,24 @@ def _get_user_double_click_preference() -> bool:
     return True
 
 
+def _viewer_has_private_access_for_rule_set(rule_set: QuizRuleSet) -> bool:
+    """Retourne True si le viewer actuel peut jouer un quiz non-public en incluant les questions privées du créateur.
+
+    - Créateur connecté: OK
+    - Autre joueur: OK uniquement si la session contient une autorisation suite à un lien partagé
+    """
+    try:
+        user = getattr(g, 'current_user', None)
+        if user and rule_set and rule_set.created_by_user_id == user.id:
+            return True
+        access = session.get('quiz_private_access')
+        if isinstance(access, dict) and rule_set and rule_set.slug:
+            return bool(access.get(rule_set.slug))
+    except Exception:
+        return False
+    return False
+
+
 def _calculate_score(rule_set, question, is_correct):
     """Calcule le score de la question et retourne le détail du calcul."""
     breakdown = {
@@ -140,7 +158,12 @@ def next_quiz_question():
             playlist: list[int] = session.get(playlist_session_key) or []
             # Si démarrage d'une nouvelle partie (history vide) OU playlist absente, régénérer
             if (not history_raw) or (not playlist):
-                playlist = _generate_quiz_playlist(rule_set, g.current_user.id if getattr(g, 'current_user', None) else None)
+                viewer_has_private_access = _viewer_has_private_access_for_rule_set(rule_set)
+                playlist = _generate_quiz_playlist(
+                    rule_set,
+                    g.current_user.id if getattr(g, 'current_user', None) else None,
+                    viewer_has_private_access=viewer_has_private_access
+                )
                 session[playlist_session_key] = playlist
                 session[playlist_index_key] = 0
                 # Reset score/correct pour ce namespace utilisateur+set
@@ -259,7 +282,7 @@ def next_quiz_question():
                 rule_set_stats = None
                 if rule_set:
                     user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
-                    rule_set_stats = get_rule_set_stats(rule_set, user_id)
+                    rule_set_stats = get_rule_set_stats(rule_set, user_id, viewer_has_private_access=_viewer_has_private_access_for_rule_set(rule_set))
 
                 return render_template(
                     'quiz_final.html',
@@ -436,7 +459,7 @@ def show_quiz_final():
         rule_set_stats = None
         if rule_set:
             user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
-            rule_set_stats = get_rule_set_stats(rule_set, user_id)
+            rule_set_stats = get_rule_set_stats(rule_set, user_id, viewer_has_private_access=_viewer_has_private_access_for_rule_set(rule_set))
 
         return render_template(
             'quiz_final.html',

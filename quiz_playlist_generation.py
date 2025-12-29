@@ -7,26 +7,37 @@ def _public_questions_query():
     return Question.query.filter(Question.is_published.is_(True), Question.is_private.is_(False))
 
 
-def _base_questions_for_rule_set(rule_set: QuizRuleSet, current_user_id: int | None):
+def _base_questions_for_rule_set(rule_set: QuizRuleSet, current_user_id: int | None, viewer_has_private_access: bool = False):
     """Requête de base du pool de questions pour un rule_set et un joueur donné.
 
     - Quiz public: seulement pool public.
-    - Quiz privé/pending/rejected: si le joueur est le créateur du set, inclure ses questions (même privées/non publiées).
+    - Quiz privé/pending/rejected: si accès privé accordé (créateur OU lien partagé), inclure les questions du créateur (même privées/non publiées).
+    - Respecte `rule_set.question_pool_scope` ('all'|'mine').
     """
     if not rule_set:
         return _public_questions_query()
 
-    base = _public_questions_query()
+    creator_id = int(rule_set.created_by_user_id)
+    is_public_quiz = getattr(rule_set, 'visibility_status', 'public') == 'public'
+    scope = getattr(rule_set, 'question_pool_scope', 'all') or 'all'
+    scope = 'mine' if str(scope).lower() == 'mine' else 'all'
 
-    is_owner = bool(current_user_id and rule_set.created_by_user_id == current_user_id)
-    if is_owner and getattr(rule_set, 'visibility_status', 'public') != 'public':
+    if scope == 'mine':
+        base = Question.query.filter(Question.author_id == creator_id)
+        # Si quiz public OU accès privé non accordé, ne jamais exposer des questions non publiées/non validées
+        if is_public_quiz or not viewer_has_private_access:
+            base = base.filter(Question.is_published.is_(True), Question.is_private.is_(False))
+        return base
+
+    # scope == 'all'
+    base = _public_questions_query()
+    if (not is_public_quiz) and viewer_has_private_access:
         base = Question.query.filter(
             db.or_(
                 db.and_(Question.is_published.is_(True), Question.is_private.is_(False)),
-                Question.author_id == int(current_user_id),
+                Question.author_id == creator_id,
             )
         )
-
     return base
 
 
@@ -107,7 +118,7 @@ def _apply_quiz_filters(query, params):
     return query
 
 
-def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None) -> dict:
+def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None, viewer_has_private_access: bool = False) -> dict:
     """
     Calcule les statistiques du pool de questions pour un rule_set donné.
     Retourne: {
@@ -131,8 +142,10 @@ def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None) -> dict:
     if rule_set.question_selection_mode == 'manual':
         stats['questions_per_game'] = len(rule_set.selected_questions)
         # Pour le mode manuel, le pool EST la sélection
-        if user_id and getattr(rule_set, 'visibility_status', 'public') != 'public' and rule_set.created_by_user_id == user_id:
-            pool_ids = [q.id for q in rule_set.selected_questions if (q.author_id == user_id) or (q.is_published and not q.is_private)]
+        is_public_quiz = getattr(rule_set, 'visibility_status', 'public') == 'public'
+        creator_id = int(rule_set.created_by_user_id)
+        if (not is_public_quiz) and viewer_has_private_access:
+            pool_ids = [q.id for q in rule_set.selected_questions if (q.author_id == creator_id) or (q.is_published and not q.is_private)]
         else:
             pool_ids = [q.id for q in rule_set.selected_questions if (q.is_published and not q.is_private)]
         pool_query = Question.query.filter(Question.id.in_(pool_ids))
@@ -141,7 +154,7 @@ def get_rule_set_stats(rule_set: QuizRuleSet, user_id: int | None) -> dict:
         stats['questions_per_game'] = sum(int(v) for v in qmap.values() if v)
         
         # 2. Construire la requête du pool
-        pool_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, user_id), rule_set)
+        pool_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, user_id, viewer_has_private_access=viewer_has_private_access), rule_set)
 
     # Compter le pool total
     stats['total_pool'] = pool_query.count()
@@ -339,7 +352,7 @@ def _select_questions_with_keyword_logic(
     return selected_ids, current_used_keywords, stats
 
 
-def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) -> list[int]:
+def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None, viewer_has_private_access: bool = False) -> list[int]:
     """
     Génère la playlist (liste d'IDs de questions) pour un quiz à longueur fixe.
 
@@ -368,14 +381,14 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         prevent_duplicate_keywords = rule_set.prevent_duplicate_keywords
         print(f"[QUIZ PLAYLIST] Prévention doublons keywords: {'OUI' if prevent_duplicate_keywords else 'NON'}")
 
-        is_owner = bool(current_user_id and rule_set.created_by_user_id == current_user_id)
+        creator_id = int(rule_set.created_by_user_id)
         is_public_quiz = getattr(rule_set, 'visibility_status', 'public') == 'public'
 
         # Mode manuel: partir de la sélection explicite
         if rule_set.question_selection_mode == 'manual' and rule_set.selected_questions:
             print(f"[QUIZ PLAYLIST] Mode MANUEL: {len(rule_set.selected_questions)} questions sélectionnées")
-            if is_owner and not is_public_quiz:
-                selected = [q for q in rule_set.selected_questions if (q.author_id == current_user_id) or (q.is_published and not q.is_private)]
+            if (not is_public_quiz) and viewer_has_private_access:
+                selected = [q for q in rule_set.selected_questions if (q.author_id == creator_id) or (q.is_published and not q.is_private)]
             else:
                 selected = [q for q in rule_set.selected_questions if (q.is_published and not q.is_private)]
             candidate_ids = [q.id for q in selected]
@@ -411,7 +424,7 @@ def _generate_quiz_playlist(rule_set: QuizRuleSet, current_user_id: int | None) 
         print(f"[QUIZ PLAYLIST] Ordre des questions: {order_mode}")
 
         # Construire la requête de base selon le set de règles
-        base_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, current_user_id), rule_set)
+        base_query = _apply_rule_set_filters(_base_questions_for_rule_set(rule_set, current_user_id, viewer_has_private_access=viewer_has_private_access), rule_set)
 
         # Préparer par difficulté avec logique keywords
         per_diff_ids: dict[int, list[int]] = {}

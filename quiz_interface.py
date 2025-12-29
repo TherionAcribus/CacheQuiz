@@ -5,6 +5,34 @@ from quiz_gameplay import _get_user_double_click_preference
 from quiz_playlist_generation import get_rule_set_stats
 
 
+def _grant_private_quiz_access(rule_set: QuizRuleSet):
+    """Enregistre en session qu'un quiz non-public est accessible (via lien partagé)."""
+    try:
+        if not rule_set or not rule_set.slug:
+            return
+        access = session.get('quiz_private_access')
+        if not isinstance(access, dict):
+            access = {}
+        access[rule_set.slug] = True
+        session['quiz_private_access'] = access
+    except Exception:
+        pass
+
+
+def _viewer_has_private_access(rule_set: QuizRuleSet) -> bool:
+    """Le viewer peut accéder au contenu privé du quiz (créateur OU lien partagé validé)."""
+    try:
+        user = getattr(g, 'current_user', None)
+        if user and rule_set and rule_set.created_by_user_id == user.id:
+            return True
+        access = session.get('quiz_private_access')
+        if isinstance(access, dict) and rule_set and rule_set.slug:
+            return bool(access.get(rule_set.slug))
+    except Exception:
+        return False
+    return False
+
+
 def play_quiz_with_rules(slug: str):
     """Redirige vers la page de jeu avec un set de règles prédéfini."""
     return redirect(f'/play?rule_set={slug}')
@@ -22,7 +50,13 @@ def play_quiz():
             user = getattr(g, 'current_user', None)
             is_owner = bool(user and rule_set.created_by_user_id == user.id)
             if getattr(rule_set, 'visibility_status', 'public') != 'public' and not is_owner:
-                return redirect(url_for('play_quiz'))
+                # Autoriser si la session a déjà validé l'accès (lien partagé)
+                if not _viewer_has_private_access(rule_set):
+                    access_key = (request.args.get('access_key') or '').strip()
+                    if access_key and access_key == (getattr(rule_set, 'private_access_key', None) or ''):
+                        _grant_private_quiz_access(rule_set)
+                    else:
+                        return redirect(url_for('play_quiz'))
     else:
         # Si on arrive sans set explicite et qu'il existait une session en cours, l'abandonner
         if getattr(g, 'current_user', None):
@@ -60,7 +94,7 @@ def play_quiz():
     rule_set_stats = None
     if rule_set:
         user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
-        rule_set_stats = get_rule_set_stats(rule_set, user_id)
+        rule_set_stats = get_rule_set_stats(rule_set, user_id, viewer_has_private_access=_viewer_has_private_access(rule_set))
 
     return render_template('play.html',
                            rule_sets=rule_sets,
@@ -84,7 +118,13 @@ def play_quiz_by_slug(slug):
     user = getattr(g, 'current_user', None)
     is_owner = bool(user and rule_set.created_by_user_id == user.id)
     if getattr(rule_set, 'visibility_status', 'public') != 'public' and not is_owner:
-        return redirect(url_for('play_quiz'))
+        # Autoriser si la session a déjà validé l'accès (lien partagé)
+        if not _viewer_has_private_access(rule_set):
+            access_key = (request.args.get('access_key') or '').strip()
+            if access_key and access_key == (getattr(rule_set, 'private_access_key', None) or ''):
+                _grant_private_quiz_access(rule_set)
+            else:
+                return redirect(url_for('play_quiz'))
 
     # Récupérer tous les sets de règles actifs pour le sélecteur
     if user:
@@ -109,7 +149,7 @@ def play_quiz_by_slug(slug):
     auto_start = True
 
     user_id = g.current_user.id if getattr(g, 'current_user', None) and g.current_user.is_authenticated else None
-    rule_set_stats = get_rule_set_stats(rule_set, user_id)
+    rule_set_stats = get_rule_set_stats(rule_set, user_id, viewer_has_private_access=_viewer_has_private_access(rule_set))
 
     return render_template('play.html',
                            rule_sets=rule_sets,

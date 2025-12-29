@@ -580,18 +580,27 @@ def count_questions_for_rule():
     """Compter le nombre de questions disponibles selon les critères sélectionnés"""
     country_ids = request.args.getlist('country_ids[]', type=int)
     filter_by_countries = request.args.get('filter_by_countries') == '1'
+    broad_theme_ids = request.args.getlist('broad_theme_ids[]', type=int)
+    use_all_broad_themes = (request.args.get('use_all_broad_themes') == '1')
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    use_all_specific_themes = (request.args.get('use_all_specific_themes') == '1')
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
-
-    if not specific_theme_ids or not difficulty_levels:
-        return {'count': 0, 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
 
     try:
         # Compter les questions qui correspondent aux critères
-        query = Question.query.filter(
-            Question.specific_theme_id.in_(specific_theme_ids),
-            Question.difficulty_level.in_(difficulty_levels)
-        )
+        query = Question.query
+
+        # Difficultés (optionnel)
+        if difficulty_levels:
+            query = query.filter(Question.difficulty_level.in_(difficulty_levels))
+
+        # Thèmes larges (optionnel)
+        if (not use_all_broad_themes) and broad_theme_ids:
+            query = query.filter(Question.broad_theme_id.in_(broad_theme_ids))
+
+        # Sous-thèmes: si "tous" => ne pas filtrer (inclut specific_theme_id NULL)
+        if not use_all_specific_themes and specific_theme_ids:
+            query = query.filter(Question.specific_theme_id.in_(specific_theme_ids))
 
         # Filtrer par pays si demandé
         if filter_by_countries:
@@ -623,7 +632,10 @@ def get_questions_for_selection():
     """Récupérer les questions disponibles pour la sélection manuelle"""
     country_ids = request.args.getlist('country_ids[]', type=int)
     filter_by_countries = request.args.get('filter_by_countries') == '1'
+    broad_theme_ids = request.args.getlist('broad_theme_ids[]', type=int)
+    use_all_broad_themes = (request.args.get('use_all_broad_themes') == '1')
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    use_all_specific_themes = (request.args.get('use_all_specific_themes') == '1')
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
 
     # Paramètres de recherche
@@ -634,15 +646,21 @@ def get_questions_for_selection():
     filter_specific_theme_id = request.args.get('specific_theme_id', type=int)
     filter_difficulty_level = request.args.get('difficulty_level', type=int)
 
-    if not specific_theme_ids or not difficulty_levels:
-        return {'questions': [], 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
-
     try:
         # Récupérer les questions qui correspondent aux critères
-        query = Question.query.filter(
-            Question.specific_theme_id.in_(specific_theme_ids),
-            Question.difficulty_level.in_(difficulty_levels)
-        )
+        query = Question.query
+
+        # Difficultés (optionnel)
+        if difficulty_levels:
+            query = query.filter(Question.difficulty_level.in_(difficulty_levels))
+
+        # Thèmes larges (optionnel)
+        if (not use_all_broad_themes) and broad_theme_ids:
+            query = query.filter(Question.broad_theme_id.in_(broad_theme_ids))
+
+        # Sous-thèmes (optionnel). Si "tous", on n'applique pas le filtre (inclut NULL).
+        if not use_all_specific_themes and specific_theme_ids:
+            query = query.filter(Question.specific_theme_id.in_(specific_theme_ids))
 
         # Filtrer par pays si demandé
         if filter_by_countries:

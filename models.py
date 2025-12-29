@@ -654,6 +654,15 @@ class QuizRuleSet(db.Model):
     public_reviewed_by_user = db.relationship('User', foreign_keys=[public_reviewed_by_user_id])
     public_review_note = db.Column(db.Text, nullable=True)
 
+    # Portée du pool de questions pour ce quiz (côté créateur)
+    # - all: questions publiques + questions du créateur (si quiz non public et accès autorisé)
+    # - mine: uniquement les questions du créateur (même privées/non publiées si quiz non public et accès autorisé)
+    question_pool_scope = db.Column(db.String(10), nullable=False, default='all')
+
+    # Clé d'accès pour partager un quiz privé (jouable via /play/<slug>?access_key=...)
+    # Note: pas d'unicité SQL imposée pour rester compatible avec l'auto-migration SQLite (ALTER TABLE simple).
+    private_access_key = db.Column(db.String(64), nullable=True)
+
     # Auteur / créateur
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_by_user = db.relationship('User', foreign_keys=[created_by_user_id])

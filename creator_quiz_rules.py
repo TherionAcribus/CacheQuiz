@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask import render_template, request, g
+import uuid
 
 from models import (
     db,
@@ -34,6 +35,20 @@ def list_creator_quiz_rules():
 
     user = g.current_user
     rules = QuizRuleSet.query.filter_by(created_by_user_id=user.id).order_by(QuizRuleSet.updated_at.desc()).all()
+    # Assurer qu'un lien de partage privé peut être affiché (clé générée si manquante)
+    try:
+        changed = False
+        for r in rules:
+            if not getattr(r, 'private_access_key', None):
+                r.private_access_key = uuid.uuid4().hex
+                changed = True
+            if not getattr(r, 'question_pool_scope', None):
+                r.question_pool_scope = 'all'
+                changed = True
+        if changed:
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
     return render_template('creator_quiz_rules_list.html', rules=rules)
 
 
@@ -105,6 +120,19 @@ def _eligible_questions_query(user_id: int):
     )
 
 
+def _normalize_question_pool_scope(raw: str | None) -> str:
+    scope = (raw or '').strip().lower()
+    return 'mine' if scope in ('mine', 'my', 'mes') else 'all'
+
+
+def _creator_question_pool_query(creator_user_id: int, scope: str):
+    """Pool disponible pour configurer un quiz côté créateur."""
+    scope = _normalize_question_pool_scope(scope)
+    if scope == 'mine':
+        return Question.query.filter(Question.author_id == creator_user_id)
+    return _eligible_questions_query(creator_user_id)
+
+
 def create_creator_quiz_rule():
     try:
         denied = _ensure_creator_api()
@@ -129,6 +157,8 @@ def create_creator_quiz_rule():
         order_mode = (data.get('question_order_mode') or 'difficulty_ascending').strip() or 'difficulty_ascending'
         if order_mode not in ['difficulty_ascending', 'full_shuffle']:
             order_mode = 'difficulty_ascending'
+
+        pool_scope = _normalize_question_pool_scope(data.get('question_pool_scope'))
 
         rule = QuizRuleSet(
             name=name,
@@ -156,7 +186,10 @@ def create_creator_quiz_rule():
             failure_image_id=(int(data.get('failure_image_id')) if (data.get('failure_image_id') or '').isdigit() else None),
             question_order_mode=order_mode,
             visibility_status='private',  # forcer privé côté créateur
+            question_pool_scope=pool_scope,
         )
+        # Générer une clé d'accès pour le partage privé (si manquante)
+        rule.private_access_key = rule.private_access_key or uuid.uuid4().hex
 
         # Difficultés autorisées
         difficulties = [int(x) for x in data.getlist('allowed_difficulties') if (x or '').isdigit()]
@@ -199,7 +232,7 @@ def create_creator_quiz_rule():
         selected_question_ids = [int(x) for x in data.getlist('selected_question_ids') if (x or '').isdigit()]
 
         # Calculer le pool disponible (critères + eligibilité créateur)
-        available_query = _eligible_questions_query(user.id)
+        available_query = _creator_question_pool_query(user.id, pool_scope)
         if not rule.use_all_specific_themes and rule.allowed_specific_themes:
             st_ids = [st.id for st in rule.allowed_specific_themes]
             available_query = available_query.filter(Question.specific_theme_id.in_(st_ids))
@@ -216,7 +249,7 @@ def create_creator_quiz_rule():
 
         if selected_question_ids and set(selected_question_ids) != set(available_question_ids):
             rule.question_selection_mode = 'manual'
-            eligible = _eligible_questions_query(user.id).filter(Question.id.in_(selected_question_ids)).all()
+            eligible = _creator_question_pool_query(user.id, pool_scope).filter(Question.id.in_(selected_question_ids)).all()
             rule.selected_questions = eligible
         else:
             rule.question_selection_mode = 'auto'
@@ -269,6 +302,10 @@ def update_creator_quiz_rule(rule_id: int):
             order_mode = 'difficulty_ascending'
         rule.question_order_mode = order_mode
 
+        pool_scope = _normalize_question_pool_scope(data.get('question_pool_scope') or getattr(rule, 'question_pool_scope', None))
+        rule.question_pool_scope = pool_scope
+        rule.private_access_key = rule.private_access_key or uuid.uuid4().hex
+
         rule.intro_message = (data.get('intro_message') or '').strip() or None
         rule.success_message = (data.get('success_message') or '').strip() or None
         rule.failure_message = (data.get('failure_message') or '').strip() or None
@@ -319,7 +356,7 @@ def update_creator_quiz_rule(rule_id: int):
         # Mode de sélection (auto vs manuel)
         selected_question_ids = [int(x) for x in data.getlist('selected_question_ids') if (x or '').isdigit()]
 
-        available_query = _eligible_questions_query(user.id)
+        available_query = _creator_question_pool_query(user.id, pool_scope)
         if not rule.use_all_specific_themes and rule.allowed_specific_themes:
             st_ids = [st.id for st in rule.allowed_specific_themes]
             available_query = available_query.filter(Question.specific_theme_id.in_(st_ids))
@@ -336,7 +373,7 @@ def update_creator_quiz_rule(rule_id: int):
 
         if selected_question_ids and set(selected_question_ids) != set(available_question_ids):
             rule.question_selection_mode = 'manual'
-            rule.selected_questions = _eligible_questions_query(user.id).filter(Question.id.in_(selected_question_ids)).all()
+            rule.selected_questions = _creator_question_pool_query(user.id, pool_scope).filter(Question.id.in_(selected_question_ids)).all()
         else:
             rule.question_selection_mode = 'auto'
             rule.selected_questions = []
@@ -454,16 +491,31 @@ def creator_quiz_rule_count_questions():
 
     country_ids = request.args.getlist('country_ids[]', type=int)
     filter_by_countries = request.args.get('filter_by_countries') == '1'
+    broad_theme_ids = request.args.getlist('broad_theme_ids[]', type=int)
+    use_all_broad_themes = (request.args.get('use_all_broad_themes') == '1')
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    use_all_specific_themes = (request.args.get('use_all_specific_themes') == '1')
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
+    scope = _normalize_question_pool_scope(request.args.get('scope'))
 
-    if not specific_theme_ids or not difficulty_levels:
-        return {'count': 0, 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
+    query = _creator_question_pool_query(user.id, scope)
 
-    query = _eligible_questions_query(user.id).filter(
-        Question.specific_theme_id.in_(specific_theme_ids),
-        Question.difficulty_level.in_(difficulty_levels),
-    )
+    # Difficultés (optionnel: si vide = toutes)
+    if difficulty_levels:
+        query = query.filter(Question.difficulty_level.in_(difficulty_levels))
+
+    # Thèmes larges (optionnel)
+    if (not use_all_broad_themes) and broad_theme_ids:
+        query = query.filter(Question.broad_theme_id.in_(broad_theme_ids))
+
+    # Sous-thèmes: si "tous" => ne pas filtrer (inclut aussi specific_theme_id NULL)
+    if not use_all_specific_themes:
+        if specific_theme_ids:
+            query = query.filter(Question.specific_theme_id.in_(specific_theme_ids))
+        else:
+            # En mode créateur, on ne bloque pas strictement: laisser l'utilisateur voir ses questions.
+            # Si la DB est grosse, l'UI reste contrôlée via les onglets et la sélection.
+            pass
 
     if filter_by_countries:
         if country_ids:
@@ -490,8 +542,12 @@ def creator_quiz_rule_get_questions_for_selection():
 
     country_ids = request.args.getlist('country_ids[]', type=int)
     filter_by_countries = request.args.get('filter_by_countries') == '1'
+    broad_theme_ids = request.args.getlist('broad_theme_ids[]', type=int)
+    use_all_broad_themes = (request.args.get('use_all_broad_themes') == '1')
     specific_theme_ids = request.args.getlist('specific_theme_ids[]', type=int)
+    use_all_specific_themes = (request.args.get('use_all_specific_themes') == '1')
     difficulty_levels = request.args.getlist('difficulty_levels[]', type=int)
+    scope = _normalize_question_pool_scope(request.args.get('scope'))
 
     search_query = (request.args.get('q') or '').strip()
     keyword_id = request.args.get('keyword_id', type=int)
@@ -499,13 +555,22 @@ def creator_quiz_rule_get_questions_for_selection():
     filter_specific_theme_id = request.args.get('specific_theme_id', type=int)
     filter_difficulty_level = request.args.get('difficulty_level', type=int)
 
-    if not specific_theme_ids or not difficulty_levels:
-        return {'questions': [], 'message': 'Sélectionnez au moins un sous-thème et une difficulté'}
+    query = _creator_question_pool_query(user.id, scope)
 
-    query = _eligible_questions_query(user.id).filter(
-        Question.specific_theme_id.in_(specific_theme_ids),
-        Question.difficulty_level.in_(difficulty_levels),
-    )
+    # Difficultés (optionnel)
+    if difficulty_levels:
+        query = query.filter(Question.difficulty_level.in_(difficulty_levels))
+
+    # Thèmes larges (optionnel)
+    if (not use_all_broad_themes) and broad_theme_ids:
+        query = query.filter(Question.broad_theme_id.in_(broad_theme_ids))
+
+    # Sous-thèmes (optionnel). Si "tous", on n'applique pas le filtre afin d'inclure aussi NULL.
+    if not use_all_specific_themes:
+        if specific_theme_ids:
+            query = query.filter(Question.specific_theme_id.in_(specific_theme_ids))
+        else:
+            pass
 
     if filter_by_countries:
         if country_ids:
@@ -514,13 +579,12 @@ def creator_quiz_rule_get_questions_for_selection():
             query = query.filter(~Question.countries.any())
 
     if search_query:
-        query = query.join(User, Question.author_id == User.id, isouter=True)\
-                     .join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True)\
+        # Confidentialité: côté créateur on n'indexe pas les pseudos joueurs dans la recherche
+        query = query.join(BroadTheme, Question.broad_theme_id == BroadTheme.id, isouter=True)\
                      .join(SpecificTheme, Question.specific_theme_id == SpecificTheme.id, isouter=True)
         query = query.filter(
             db.or_(
                 Question.question_text.contains(search_query),
-                User.username.contains(search_query),
                 BroadTheme.name.contains(search_query),
                 SpecificTheme.name.contains(search_query),
             )

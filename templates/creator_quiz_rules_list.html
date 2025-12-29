@@ -2,7 +2,7 @@
 <div class="rules-list">
     {% for rule in rules %}
     <div class="rule-card">
-        <div class="rule-main">
+        <div class="rule-header">
             <div class="rule-title">
                 <h3>{{ rule.name }}</h3>
                 <span class="badge badge-slug">{{ rule.slug or '-' }}</span>
@@ -16,18 +16,82 @@
                 <span class="badge badge-private">Privé</span>
                 {% endif %}
             </div>
-            {% if rule.description %}
-            <p class="rule-desc">{{ rule.description }}</p>
-            {% endif %}
-        </div>
-        <div class="rule-actions">
+            <div class="rule-actions">
             <button class="btn-icon" type="button"
                 onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
                 hx-get="/creator/quiz-rule/{{ rule.id }}/edit"
                 hx-target="#rule-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
             <button class="btn-icon btn-danger" hx-delete="/api/creator/quiz-rule/{{ rule.id }}"
                 hx-target="#quiz-rules-list" hx-confirm="Supprimer ce quiz ?" title="Supprimer">🗑️</button>
+            </div>
         </div>
+
+        {% if rule.description %}
+        <p class="rule-desc">{{ rule.description }}</p>
+        {% endif %}
+
+        {% if rule.intro_image %}
+        <div class="rule-image">
+            <img src="{{ rule.intro_image.url }}" alt="Image d'introduction">
+            {% if rule.intro_image.copyright_credits or rule.intro_image.copyright_link %}
+            <div class="image-copyright">
+                {% if rule.intro_image.copyright_credits and rule.intro_image.copyright_link %}
+                <small><a href="{{ rule.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer"
+                        class="copyright-link">© {{ rule.intro_image.copyright_credits }}</a></small>
+                {% elif rule.intro_image.copyright_credits %}
+                <small>© {{ rule.intro_image.copyright_credits }}</small>
+                {% elif rule.intro_image.copyright_link %}
+                <small><a href="{{ rule.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer"
+                        class="copyright-link">🔗 Source</a></small>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if rule.intro_message %}
+        <div class="rule-intro">
+            {{ rule.intro_message|safe }}
+        </div>
+        {% endif %}
+
+        <div class="rule-summary">
+            <div class="summary-row"><strong>⏱️ Timer :</strong> {{ rule.timer_seconds }}s</div>
+            {% set diffs = rule.get_allowed_difficulties() %}
+            <div class="summary-row"><strong>📊 Difficultés :</strong> {{ diffs|join(', ') if diffs else 'toutes' }}</div>
+            {% set qmap = rule.get_questions_per_difficulty() %}
+            {% if qmap %}
+            <div class="summary-row"><strong>📋 Questions/difficulté :</strong> {{ qmap|tojson }}</div>
+            {% endif %}
+            <div class="summary-row"><strong>🧩 Sélection :</strong> {{ 'Manuelle' if rule.question_selection_mode == 'manual' else 'Automatique' }}</div>
+            <div class="summary-row"><strong>🗂️ Pool :</strong> {{ 'Mes questions' if rule.question_pool_scope == 'mine' else 'Toutes (publiques + mes questions)' }}</div>
+        </div>
+
+        <div class="rule-share">
+            {% set public_url = url_for('play_quiz_by_slug', slug=rule.slug, _external=True) %}
+            {% if rule.visibility_status == 'public' %}
+                {% set share_url = public_url %}
+                <div class="share-title"><strong>🔗 Lien à partager</strong> (quiz public)</div>
+            {% else %}
+                {% if rule.private_access_key %}
+                    {% set share_url = public_url ~ '?access_key=' ~ rule.private_access_key %}
+                    <div class="share-title"><strong>🔒 Lien à partager</strong> (quiz privé jouable via ce lien)</div>
+                {% else %}
+                    {% set share_url = '' %}
+                    <div class="share-title"><strong>🔒 Lien à partager</strong></div>
+                {% endif %}
+            {% endif %}
+
+            {% if share_url %}
+            <div class="share-row">
+                <input id="share-link-{{ rule.id }}" class="share-input" type="text" readonly value="{{ share_url }}">
+                <button class="btn btn-outline btn-small" type="button" onclick="copyShareLink('share-link-{{ rule.id }}')">Copier</button>
+            </div>
+            {% else %}
+            <div class="text-muted">Enregistrez le quiz (ou ré-éditez/sauvegardez) pour générer le lien.</div>
+            {% endif %}
+        </div>
+
         <div class="rule-footer">
             <small>Modifié: {{ rule.updated_at.strftime('%d/%m/%Y %H:%M') if rule.updated_at }}</small>
             <div class="footer-actions">
@@ -54,10 +118,11 @@
 <style>
     .rules-list{display:flex;flex-direction:column;gap:1rem}
     .rule-card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:.9rem;box-shadow:var(--shadow);padding:1rem}
+    .rule-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
     .rule-title{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
     .rule-title h3{margin:0}
     .rule-desc{margin:.5rem 0 0 0;color:var(--text-light)}
-    .rule-actions{display:flex;gap:.4rem;justify-content:flex-end;margin-top:-2.2rem}
+    .rule-actions{display:flex;gap:.4rem;justify-content:flex-end}
     .rule-footer{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border-color)}
     .footer-actions{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
     .text-muted{color:var(--text-light)}
@@ -70,6 +135,51 @@
     .btn-icon{background:none;border:1px solid var(--border-color);border-radius:.5rem;padding:.35rem .5rem;cursor:pointer}
     .btn-icon.btn-danger{border-color:rgba(229,62,62,.35)}
     .no-rules{text-align:center;padding:2rem;color:var(--text-light)}
+
+    .rule-image{position:relative;margin-top:.75rem;border-radius:.75rem;overflow:hidden;border:1px solid var(--border-color);max-height:220px}
+    .rule-image img{width:100%;height:220px;object-fit:cover;display:block}
+    .image-copyright{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;padding:.4rem .6rem;display:flex;gap:.5rem;align-items:center}
+    .copyright-link{color:inherit;text-decoration:none}
+    .copyright-link:hover{opacity:.85}
+
+    .rule-intro{margin-top:.75rem;padding:.75rem;border:1px solid var(--border-color);border-radius:.75rem;background:rgba(0,0,0,.03)}
+
+    .rule-summary{margin-top:.75rem;display:grid;grid-template-columns:1fr;gap:.35rem}
+    .summary-row{color:var(--text-color);font-size:.95rem}
+
+    .rule-share{margin-top:.75rem;padding:.75rem;border:1px dashed var(--border-color);border-radius:.75rem}
+    .share-title{margin-bottom:.5rem}
+    .share-row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+    .share-input{flex:1;min-width:280px;padding:.5rem .6rem;border:1px solid var(--border-color);border-radius:.5rem;background:var(--card-bg)}
 </style>
+
+<script>
+function copyShareLink(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    const text = input.value || '';
+    if (!text) return;
+
+    // Clipboard API (moderne)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                if (typeof showAppModal === 'function') showAppModal('Lien copié dans le presse-papiers.');
+            })
+            .catch(() => {
+                // fallback
+                input.select();
+                document.execCommand('copy');
+                if (typeof showAppModal === 'function') showAppModal('Lien copié.');
+            });
+    } else {
+        // fallback
+        input.select();
+        document.execCommand('copy');
+        if (typeof showAppModal === 'function') showAppModal('Lien copié.');
+    }
+}
+</script>
 
 

@@ -140,6 +140,25 @@
                                 <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
                             </div>
 
+                            {% if creator_mode %}
+                            <div class="form-group" style="margin: .75rem 0 1rem 0;">
+                                <label>Pool de questions</label>
+                                <div class="radio-group" style="display:flex; gap:.75rem; flex-wrap:wrap">
+                                    {% set pool_scope = (rule.question_pool_scope if rule else 'all') %}
+                                    <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
+                                        <input type="radio" name="question_pool_scope" value="all" {% if pool_scope != 'mine' %}checked{% endif %}>
+                                        <span class="option-title">Toutes les questions disponibles</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Questions publiques + vos questions</span>
+                                    </label>
+                                    <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
+                                        <input type="radio" name="question_pool_scope" value="mine" {% if pool_scope == 'mine' %}checked{% endif %}>
+                                        <span class="option-title">Mes questions uniquement</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Uniquement vos questions (même non publiées)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
                             <!-- Recherche locale dans la sélection -->
                             <div class="search-container" style="width: 100%; margin-bottom: 1rem;">
                                 <div class="search-wrapper">
@@ -152,7 +171,9 @@
                                     <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="{% if creator_mode %}/api/creator/themes/json{% else %}/api/themes/json{% endif %}">📂 Thème</div>
                                     <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="{% if creator_mode %}/api/creator/subthemes/json{% else %}/api/subthemes/json{% endif %}">ue Sous-thème</div>
                                     <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
-                                    <div class="dropdown-item" data-type="author_id" data-endpoint="{% if creator_mode %}/api/creator/authors/json{% else %}/api/authors/json{% endif %}">👤 Auteur</div>
+                                    {% if not creator_mode %}
+                                    <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
+                                    {% endif %}
                                     <div class="dropdown-item" data-type="difficulty_level" data-endpoint="{% if creator_mode %}/api/creator/difficulties/json{% else %}/api/difficulties/json{% endif %}">⭐ Niveau</div>
                                 </div>
                                 <!-- Dropdown pour les valeurs de filtre -->
@@ -810,7 +831,13 @@ function updateQuestionCount() {
     const selectedCountries = useAllCountries ? [] : Array.from(document.querySelectorAll('input[name="allowed_country_ids"]:checked'))
         .map(cb => parseInt(cb.value));
 
+    // Thèmes larges cochés
+    const useAllBroadThemes = document.getElementById('use_all_broad_themes');
+    const selectedBroadThemes = Array.from(document.querySelectorAll('input[name="allowed_broad_theme_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
     // Récupérer les sous-thèmes cochés
+    const useAllSpecificThemes = document.getElementById('use_all_specific_themes');
     const selectedSpecificThemes = Array.from(document.querySelectorAll('input[name="allowed_specific_theme_ids"]:checked'))
         .map(cb => parseInt(cb.value));
 
@@ -821,7 +848,8 @@ function updateQuestionCount() {
     const countText = document.getElementById('question-count-text');
     const countContainer = document.getElementById('question-count');
 
-    if (selectedSpecificThemes.length === 0 || selectedDifficulties.length === 0) {
+    // On garde le blocage UI si aucune difficulté n'est sélectionnée, sinon on laisse l'API gérer.
+    if (selectedDifficulties.length === 0) {
         countText.textContent = 'Sélectionnez au moins un sous-thème et une difficulté';
         countContainer.style.backgroundColor = '#fff3cd';
         return;
@@ -836,8 +864,29 @@ function updateQuestionCount() {
         // Ajouter un paramètre pour indiquer qu'on veut filtrer par pays
         params.append('filter_by_countries', '1');
     }
+    // Flags + thèmes larges
+    if (useAllBroadThemes && useAllBroadThemes.checked) {
+        params.append('use_all_broad_themes', '1');
+    } else {
+        params.append('use_all_broad_themes', '0');
+        selectedBroadThemes.forEach(id => params.append('broad_theme_ids[]', id));
+    }
+
+    if (useAllSpecificThemes && useAllSpecificThemes.checked) {
+        params.append('use_all_specific_themes', '1');
+    } else {
+        params.append('use_all_specific_themes', '0');
+    }
+
     selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
     selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
+
+    {% if creator_mode %}
+    // Pool de questions (créateur): 'all' ou 'mine'
+    const scopeEl = document.querySelector('input[name="question_pool_scope"]:checked');
+    const scope = scopeEl ? scopeEl.value : 'all';
+    params.append('scope', scope);
+    {% endif %}
 
     fetch(`{% if creator_mode %}/api/creator/quiz-rule/count-questions{% else %}/api/quiz-rule/count-questions{% endif %}?${params}`)
         .then(response => response.json())
@@ -1326,6 +1375,19 @@ let activeFilters = []; // { type: 'author_id', label: 'Auteur', value: 1, displ
 let searchTimeout;
 let currentFilterType = null;
 
+function initQuestionPoolScopeToggle() {
+    const radios = document.querySelectorAll('input[name="question_pool_scope"]');
+    if (!radios || radios.length === 0) return;
+    radios.forEach(r => {
+        if (r.dataset.poolScopeListenerAttached === '1') return;
+        r.dataset.poolScopeListenerAttached = '1';
+        r.addEventListener('change', function() {
+            updateQuestionCount();
+            loadQuestionsForSelection();
+        });
+    });
+}
+
 function initSearchFeatures() {
     const searchInput = document.getElementById('search-input');
     const typeDropdown = document.getElementById('filter-type-dropdown');
@@ -1512,7 +1574,13 @@ function loadQuestionsForSelection() {
     const selectedCountries = useAllCountries ? [] : Array.from(document.querySelectorAll('input[name="allowed_country_ids"]:checked'))
         .map(cb => parseInt(cb.value));
 
+    // Thèmes larges cochés
+    const useAllBroadThemes = document.getElementById('use_all_broad_themes');
+    const selectedBroadThemes = Array.from(document.querySelectorAll('input[name="allowed_broad_theme_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
     // Récupérer les sous-thèmes cochés
+    const useAllSpecificThemes = document.getElementById('use_all_specific_themes');
     const selectedSpecificThemes = Array.from(document.querySelectorAll('input[name="allowed_specific_theme_ids"]:checked'))
         .map(cb => parseInt(cb.value));
 
@@ -1522,8 +1590,8 @@ function loadQuestionsForSelection() {
 
     const tableBody = document.getElementById('questions-table-body');
 
-    if (selectedSpecificThemes.length === 0 || selectedDifficulties.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Veuillez sélectionner au moins un sous-thème et une difficulté dans les onglets précédents.</td></tr>';
+    if (selectedDifficulties.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Veuillez sélectionner au moins une difficulté.</td></tr>';
         updateSelectedQuestionsCount();
         return;
     }
@@ -1534,8 +1602,29 @@ function loadQuestionsForSelection() {
         selectedCountries.forEach(id => params.append('country_ids[]', id));
         params.append('filter_by_countries', '1');
     }
+    // Flags + thèmes larges
+    if (useAllBroadThemes && useAllBroadThemes.checked) {
+        params.append('use_all_broad_themes', '1');
+    } else {
+        params.append('use_all_broad_themes', '0');
+        selectedBroadThemes.forEach(id => params.append('broad_theme_ids[]', id));
+    }
+
+    if (useAllSpecificThemes && useAllSpecificThemes.checked) {
+        params.append('use_all_specific_themes', '1');
+    } else {
+        params.append('use_all_specific_themes', '0');
+    }
+
     selectedSpecificThemes.forEach(id => params.append('specific_theme_ids[]', id));
     selectedDifficulties.forEach(level => params.append('difficulty_levels[]', level));
+
+    {% if creator_mode %}
+    // Pool de questions (créateur): 'all' ou 'mine'
+    const scopeEl = document.querySelector('input[name="question_pool_scope"]:checked');
+    const scope = scopeEl ? scopeEl.value : 'all';
+    params.append('scope', scope);
+    {% endif %}
 
     // Ajouter les paramètres de recherche
     const searchInput = document.getElementById('search-input');
@@ -1685,6 +1774,16 @@ function showQuestionDetail(questionId) {
             }
             
             // Construire le HTML du détail
+            const CREATOR_MODE = {{ 'true' if creator_mode else 'false' }};
+            let authorHtml = '';
+            if (!CREATOR_MODE) {
+                authorHtml = `
+                        <div class="detail-item">
+                            <strong>Auteur:</strong>
+                            <span>${escapeHtml(data.author_name || '-')}</span>
+                        </div>
+                `;
+            }
             let html = `
                 <div class="question-detail">
                     <div class="detail-section">
@@ -1720,10 +1819,7 @@ function showQuestionDetail(questionId) {
                             <strong>Difficulté:</strong>
                             <span class="difficulty-badge difficulty-${data.difficulty_level}">${data.difficulty_level}</span>
                         </div>
-                        <div class="detail-item">
-                            <strong>Auteur:</strong>
-                            <span>${escapeHtml(data.author_name || '-')}</span>
-                        </div>
+                        ${authorHtml}
                     </div>
             `;
             
@@ -1809,6 +1905,7 @@ document.addEventListener('click', function(e) {
         setTimeout(function() {
             // Initialiser la recherche si pas encore fait
             initSearchFeatures();
+            initQuestionPoolScopeToggle();
             loadQuestionsForSelection();
         }, 100);
         // Initialiser la checkbox "Tout sélectionner" après le chargement des questions
