@@ -4,6 +4,45 @@
         <button class="btn-close" type="button" onclick="document.getElementById('rule-form-container').classList.add('hidden')">✕</button>
     </div>
 
+    <style>
+        /* UX mode simple (créateur) */
+        .creator-quick-theme {
+            background: rgba(0,0,0,.03);
+            border: 1px solid var(--border-color);
+            border-radius: .9rem;
+            padding: .85rem;
+            margin: .75rem 0 1rem 0;
+        }
+        .creator-quick-theme .quick-theme-row{
+            display:flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .creator-quick-theme select{
+            width: 100%;
+            padding: .55rem .65rem;
+            border: 1px solid var(--border-color);
+            border-radius: .6rem;
+            background: var(--card-bg);
+        }
+        .creator-quick-theme small{ display:block; color: var(--text-light); margin-top: .35rem; }
+        .creator-quick-theme .quick-theme-actions{ display:flex; justify-content:flex-end; margin-top: .65rem; }
+        .advanced-details{
+            border: 1px dashed var(--border-color);
+            border-radius: .9rem;
+            padding: .35rem .75rem .75rem .75rem;
+            margin-top: .6rem;
+        }
+        .advanced-details > summary{
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--text-color);
+            padding: .35rem 0;
+        }
+        .auto-selection-hint{ margin: .75rem 0 1rem 0; }
+    </style>
+
     {% if form_action %}
     <form hx-post="{{ form_action }}"
     {% else %}
@@ -15,8 +54,8 @@
         <div class="tabs" hx-on:click="var btn=event.target.closest('.tab, .tab-next'); if(!btn) return; var wrap=event.currentTarget; var nav=wrap.querySelector('.tabs-nav'); var key=btn.classList.contains('tab')?btn.getAttribute('data-tab'):btn.getAttribute('data-next-tab'); if(key){nav.querySelectorAll('.tab').forEach(function(b){var on=b.getAttribute('data-tab')===key; b.classList.toggle('active',on); b.setAttribute('aria-selected',on?'true':'false')}); wrap.querySelectorAll('.tabs-panels .tab-panel').forEach(function(p){p.classList.toggle('active', p.getAttribute('data-tab')===key)});}">
             <div class="tabs-nav" role="tablist" aria-label="Règles - onglets">
                 <button type="button" class="tab active" data-tab="general" aria-selected="true">Général</button>
-                <button type="button" class="tab" data-tab="themes" aria-selected="false">Thèmes</button>
-                <button type="button" class="tab" data-tab="questions" aria-selected="false">Sélection de questions</button>
+                <button type="button" class="tab" data-tab="themes" aria-selected="false">Filtres</button>
+                <button type="button" class="tab" data-tab="questions" aria-selected="false">Questions (avancé)</button>
                 <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
                 <button type="button" class="tab" data-tab="scoring" aria-selected="false">Scoring</button>
                 <button type="button" class="tab" data-tab="messages" aria-selected="false">Messages</button>
@@ -82,6 +121,40 @@
 
                         <fieldset class="fieldset">
                             <legend>Thèmes utilisés</legend>
+                            
+                            {% if creator_mode %}
+                            <!-- Mode simple (recommandé) -->
+                            <div class="creator-quick-theme">
+                                <div class="quick-theme-row">
+                                    <div class="form-group" style="margin:0; min-width: 260px; flex: 1;">
+                                        <label for="creator-broad-theme-select">Filtre principal (thème) — mode simple</label>
+                                        <select id="creator-broad-theme-select">
+                                            <option value="__custom__">— Sélection personnalisée (ne rien changer) —</option>
+                                            <option value="__all__">🌍 Tous les thèmes</option>
+                                            {% for theme in themes %}
+                                            <option value="{{ theme.id }}">{% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <small>Choisis un thème, et on ajuste automatiquement les sous-thèmes. Tu peux toujours affiner en “Options avancées”.</small>
+                                    </div>
+                                    <div class="form-group" style="margin:0; flex: 1; min-width: 240px;">
+                                        <label class="checkbox-label" style="margin-top: 1.8rem;">
+                                            <input type="checkbox" id="creator-include-all-subthemes" checked>
+                                            Inclure tous les sous-thèmes du thème choisi
+                                        </label>
+                                        <small>Décoche pour choisir des sous-thèmes spécifiques (avancé).</small>
+                                    </div>
+                                </div>
+                                <div class="quick-theme-actions">
+                                    <button type="button" class="btn btn-outline btn-small" onclick="openCreatorAdvancedThemeOptions()">⚙️ Options avancées…</button>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if creator_mode %}
+                            <details id="creator-advanced-theme-details" class="advanced-details">
+                                <summary>Options avancées (thèmes & sous-thèmes)</summary>
+                            {% endif %}
                             <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les thèmes larges</label>
                             <!-- Debug: defaults={{ defaults }}, check_all_broad_themes={{ defaults.get('check_all_broad_themes', 'NOT_SET') }} -->
                             <div class="themes-grid-select" data-theme-relations='{
@@ -108,6 +181,10 @@
                                 <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule %}{% if (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}{% else %}{% if defaults.get('check_all_specific_themes', true) %}checked{% endif %}{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
                                 {% endfor %}
                             </div>
+
+                            {% if creator_mode %}
+                            </details>
+                            {% endif %}
 
                             <!-- Compteur de questions -->
                             <div class="question-counter">
@@ -140,6 +217,14 @@
                                 <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
                             </div>
 
+                            <!-- Compteur de questions (visible aussi dans cet onglet) -->
+                            <div class="question-counter" style="margin: .75rem 0 1rem 0;">
+                                <div id="question-count-questions-tab" class="question-count-info">
+                                    <span class="count-icon">🔢</span>
+                                    <span id="question-count-text-questions-tab">Calcul en cours...</span>
+                                </div>
+                            </div>
+
                             {% if creator_mode %}
                             <div class="form-group" style="margin: .75rem 0 1rem 0;">
                                 <label>Pool de questions</label>
@@ -159,29 +244,56 @@
                             </div>
                             {% endif %}
 
-                            <!-- Recherche locale dans la sélection -->
-                            <div class="search-container" style="width: 100%; margin-bottom: 1rem;">
-                                <div class="search-wrapper">
-                                    <div id="search-chips" class="search-chips"></div>
-                                    <input type="text" id="search-input" placeholder="Rechercher une question... (tapez @ pour filtrer)" autocomplete="off">
-                                </div>
-                                <!-- Dropdown pour le type de filtre -->
-                                <div id="filter-type-dropdown" class="search-dropdown hidden">
-                                    <div class="dropdown-header">Filtrer par...</div>
-                                    <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="{% if creator_mode %}/api/creator/themes/json{% else %}/api/themes/json{% endif %}">📂 Thème</div>
-                                    <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="{% if creator_mode %}/api/creator/subthemes/json{% else %}/api/subthemes/json{% endif %}">ue Sous-thème</div>
-                                    <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
-                                    {% if not creator_mode %}
-                                    <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
-                                    {% endif %}
-                                    <div class="dropdown-item" data-type="difficulty_level" data-endpoint="{% if creator_mode %}/api/creator/difficulties/json{% else %}/api/difficulties/json{% endif %}">⭐ Niveau</div>
-                                </div>
-                                <!-- Dropdown pour les valeurs de filtre -->
-                                <div id="filter-value-dropdown" class="search-dropdown hidden">
-                                    <div class="dropdown-header">Sélectionner...</div>
-                                    <div id="filter-value-list"></div>
+                            {% set ui_sel_mode = 'manual' if (rule and rule.question_selection_mode == 'manual') else 'auto' %}
+                            <div class="form-group" style="margin: .75rem 0 1rem 0;">
+                                <label>Mode de sélection (UX)</label>
+                                <div class="radio-group" style="display:flex; gap:.75rem; flex-wrap:wrap">
+                                    <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
+                                        <input type="radio" name="question_selection_ui_mode" value="auto" {% if ui_sel_mode == 'auto' %}checked{% endif %}>
+                                        <span class="option-title">Automatique (recommandé)</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Pas besoin de choisir des questions : on utilise tout le pool selon thèmes/pays/difficultés.</span>
+                                    </label>
+                                    <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
+                                        <input type="radio" name="question_selection_ui_mode" value="manual" {% if ui_sel_mode == 'manual' %}checked{% endif %}>
+                                        <span class="option-title">Manuel (avancé)</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Choisir précisément les questions (en excluant certaines).</span>
+                                    </label>
                                 </div>
                             </div>
+
+                            <div id="auto-selection-hint" class="auto-selection-hint" {% if ui_sel_mode != 'auto' %}style="display:none"{% endif %}>
+                                <div class="alert alert-info" style="margin: 0;">
+                                    <strong>Mode automatique :</strong> tu peux passer à l’onglet suivant. (Tu peux toujours revenir ici si tu veux exclure quelques questions.)
+                                </div>
+                            </div>
+
+                            <!-- Container caché: inputs réels soumis au backend en mode manuel -->
+                            <div id="selected-questions-hidden" style="display:none"></div>
+
+                            <div id="manual-question-selection-ui" {% if ui_sel_mode != 'manual' %}style="display:none"{% endif %}>
+                                <!-- Recherche locale dans la sélection -->
+                                <div class="search-container" style="width: 100%; margin-bottom: 1rem;">
+                                    <div class="search-wrapper">
+                                        <div id="search-chips" class="search-chips"></div>
+                                        <input type="text" id="search-input" placeholder="Rechercher une question... (tapez @ pour filtrer)" autocomplete="off">
+                                    </div>
+                                    <!-- Dropdown pour le type de filtre -->
+                                    <div id="filter-type-dropdown" class="search-dropdown hidden">
+                                        <div class="dropdown-header">Filtrer par...</div>
+                                        <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="{% if creator_mode %}/api/creator/themes/json{% else %}/api/themes/json{% endif %}">📂 Thème</div>
+                                        <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="{% if creator_mode %}/api/creator/subthemes/json{% else %}/api/subthemes/json{% endif %}">ue Sous-thème</div>
+                                        <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
+                                        {% if not creator_mode %}
+                                        <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
+                                        {% endif %}
+                                        <div class="dropdown-item" data-type="difficulty_level" data-endpoint="{% if creator_mode %}/api/creator/difficulties/json{% else %}/api/difficulties/json{% endif %}">⭐ Niveau</div>
+                                    </div>
+                                    <!-- Dropdown pour les valeurs de filtre -->
+                                    <div id="filter-value-dropdown" class="search-dropdown hidden">
+                                        <div class="dropdown-header">Sélectionner...</div>
+                                        <div id="filter-value-list"></div>
+                                    </div>
+                                </div>
 
                             {% set order_mode = rule.question_order_mode if rule else defaults.get('question_order_mode', 'difficulty_ascending') %}
                             <div class="form-group question-order-group">
@@ -228,6 +340,7 @@
 
                             <div class="questions-selection-summary">
                                 <span id="selected-questions-count">0 question(s) sélectionnée(s)</span>
+                            </div>
                             </div>
                         </fieldset>
                     </div>
@@ -847,11 +960,16 @@ function updateQuestionCount() {
 
     const countText = document.getElementById('question-count-text');
     const countContainer = document.getElementById('question-count');
+    const countText2 = document.getElementById('question-count-text-questions-tab');
+    const countContainer2 = document.getElementById('question-count-questions-tab');
 
     // On garde le blocage UI si aucune difficulté n'est sélectionnée, sinon on laisse l'API gérer.
     if (selectedDifficulties.length === 0) {
-        countText.textContent = 'Sélectionnez au moins un sous-thème et une difficulté';
-        countContainer.style.backgroundColor = '#fff3cd';
+        const msg = 'Sélectionnez au moins une difficulté';
+        if (countText) countText.textContent = msg;
+        if (countContainer) countContainer.style.backgroundColor = '#fff3cd';
+        if (countText2) countText2.textContent = msg;
+        if (countContainer2) countContainer2.style.backgroundColor = '#fff3cd';
         return;
     }
 
@@ -891,19 +1009,25 @@ function updateQuestionCount() {
     fetch(`{% if creator_mode %}/api/creator/quiz-rule/count-questions{% else %}/api/quiz-rule/count-questions{% endif %}?${params}`)
         .then(response => response.json())
         .then(data => {
-            countText.textContent = data.message;
+            if (countText) countText.textContent = data.message;
+            if (countText2) countText2.textContent = data.message;
             if (data.count === 0) {
-                countContainer.style.backgroundColor = '#f8d7da';
+                if (countContainer) countContainer.style.backgroundColor = '#f8d7da';
+                if (countContainer2) countContainer2.style.backgroundColor = '#f8d7da';
             } else if (data.count < 10) {
-                countContainer.style.backgroundColor = '#fff3cd';
+                if (countContainer) countContainer.style.backgroundColor = '#fff3cd';
+                if (countContainer2) countContainer2.style.backgroundColor = '#fff3cd';
             } else {
-                countContainer.style.backgroundColor = '#d1ecf1';
+                if (countContainer) countContainer.style.backgroundColor = '#d1ecf1';
+                if (countContainer2) countContainer2.style.backgroundColor = '#d1ecf1';
             }
         })
         .catch(error => {
             console.error('Erreur lors du comptage:', error);
-            countText.textContent = 'Erreur de calcul';
-            countContainer.style.backgroundColor = '#f8d7da';
+            if (countText) countText.textContent = 'Erreur de calcul';
+            if (countContainer) countContainer.style.backgroundColor = '#f8d7da';
+            if (countText2) countText2.textContent = 'Erreur de calcul';
+            if (countContainer2) countContainer2.style.backgroundColor = '#f8d7da';
         });
 }
 
@@ -1374,6 +1498,64 @@ function initThemeCheckboxes() {
 let activeFilters = []; // { type: 'author_id', label: 'Auteur', value: 1, display: 'Admin' }
 let searchTimeout;
 let currentFilterType = null;
+const initialSelectedQuestionIds = {{ (rule.selected_questions | map(attribute='id') | list if (rule and rule.question_selection_mode == 'manual') else []) | tojson }};
+let selectedQuestionIds = new Set(initialSelectedQuestionIds);
+let lastAvailableQuestionsCount = 0;
+
+function isManualQuestionSelection() {
+    const el = document.querySelector('input[name="question_selection_ui_mode"]:checked');
+    return el ? el.value === 'manual' : false;
+}
+
+function syncHiddenSelectedInputs() {
+    const container = document.getElementById('selected-questions-hidden');
+    if (!container) return;
+    container.innerHTML = '';
+    // Important: on ne génère les inputs que si on est en manuel
+    if (!isManualQuestionSelection()) return;
+    selectedQuestionIds.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selected_question_ids';
+        input.value = String(id);
+        container.appendChild(input);
+    });
+}
+
+function setQuestionSelectionUIMode(mode) {
+    const manualWrap = document.getElementById('manual-question-selection-ui');
+    const autoHint = document.getElementById('auto-selection-hint');
+    if (mode === 'manual') {
+        if (manualWrap) manualWrap.style.display = '';
+        if (autoHint) autoHint.style.display = 'none';
+        // Charger les questions uniquement quand on passe en manuel
+        updateQuestionCount();
+        initSearchFeatures();
+        initQuestionPoolScopeToggle();
+        loadQuestionsForSelection();
+    } else {
+        if (manualWrap) manualWrap.style.display = 'none';
+        if (autoHint) autoHint.style.display = '';
+        // En auto: aucun input "selected_question_ids" => backend interprète auto
+        selectedQuestionIds = new Set();
+        syncHiddenSelectedInputs();
+        updateSelectedQuestionsCount();
+    }
+}
+
+function initQuestionSelectionUIMode() {
+    const radios = document.querySelectorAll('input[name="question_selection_ui_mode"]');
+    if (!radios || radios.length === 0) return;
+    radios.forEach(r => {
+        if (r.dataset.selModeListenerAttached === '1') return;
+        r.dataset.selModeListenerAttached = '1';
+        r.addEventListener('change', function() {
+            setQuestionSelectionUIMode(this.value);
+        });
+    });
+    // init
+    syncHiddenSelectedInputs();
+}
 
 function initQuestionPoolScopeToggle() {
     const radios = document.querySelectorAll('input[name="question_pool_scope"]');
@@ -1569,6 +1751,9 @@ function renderChips() {
 }
 
 function loadQuestionsForSelection() {
+    if (!isManualQuestionSelection()) {
+        return;
+    }
     // Récupérer les pays cochés (si "Tous les pays" n'est pas coché)
     const useAllCountries = document.getElementById('use_all_countries').checked;
     const selectedCountries = useAllCountries ? [] : Array.from(document.querySelectorAll('input[name="allowed_country_ids"]:checked'))
@@ -1646,22 +1831,22 @@ function loadQuestionsForSelection() {
         .then(response => response.json())
         .then(data => {
             if (data.questions && data.questions.length > 0) {
+                lastAvailableQuestionsCount = data.count || data.questions.length;
+                const defaultSelectAll = (selectedQuestionIds && selectedQuestionIds.size === 0);
                 tableBody.innerHTML = '';
                 data.questions.forEach(question => {
-                    // Checkbox is checked if it was already in selected_question_ids inputs OR if we are in "Select All" mode
-                    // Actually, we must preserve selection state if possible, but here we are reloading the list.
-                    // The standard behavior for this form seems to be: re-render list with checkboxes checked by default (mode auto)
-                    // unless we track what was unchecked.
-                    // BUT: The form submits "selected_question_ids". If we filter the list, we might lose the "checked" status of hidden items?
-                    // In this implementation, the backend says "Mode auto" if all available questions are selected.
-                    // If we filter, we only see a subset.
-                    // The simple approach for now: render them checked by default as per original code
+                    // Mode manuel: on conserve une sélection persistée (selectedQuestionIds)
+                    // Si aucune sélection n'existe encore, on part de "tout sélectionné" (l'utilisateur pourra décocher)
+                    const isChecked = defaultSelectAll ? true : (selectedQuestionIds ? selectedQuestionIds.has(question.id) : false);
+                    if (defaultSelectAll && selectedQuestionIds) {
+                        selectedQuestionIds.add(question.id);
+                    }
                     
                     const row = document.createElement('tr');
                     row.classList.add('question-row');
                     row.dataset.questionId = question.id;
                     row.innerHTML = `
-                        <td onclick="event.stopPropagation()"><input type="checkbox" name="selected_question_ids" value="${question.id}" checked onchange="updateSelectedQuestionsCount()"></td>
+                        <td onclick="event.stopPropagation()"><input class="question-select-checkbox" type="checkbox" data-question-id="${question.id}" ${isChecked ? 'checked' : ''}></td>
                         <td>${question.id}</td>
                         <td class="question-text">${escapeHtml(question.question_text)}</td>
                         <td>${escapeHtml(question.broad_theme_name || '-')}</td>
@@ -1676,23 +1861,39 @@ function loadQuestionsForSelection() {
                     });
                     
                     tableBody.appendChild(row);
+
+                    const cb = row.querySelector('input.question-select-checkbox');
+                    if (cb) {
+                        cb.addEventListener('change', function() {
+                            const qid = parseInt(this.dataset.questionId || '0', 10);
+                            if (!qid) return;
+                            if (this.checked) selectedQuestionIds.add(qid);
+                            else selectedQuestionIds.delete(qid);
+                            syncHiddenSelectedInputs();
+                            updateSelectedQuestionsCount();
+                        });
+                    }
                 });
                 
                 // Cocher aussi le checkbox "Tout sélectionner"
                 const selectAllCheckbox = document.getElementById('select-all-questions');
                 if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.checked = (selectedQuestionIds.size > 0) && (selectedQuestionIds.size === lastAvailableQuestionsCount);
                 }
                 
+                syncHiddenSelectedInputs();
                 updateSelectedQuestionsCount();
             } else {
                 tableBody.innerHTML = '<tr><td colspan="6" class="no-questions-message">Aucune question ne correspond aux critères sélectionnés.</td></tr>';
+                lastAvailableQuestionsCount = 0;
+                syncHiddenSelectedInputs();
                 updateSelectedQuestionsCount();
             }
         })
         .catch(error => {
             console.error('Erreur lors du chargement des questions:', error);
             tableBody.innerHTML = '<tr><td colspan="6" class="error-message">Erreur lors du chargement des questions.</td></tr>';
+            lastAvailableQuestionsCount = 0;
         });
 }
 
@@ -1705,20 +1906,22 @@ function escapeHtml(text) {
 
 // Mettre à jour le compteur de questions sélectionnées et l'indicateur de mode
 function updateSelectedQuestionsCount() {
-    const allCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]');
-    const selectedCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]:checked');
-    const selectedCount = selectedCheckboxes.length;
-    const totalCount = allCheckboxes.length;
+    const selectedCount = (selectedQuestionIds && selectedQuestionIds.size) ? selectedQuestionIds.size : 0;
+    const totalCount = lastAvailableQuestionsCount || document.querySelectorAll('input.question-select-checkbox').length;
     
     const countSpan = document.getElementById('selected-questions-count');
     if (countSpan) {
-        countSpan.textContent = `${selectedCount} question(s) sélectionnée(s) sur ${totalCount}`;
+        if (!isManualQuestionSelection()) {
+            countSpan.textContent = `Mode automatique (aucune sélection manuelle)`;
+        } else {
+            countSpan.textContent = `${selectedCount} question(s) sélectionnée(s) sur ${totalCount}`;
+        }
     }
     
     // Mettre à jour l'indicateur de mode
     const modeIndicator = document.getElementById('selection-mode-indicator');
-    if (modeIndicator && totalCount > 0) {
-        const isAutoMode = selectedCount === totalCount;
+    if (modeIndicator) {
+        const isAutoMode = (!isManualQuestionSelection()) || (totalCount > 0 && selectedCount === totalCount);
         
         if (isAutoMode) {
             modeIndicator.innerHTML = `
@@ -1744,10 +1947,18 @@ function initSelectAllQuestions() {
 
         // Ajouter le nouvel event listener
         newCheckbox.addEventListener('change', function() {
-            const questionCheckboxes = document.querySelectorAll('input[name="selected_question_ids"]');
-            questionCheckboxes.forEach(cb => {
-                cb.checked = this.checked;
-            });
+            const questionCheckboxes = document.querySelectorAll('input.question-select-checkbox');
+            questionCheckboxes.forEach(cb => { cb.checked = this.checked; });
+            if (this.checked) {
+                selectedQuestionIds = new Set();
+                questionCheckboxes.forEach(cb => {
+                    const qid = parseInt(cb.dataset.questionId || '0', 10);
+                    if (qid) selectedQuestionIds.add(qid);
+                });
+            } else {
+                selectedQuestionIds = new Set();
+            }
+            syncHiddenSelectedInputs();
             updateSelectedQuestionsCount();
         });
     }
@@ -1874,6 +2085,98 @@ function closeQuestionDetailModal() {
     }
 }
 
+// ====== UX Créateur: sélection rapide des thèmes ======
+function openCreatorAdvancedThemeOptions() {
+    const details = document.getElementById('creator-advanced-theme-details');
+    if (details) {
+        details.open = true;
+        try { details.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+    }
+}
+
+function applyCreatorQuickThemeSelection(selectEl) {
+    if (!selectEl) return;
+    const root = selectEl.closest('.form-wrapper') || document;
+    const includeAllSub = root.querySelector('#creator-include-all-subthemes');
+
+    const v = (selectEl.value || '').toString();
+    if (!v || v === '__custom__') return;
+
+    const useAllBroad = root.querySelector('#use_all_broad_themes');
+    const useAllSpec = root.querySelector('#use_all_specific_themes');
+    const broadCbs = Array.from(root.querySelectorAll('input[name="allowed_broad_theme_ids"]'));
+    const specCbs = Array.from(root.querySelectorAll('input[name="allowed_specific_theme_ids"]'));
+
+    // Relations thème large -> sous-thèmes (pour "tout sous-thème du thème choisi")
+    let rel = {};
+    const relEl = root.querySelector('.themes-grid-select[data-theme-relations]');
+    if (relEl) {
+        try { rel = JSON.parse(relEl.dataset.themeRelations || '{}'); } catch (e) { rel = {}; }
+    }
+
+    if (v === '__all__') {
+        if (useAllBroad) useAllBroad.checked = true;
+        broadCbs.forEach(cb => { cb.checked = true; });
+        if (useAllSpec) useAllSpec.checked = true;
+        specCbs.forEach(cb => { cb.checked = true; });
+    } else {
+        // Un seul thème large coché
+        if (useAllBroad) useAllBroad.checked = false;
+        broadCbs.forEach(cb => { cb.checked = (String(cb.value) === String(v)); });
+
+        // Sous-thèmes
+        const wantAllSub = includeAllSub ? includeAllSub.checked : true;
+        if (wantAllSub) {
+            if (useAllSpec) useAllSpec.checked = false;
+            const ids = (rel && rel[String(v)]) ? rel[String(v)] : [];
+            specCbs.forEach(cb => {
+                cb.checked = ids.includes(parseInt(cb.value, 10));
+            });
+        } else {
+            // Laisser l'utilisateur choisir manuellement en avancé
+            if (useAllSpec) useAllSpec.checked = false;
+            openCreatorAdvancedThemeOptions();
+        }
+    }
+
+    // Mettre à jour le compteur + recharger la table si on est en manuel
+    try { updateQuestionCount(); } catch (e) {}
+    try { loadQuestionsForSelection(); } catch (e) {}
+}
+
+function initCreatorQuickThemeSelector() {
+    const select = document.getElementById('creator-broad-theme-select');
+    if (!select) return;
+    if (select.dataset.listenerAttached === '1') return;
+    select.dataset.listenerAttached = '1';
+    const root = select.closest('.form-wrapper') || document;
+
+    const includeAllSub = root.querySelector ? root.querySelector('#creator-include-all-subthemes') : document.getElementById('creator-include-all-subthemes');
+    if (includeAllSub && includeAllSub.dataset.listenerAttached !== '1') {
+        includeAllSub.dataset.listenerAttached = '1';
+        includeAllSub.addEventListener('change', function() {
+            if (!this.checked) {
+                openCreatorAdvancedThemeOptions();
+            }
+        });
+    }
+
+    function inferInitialSelectValue() {
+        const useAllBroad = root.querySelector('#use_all_broad_themes');
+        if (useAllBroad && useAllBroad.checked) return '__all__';
+        const checked = Array.from(root.querySelectorAll('input[name="allowed_broad_theme_ids"]:checked'));
+        if (checked.length === 1) return checked[0].value;
+        return '__custom__';
+    }
+
+    // init état du select d'après les checkboxes actuelles
+    select.value = inferInitialSelectValue();
+
+    select.addEventListener('change', function() {
+        applyCreatorQuickThemeSelection(this);
+    });
+}
+
 // Initialiser les checkboxes de thèmes après le chargement HTMX
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded déclenché');
@@ -1882,6 +2185,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Timeout DOMContentLoaded terminé, appel initThemeCheckboxes');
         initThemeCheckboxes();
         initSelectAllQuestions();
+        initQuestionSelectionUIMode();
+        initCreatorQuickThemeSelector();
     }, 100);
 });
 
@@ -1894,7 +2199,18 @@ document.addEventListener('htmx:afterSwap', function(evt) {
             console.log('Timeout htmx:afterSwap terminé, appel initThemeCheckboxes');
             initThemeCheckboxes();
             initSelectAllQuestions();
+            initQuestionSelectionUIMode();
+            initCreatorQuickThemeSelector();
         }, 50);
+    }
+});
+
+// Fallback robuste: si l'event listener local n'est pas attaché (HTMX / DOM), on gère en délégation.
+document.addEventListener('change', function(e) {
+    const target = e.target;
+    if (!target) return;
+    if (target.id === 'creator-broad-theme-select') {
+        applyCreatorQuickThemeSelection(target);
     }
 });
 
@@ -1903,10 +2219,13 @@ document.addEventListener('click', function(e) {
     const tab = e.target.closest('.tab[data-tab="questions"]');
     if (tab) {
         setTimeout(function() {
-            // Initialiser la recherche si pas encore fait
-            initSearchFeatures();
-            initQuestionPoolScopeToggle();
-            loadQuestionsForSelection();
+            initQuestionSelectionUIMode();
+            // Initialiser la recherche uniquement si on est en manuel
+            if (isManualQuestionSelection()) {
+                initSearchFeatures();
+                initQuestionPoolScopeToggle();
+                loadQuestionsForSelection();
+            }
         }, 100);
         // Initialiser la checkbox "Tout sélectionner" après le chargement des questions
         setTimeout(function() {
