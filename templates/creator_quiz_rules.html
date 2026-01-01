@@ -2,17 +2,17 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>🧩 Mes quiz</h2>
+    <h2>🧩 {{ _('Mes quiz') }}</h2>
     <div class="header-actions">
         <button class="btn btn-primary"
                 onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
                 hx-get="/creator/quiz-rule/new"
                 hx-target="#rule-form-container"
                 hx-swap="innerHTML">
-            + Nouveau quiz
+            + {{ _('Nouveau quiz') }}
         </button>
     </div>
-    <p class="text-muted">Les quiz sont privés par défaut. Vous pouvez demander la publication pour relecture admin.</p>
+    <p class="text-muted">{{ _('Les quiz sont privés par défaut. Vous pouvez demander la publication pour relecture admin.') }}</p>
 </div>
 
 <div id="rule-form-container" class="hidden form-modal"></div>
@@ -21,7 +21,7 @@
      hx-get="/api/creator/quiz-rules"
      hx-trigger="load"
      hx-swap="innerHTML">
-    <div class="loading">Chargement...</div>
+    <div class="loading">{{ _('Chargement...') }}</div>
 </div>
 
 <style>

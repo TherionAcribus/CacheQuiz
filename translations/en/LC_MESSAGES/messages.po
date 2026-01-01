@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-01 18:21+0100\n"
+"POT-Creation-Date: 2026-01-01 21:01+0100\n"
 "PO-Revision-Date: 2026-01-01 18:02+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -17,6 +17,74 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
+
+#: templates/auth_widget.html:4
+#, fuzzy
+msgid "Administration"
+msgstr "Administration"
+
+#: templates/auth_widget.html:6
+msgid "Admin"
+msgstr "Admin"
+
+#: templates/auth_widget.html:22
+msgid "Menu utilisateur"
+msgstr "User menu"
+
+#: templates/auth_widget.html:29
+#, fuzzy
+msgid "Créateur"
+msgstr "Creator area"
+
+#: templates/auth_widget.html:34
+msgid "Messages"
+msgstr "Messages"
+
+#: templates/auth_widget.html:42
+msgid "Préférences"
+msgstr "Preferences"
+
+#: templates/auth_widget.html:46
+msgid "Questions sauvegardées"
+msgstr "Saved questions"
+
+#: templates/auth_widget.html:50
+msgid "Mes statistiques"
+msgstr "My statistics"
+
+#: templates/auth_widget.html:60
+msgid "Se déconnecter"
+msgstr "Log out"
+
+#: templates/auth_widget.html:77 templates/auth_widget.html:103
+#: templates/play.html:103
+msgid "Votre pseudo"
+msgstr "Your username"
+
+#: templates/auth_widget.html:79 templates/play.html:118
+msgid "Mot de passe"
+msgstr "Password"
+
+#: templates/auth_widget.html:89 templates/play.html:137
+msgid "Mot de passe oublié ?"
+msgstr "Forgot password?"
+
+#: templates/auth_widget.html:95 templates/creator_access_denied_full.html:15
+msgid "Se connecter"
+msgstr "Log in"
+
+#: templates/auth_widget.html:97 templates/base_public.html:140
+#: templates/play.html:109 templates/play.html:291
+msgid "Annuler"
+msgstr "Cancel"
+
+#: templates/auth_widget.html:106
+msgid "Entrer"
+msgstr "Enter"
+
+#: templates/auth_widget.html:108 templates/home_public.html:26
+msgid "Créer un compte"
+msgstr "Create an account"
 
 #: templates/base.html:24
 msgid "Quiz Géocaching - Gestion des Questions"
@@ -129,13 +197,244 @@ msgstr "Are you sure you want to quit this quiz?"
 msgid "Votre progression sera perdue."
 msgstr "Your progress will be lost."
 
-#: templates/base_public.html:140
-msgid "Annuler"
-msgstr "Cancel"
-
 #: templates/base_public.html:141
 msgid "Quitter définitivement"
 msgstr "Quit for good"
+
+#: templates/creator_access_denied_full.html:5
+msgid "Accès refusé"
+msgstr "Access denied"
+
+#: templates/creator_access_denied_full.html:10 templates/creator_home.html:5
+msgid "Espace Créateur"
+msgstr "Creator Space"
+
+#: templates/creator_access_denied_full.html:11
+msgid ""
+"Vous devez être connecté avec un compte protégé par mot de passe pour "
+"accéder à cette zone."
+msgstr ""
+"You must be logged in with a password-protected account to access this "
+"area."
+
+#: templates/creator_access_denied_full.html:14
+msgid "Retour au quiz"
+msgstr "Back to quiz"
+
+#: templates/creator_home.html:6
+msgid ""
+"Créez vos questions, images et quiz personnels. Vous pourrez ensuite "
+"demander une validation pour publication."
+msgstr ""
+"Create your personal questions, images and quizzes. You can then request "
+"validation for publication."
+
+#: templates/creator_home.html:13 templates/creator_questions.html:5
+#: templates/creator_quiz_rules_list.html:70
+msgid "Mes questions"
+msgstr "My questions"
+
+#: templates/creator_home.html:14
+msgid ""
+"Créer/éditer vos questions. Thème large obligatoire. Publication soumise "
+"à validation."
+msgstr ""
+"Create/edit your questions. Broad theme required. Publication subject to "
+"validation."
+
+#: templates/creator_home.html:20 templates/creator_quiz_rules.html:5
+msgid "Mes quiz"
+msgstr "My quizzes"
+
+#: templates/creator_home.html:21
+msgid "Créer des quiz privés. Demander la publication pour relecture admin."
+msgstr "Create private quizzes. Request publication for admin review."
+
+#: templates/creator_home.html:27
+msgid "Mes images"
+msgstr "My images"
+
+#: templates/creator_home.html:28
+msgid "Ajouter des images pour illustrer vos questions et messages de quiz."
+msgstr "Add images to illustrate your questions and quiz messages."
+
+#: templates/creator_questions.html:8 templates/creator_questions.html:19
+#: templates/creator_quiz_rules.html:24
+msgid "Chargement..."
+msgstr "Loading..."
+
+#: templates/creator_questions.html:10
+msgid "Nouvelle question"
+msgstr "New question"
+
+#: templates/creator_questions.html:13
+msgid ""
+"Vos questions sont privées par défaut. Pour demander une publication, "
+"utilisez \"Demander validation\"."
+msgstr ""
+"Your questions are private by default. To request publication, use "
+"\"Request validation\"."
+
+#: templates/creator_quiz_rules.html:12
+msgid "Nouveau quiz"
+msgstr "New quiz"
+
+#: templates/creator_quiz_rules.html:15
+msgid ""
+"Les quiz sont privés par défaut. Vous pouvez demander la publication pour"
+" relecture admin."
+msgstr ""
+"Quizzes are private by default. You can request publication for admin "
+"review."
+
+#: templates/creator_quiz_rules_list.html:10
+msgid "Public"
+msgstr ""
+
+#: templates/creator_quiz_rules_list.html:12
+msgid "En attente"
+msgstr ""
+
+#: templates/creator_quiz_rules_list.html:14
+#: templates/creator_quiz_rules_list.html:80
+#, fuzzy
+msgid "Refusé"
+msgstr "Access denied"
+
+#: templates/creator_quiz_rules_list.html:16
+msgid "Privé"
+msgstr ""
+
+#: templates/creator_quiz_rules_list.html:23
+msgid "Éditer"
+msgstr "Edit"
+
+#: templates/creator_quiz_rules_list.html:28
+msgid "Supprimer"
+msgstr "Delete"
+
+#: templates/creator_quiz_rules_list.html:38
+msgid "Image d'introduction"
+msgstr "Intro image"
+
+#: templates/creator_quiz_rules_list.html:48
+msgid "Source"
+msgstr "Source"
+
+#: templates/creator_quiz_rules_list.html:62
+msgid "Timer"
+msgstr "Timer"
+
+#: templates/creator_quiz_rules_list.html:64
+msgid "Difficultés"
+msgstr "Difficulties"
+
+#: templates/creator_quiz_rules_list.html:64 templates/play.html:187
+msgid "toutes"
+msgstr "all"
+
+#: templates/creator_quiz_rules_list.html:67
+msgid "Questions/difficulté"
+msgstr "Questions/difficulty"
+
+#: templates/creator_quiz_rules_list.html:69
+msgid "Sélection"
+msgstr "Selection"
+
+#: templates/creator_quiz_rules_list.html:69
+msgid "Manuelle"
+msgstr "Manual"
+
+#: templates/creator_quiz_rules_list.html:69
+msgid "Automatique"
+msgstr "Automatic"
+
+#: templates/creator_quiz_rules_list.html:70
+msgid "Pool"
+msgstr "Pool"
+
+#: templates/creator_quiz_rules_list.html:70
+msgid "Toutes (publiques + mes questions)"
+msgstr "All (public + my questions)"
+
+#: templates/creator_quiz_rules_list.html:76
+msgid "Soumis"
+msgstr "Submitted"
+
+#: templates/creator_quiz_rules_list.html:76
+#: templates/creator_quiz_rules_list.html:80
+#: templates/creator_quiz_rules_list.html:91
+msgid "le"
+msgstr "on"
+
+#: templates/creator_quiz_rules_list.html:84
+#: templates/creator_quiz_rules_list.html:87
+msgid "Motif"
+msgstr "Reason"
+
+#: templates/creator_quiz_rules_list.html:87
+msgid "(voir la messagerie pour le détail)"
+msgstr "(see messaging for details)"
+
+#: templates/creator_quiz_rules_list.html:91
+msgid "Validé"
+msgstr "Validated"
+
+#: templates/creator_quiz_rules_list.html:95
+msgid "Message"
+msgstr "Message"
+
+#: templates/creator_quiz_rules_list.html:105
+#: templates/creator_quiz_rules_list.html:109
+#: templates/creator_quiz_rules_list.html:112
+msgid "Lien à partager"
+msgstr "Link to share"
+
+#: templates/creator_quiz_rules_list.html:105
+msgid "quiz public"
+msgstr "public quiz"
+
+#: templates/creator_quiz_rules_list.html:109
+msgid "quiz privé jouable via ce lien"
+msgstr "private quiz playable via this link"
+
+#: templates/creator_quiz_rules_list.html:119
+msgid "Copier"
+msgstr "Copy"
+
+#: templates/creator_quiz_rules_list.html:122
+msgid "Enregistrez le quiz (ou ré-éditez/sauvegardez) pour générer le lien."
+msgstr "Save the quiz (or re-edit/save) to generate the link."
+
+#: templates/creator_quiz_rules_list.html:134
+msgid "Demander publication"
+msgstr "Request publication"
+
+#: templates/creator_quiz_rules_list.html:137
+msgid "En attente de review admin"
+msgstr "Waiting for admin review"
+
+#: templates/creator_quiz_rules_list.html:139
+msgid "Tester ce quiz"
+msgstr "Test this quiz"
+
+#: templates/creator_quiz_rules_list.html:139
+#, fuzzy
+msgid "Tester"
+msgstr "Enter"
+
+#: templates/creator_quiz_rules_list.html:146
+msgid "Aucun quiz pour le moment."
+msgstr "No quizzes yet."
+
+#: templates/creator_quiz_rules_list.html:209
+msgid "'Lien copié dans le presse-papiers.'|tojson"
+msgstr "'Link copied to clipboard.'|tojson"
+
+#: templates/creator_quiz_rules_list.html:215
+#: templates/creator_quiz_rules_list.html:221
+msgid "'Lien copié.'|tojson"
+msgstr "'Link copied.'|tojson"
 
 #: templates/home_public.html:10
 msgid "Bienvenue sur CacheQuiz"
@@ -181,10 +480,6 @@ msgstr "Add new questions"
 msgid "Commencer à jouer"
 msgstr "Start playing"
 
-#: templates/home_public.html:26
-msgid "Créer un compte"
-msgstr "Create an account"
-
 #: templates/home_public.html:35
 msgid "Comment ça marche ?"
 msgstr "How does it work?"
@@ -220,4 +515,289 @@ msgid ""
 msgstr ""
 "You can play right away without signing up. Just enter a username in the "
 "top bar."
+
+#: templates/play.html:94 templates/play.html:98
+#, fuzzy
+msgid "Démarrer le quiz"
+msgstr "Start the quiz"
+
+#: templates/play.html:102
+msgid "Choisissez un pseudo pour cette session"
+msgstr "Choose a username for this session"
+
+#: templates/play.html:108
+msgid "Valider et démarrer le quiz"
+msgstr "Validate and start the quiz"
+
+#: templates/play.html:111
+msgid ""
+"Si ce pseudo est protégé par un mot de passe, nous vous le demanderons "
+"juste après."
+msgstr ""
+
+#: templates/play.html:116
+msgid "Pseudo"
+msgstr "Username"
+
+#: templates/play.html:119
+msgid "Votre mot de passe"
+msgstr "Your password"
+
+#: templates/play.html:125
+msgid "Connexion et démarrage"
+msgstr ""
+
+#: templates/play.html:126
+#, fuzzy
+msgid "Retour"
+msgstr "Back to game"
+
+#: templates/play.html:150
+msgid "Double-clic pour valider"
+msgstr ""
+
+#: templates/play.html:156
+msgid "Statistiques du Pool"
+msgstr ""
+
+#: templates/play.html:158
+#, fuzzy
+msgid "Format :"
+msgstr "Information"
+
+#: templates/play.html:158
+msgid "questions tirées aléatoirement parmi"
+msgstr ""
+
+#: templates/play.html:158
+msgid "disponibles"
+msgstr ""
+
+#: templates/play.html:161
+msgid "Votre historique :"
+msgstr ""
+
+#: templates/play.html:161
+msgid "questions déjà jouées sur ce pool"
+msgstr ""
+
+#: templates/play.html:163
+msgid "Type de partie :"
+msgstr ""
+
+#: templates/play.html:165
+msgid "100% Inédit"
+msgstr ""
+
+#: templates/play.html:165
+#, fuzzy
+msgid "Questions jamais vues"
+msgstr "Questions"
+
+#: templates/play.html:167
+msgid "Mixte"
+msgstr ""
+
+#: templates/play.html:167
+#, fuzzy
+msgid "Nouvelles + Révisions"
+msgstr "Add new questions"
+
+#: templates/play.html:169
+msgid "Révision"
+msgstr ""
+
+#: templates/play.html:169
+msgid "Toutes déjà vues"
+msgstr ""
+
+#: templates/play.html:171
+msgid "Inconnu"
+msgstr ""
+
+#: templates/play.html:180
+msgid "Règles appliquées"
+msgstr ""
+
+#: templates/play.html:182
+msgid "Timer:"
+msgstr ""
+
+#: templates/play.html:182
+msgid "secondes par question"
+msgstr ""
+
+#: templates/play.html:185 templates/play.html:187
+msgid "Difficultés:"
+msgstr ""
+
+#: templates/play.html:191
+msgid "Nombre de questions par difficulté:"
+msgstr ""
+
+#: templates/play.html:194
+#, fuzzy
+msgid "Thèmes larges:"
+msgstr "Themes"
+
+#: templates/play.html:201
+#, fuzzy
+msgid "Sous-thèmes:"
+msgstr "Themes"
+
+#: templates/play.html:207
+msgid "Scoring:"
+msgstr ""
+
+#: templates/play.html:207
+msgid "points par question"
+msgstr ""
+
+#: templates/play.html:209
+msgid "+ bonus difficulté"
+msgstr ""
+
+#: templates/play.html:211
+msgid "× coefficient difficulté"
+msgstr ""
+
+#: templates/play.html:214
+msgid "+ combo (palier"
+msgstr ""
+
+#: templates/play.html:214 templates/play.html:217
+msgid "+"
+msgstr ""
+
+#: templates/play.html:217
+msgid "si perfect"
+msgstr ""
+
+#: templates/play.html:224
+msgid "Contrôles Clavier"
+msgstr ""
+
+#: templates/play.html:226
+msgid "Sélectionner une réponse (fonctionne avec le pavé numérique)"
+msgstr ""
+
+#: templates/play.html:227
+msgid "Double appui (1-4) :"
+msgstr ""
+
+#: templates/play.html:227
+msgid ""
+"Sélectionner et valider immédiatement (si \"Double-clic pour valider\" "
+"activé)"
+msgstr ""
+
+#: templates/play.html:228
+#, fuzzy
+msgid "Espace :"
+msgstr "Creator area"
+
+#: templates/play.html:228
+msgid "Action principale (Valider réponse / Question suivante / Démarrer quiz)"
+msgstr ""
+
+#: templates/play.html:229
+msgid "Entrée :"
+msgstr ""
+
+#: templates/play.html:229
+msgid "Valider la réponse sélectionnée"
+msgstr ""
+
+#: templates/play.html:234
+msgid "Choisir un autre Quiz"
+msgstr ""
+
+#: templates/play.html:245
+#, fuzzy
+msgid "Protégez votre compte"
+msgstr "Create an account"
+
+#: templates/play.html:246
+msgid "Ajoutez un email et un mot de passe pour bénéficier de :"
+msgstr ""
+
+#: templates/play.html:248
+msgid "Protection de votre pseudo contre les usurpations"
+msgstr ""
+
+#: templates/play.html:249
+msgid "Accès à vos statistiques détaillées"
+msgstr ""
+
+#: templates/play.html:250
+#, fuzzy
+msgid "Suivi de votre progression"
+msgstr "Your progress will be lost."
+
+#: templates/play.html:251
+msgid "Conservation de vos scores personnels"
+msgstr ""
+
+#: templates/play.html:256
+#, fuzzy
+msgid "Créer mon compte sécurisé"
+msgstr "Create an account"
+
+#: templates/play.html:260
+msgid "Plus tard"
+msgstr ""
+
+#: templates/play.html:270
+#, fuzzy
+msgid "Créer votre compte sécurisé"
+msgstr "Create an account"
+
+#: templates/play.html:275
+msgid "Email (optionnel)"
+msgstr ""
+
+#: templates/play.html:276
+msgid "votre.email@exemple.com"
+msgstr ""
+
+#: templates/play.html:277
+msgid "Pour récupérer votre compte si nécessaire"
+msgstr ""
+
+#: templates/play.html:280
+msgid "Mot de passe *"
+msgstr ""
+
+#: templates/play.html:281
+msgid "Choisissez un mot de passe"
+msgstr ""
+
+#: templates/play.html:282
+msgid "Minimum 6 caractères"
+msgstr ""
+
+#: templates/play.html:285
+msgid "Confirmer le mot de passe *"
+msgstr ""
+
+#: templates/play.html:287
+msgid "Retapez le mot de passe"
+msgstr ""
+
+#: templates/play.html:290
+#, fuzzy
+msgid "Créer mon compte"
+msgstr "Create an account"
+
+#: templates/play.html:299
+msgid "Choisissez votre jeu"
+msgstr "Choose your game"
+
+#: templates/play.html:371
+msgid "Lancer ce Quiz"
+msgstr "Launch this Quiz"
+
+#: templates/play.html:1243
+msgid "Erreur de connexion"
+msgstr ""
 

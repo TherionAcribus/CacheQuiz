@@ -2,30 +2,30 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>🛠️ Espace Créateur</h2>
-    <p class="text-muted">Créez vos questions, images et quiz personnels. Vous pourrez ensuite demander une validation pour publication.</p>
+    <h2>🛠️ {{ _('Espace Créateur') }}</h2>
+    <p class="text-muted">{{ _('Créez vos questions, images et quiz personnels. Vous pourrez ensuite demander une validation pour publication.') }}</p>
 </div>
 
 <div class="creator-grid">
     <a class="creator-card" href="/creator/questions">
         <div class="creator-icon">❓</div>
         <div>
-            <h3>Mes questions</h3>
-            <p>Créer/éditer vos questions. Thème large obligatoire. Publication soumise à validation.</p>
+            <h3>{{ _('Mes questions') }}</h3>
+            <p>{{ _('Créer/éditer vos questions. Thème large obligatoire. Publication soumise à validation.') }}</p>
         </div>
     </a>
     <a class="creator-card" href="/creator/quiz-rules">
         <div class="creator-icon">🧩</div>
         <div>
-            <h3>Mes quiz</h3>
-            <p>Créer des quiz privés. Demander la publication pour relecture admin.</p>
+            <h3>{{ _('Mes quiz') }}</h3>
+            <p>{{ _('Créer des quiz privés. Demander la publication pour relecture admin.') }}</p>
         </div>
     </a>
     <a class="creator-card" href="/creator/images">
         <div class="creator-icon">🖼️</div>
         <div>
-            <h3>Mes images</h3>
-            <p>Ajouter des images pour illustrer vos questions et messages de quiz.</p>
+            <h3>{{ _('Mes images') }}</h3>
+            <p>{{ _('Ajouter des images pour illustrer vos questions et messages de quiz.') }}</p>
         </div>
     </a>
 </div>

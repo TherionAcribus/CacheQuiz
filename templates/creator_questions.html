@@ -2,21 +2,21 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>❓ Mes questions</h2>
+    <h2>❓ {{ _('Mes questions') }}</h2>
     <div class="header-actions">
         <button class="btn btn-primary"
-            onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>Chargement...</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
+            onclick="document.getElementById('question-form-container').innerHTML='<div style=\'color:white\'>{{ _('Chargement...')|e }}</div>'; document.getElementById('question-form-container').classList.remove('hidden')"
             hx-get="/creator/question/new" hx-target="#question-form-container" hx-swap="innerHTML">
-            + Nouvelle question
+            + {{ _('Nouvelle question') }}
         </button>
     </div>
-    <p class="text-muted">Vos questions sont privées par défaut. Pour demander une publication, utilisez “Demander validation”.</p>
+    <p class="text-muted">{{ _('Vos questions sont privées par défaut. Pour demander une publication, utilisez "Demander validation".') }}</p>
 </div>
 
 <div id="question-form-container" class="hidden form-modal"></div>
 
 <div id="questions-list" hx-get="/api/creator/questions" hx-trigger="load" hx-swap="innerHTML">
-    <div class="loading">Chargement...</div>
+    <div class="loading">{{ _('Chargement...') }}</div>
 </div>
 
 <style>

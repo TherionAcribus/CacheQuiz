@@ -2,17 +2,17 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>🚫 Accès refusé</h2>
+    <h2>🚫 {{ _('Accès refusé') }}</h2>
 </div>
 
 <div class="access-denied-container">
     <div class="access-denied-card">
-        <h3>Espace Créateur</h3>
-        <p>Vous devez être connecté avec un compte protégé par mot de passe pour accéder à cette zone.</p>
+        <h3>{{ _('Espace Créateur') }}</h3>
+        <p>{{ _('Vous devez être connecté avec un compte protégé par mot de passe pour accéder à cette zone.') }}</p>
 
         <div class="actions">
-            <a href="/play" class="btn btn-primary">Retour au quiz</a>
-            <a href="/login?next=/creator" class="btn btn-secondary">Se connecter</a>
+            <a href="/play" class="btn btn-primary">{{ _('Retour au quiz') }}</a>
+            <a href="/login?next=/creator" class="btn btn-secondary">{{ _('Se connecter') }}</a>
         </div>
     </div>
 </div>

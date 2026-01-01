@@ -91,50 +91,50 @@ endblock %}
         <button class="btn btn-primary btn-large" hx-get="/api/quiz/next" hx-target="#quiz-stage" hx-swap="innerHTML"
             hx-vals='{"rule_set": "{{ rule_set.slug }}", "history": "", "quick_double_click": "{{ "true" if quick_double_click else "false" }}"}'
             id="start-quiz-btn">
-            🚀 Démarrer le quiz
+            🚀 {{ _('Démarrer le quiz') }}
         </button>
         {% else %}
         <div class="start-button-step" id="start-button-step">
-            <button class="btn btn-primary btn-large" id="start-quiz-btn" type="button">🚀 Démarrer le quiz</button>
+            <button class="btn btn-primary btn-large" id="start-quiz-btn" type="button">🚀 {{ _('Démarrer le quiz') }}</button>
         </div>
         <form id="pseudo-start-form" class="start-form" hx-post="/auth/quick-login" hx-swap="none">
             <div class="form-fields">
-                <label for="quick-pseudo-input" class="form-label">Choisissez un pseudo pour cette session</label>
-                <input type="text" name="pseudo" id="quick-pseudo-input" placeholder="Votre pseudo" required>
+                <label for="quick-pseudo-input" class="form-label">{{ _('Choisissez un pseudo pour cette session') }}</label>
+                <input type="text" name="pseudo" id="quick-pseudo-input" placeholder="{{ _('Votre pseudo') }}" required>
             </div>
             <input type="hidden" name="next" value="{{ start_redirect_url }}">
             <input type="hidden" name="source" value="play-start">
             <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Valider et démarrer le quiz</button>
-                <button class="btn btn-secondary" type="button" id="cancel-start-input">Annuler</button>
+                <button class="btn btn-primary" type="submit">{{ _('Valider et démarrer le quiz') }}</button>
+                <button class="btn btn-secondary" type="button" id="cancel-start-input">{{ _('Annuler') }}</button>
             </div>
-            <p class="login-hint">Si ce pseudo est protégé par un mot de passe, nous vous le demanderons juste après.
+            <p class="login-hint">{{ _('Si ce pseudo est protégé par un mot de passe, nous vous le demanderons juste après.') }}
             </p>
         </form>
         <form id="password-start-form" class="start-form" hx-post="/auth/widget-login" hx-swap="none" hidden>
             <div class="form-fields">
-                <label for="password-start-username" class="form-label">Pseudo</label>
+                <label for="password-start-username" class="form-label">{{ _('Pseudo') }}</label>
                 <input type="text" id="password-start-username" name="username" readonly>
-                <label for="password-start-password" class="form-label">Mot de passe</label>
-                <input type="password" id="password-start-password" name="password" placeholder="Votre mot de passe"
+                <label for="password-start-password" class="form-label">{{ _('Mot de passe') }}</label>
+                <input type="password" id="password-start-password" name="password" placeholder="{{ _('Votre mot de passe') }}"
                     required>
             </div>
             <input type="hidden" name="next" value="{{ start_redirect_url }}">
             <input type="hidden" name="source" value="play-start">
             <div class="form-actions">
-                <button class="btn btn-primary" type="submit">Connexion et démarrage</button>
-                <button class="btn btn-secondary" type="button" id="password-back-btn">Retour</button>
+                <button class="btn btn-primary" type="submit">{{ _('Connexion et démarrage') }}</button>
+                <button class="btn btn-secondary" type="button" id="password-back-btn">{{ _('Retour') }}</button>
             </div>
             <p class="error-message" id="password-error" hidden></p>
             <div id="password-reset-container" style="display: none; width: 100%; text-align: center; margin-top: 0.5rem;">
-                <button type="button" 
+                <button type="button"
                         id="play-send-reset-btn"
-                        hx-post="/auth/widget-send-reset" 
+                        hx-post="/auth/widget-send-reset"
                         hx-include="#password-start-username"
                         hx-target="#password-reset-container"
                         hx-swap="innerHTML"
                         style="background: none; border: none; color: rgba(219, 234, 254, 0.7); text-decoration: underline; font-size: 0.85rem; padding: 0; cursor: pointer;">
-                    Mot de passe oublié ?
+                    {{ _('Mot de passe oublié ?') }}
                 </button>
             </div>
         </form>
@@ -147,28 +147,28 @@ endblock %}
             <input type="checkbox" id="quick-double-click" name="quick_double_click" {% if quick_double_click
                 %}checked{% endif %}>
             <span class="checkmark"></span>
-            <span class="option-text">Double-clic pour valider</span>
+            <span class="option-text">{{ _('Double-clic pour valider') }}</span>
         </label>
     </div>
 
     {% if rule_set_stats %}
     <div class="rule-details">
-        <h3>📊 Statistiques du Pool</h3>
+        <h3>📊 {{ _('Statistiques du Pool') }}</h3>
         <ul>
-            <li><strong>Format :</strong> {{ rule_set_stats.questions_requested }} questions tirées aléatoirement parmi {{ rule_set_stats.total_pool }} disponibles</li>
-            
+            <li><strong>{{ _('Format :') }}</strong> {{ rule_set_stats.questions_requested }} {{ _('questions tirées aléatoirement parmi') }} {{ rule_set_stats.total_pool }} {{ _('disponibles') }}</li>
+
             {% if current_user and current_user.password_hash %}
-            <li><strong>Votre historique :</strong> {{ rule_set_stats.user_seen_count }} questions déjà jouées sur ce pool</li>
+            <li><strong>{{ _('Votre historique :') }}</strong> {{ rule_set_stats.user_seen_count }} {{ _('questions déjà jouées sur ce pool') }}</li>
             <li>
-                <strong>Type de partie :</strong>
+                <strong>{{ _('Type de partie :') }}</strong>
                 {% if rule_set_stats.freshness == 'new' %}
-                    <span style="color: #4ade80; font-weight: bold;">✨ 100% Inédit</span> (Questions jamais vues)
+                    <span style="color: #4ade80; font-weight: bold;">✨ {{ _('100% Inédit') }}</span> ({{ _('Questions jamais vues') }})
                 {% elif rule_set_stats.freshness == 'mixed' %}
-                    <span style="color: #fbbf24; font-weight: bold;">🔀 Mixte</span> (Nouvelles + Révisions)
+                    <span style="color: #fbbf24; font-weight: bold;">🔀 {{ _('Mixte') }}</span> ({{ _('Nouvelles + Révisions') }})
                 {% elif rule_set_stats.freshness == 'all_seen' %}
-                    <span style="color: #f87171; font-weight: bold;">🔄 Révision</span> (Toutes déjà vues)
+                    <span style="color: #f87171; font-weight: bold;">🔄 {{ _('Révision') }}</span> ({{ _('Toutes déjà vues') }})
                 {% else %}
-                    <span>Inconnu</span>
+                    <span>{{ _('Inconnu') }}</span>
                 {% endif %}
             </li>
             {% endif %}
@@ -177,61 +177,61 @@ endblock %}
     {% endif %}
 
     <div class="rule-details">
-        <h3>Règles appliquées</h3>
+        <h3>{{ _('Règles appliquées') }}</h3>
         <ul>
-            <li><strong>Timer:</strong> {{ rule_set.timer_seconds }} secondes par question</li>
+            <li><strong>{{ _('Timer:') }}</strong> {{ rule_set.timer_seconds }} {{ _('secondes par question') }}</li>
             {% set diffs = rule_set.get_allowed_difficulties() %}
             {% if diffs %}
-            <li><strong>Difficultés:</strong> {{ diffs|join(', ') }}</li>
+            <li><strong>{{ _('Difficultés:') }}</strong> {{ diffs|join(', ') }}</li>
             {% else %}
-            <li><strong>Difficultés:</strong> toutes</li>
+            <li><strong>{{ _('Difficultés:') }}</strong> {{ _('toutes') }}</li>
             {% endif %}
             {% set qmap = rule_set.get_questions_per_difficulty() %}
             {% if qmap %}
-            <li><strong>Nombre de questions par difficulté:</strong> {{ qmap|tojson }}</li>
+            <li><strong>{{ _('Nombre de questions par difficulté:') }}</strong> {{ qmap|tojson }}</li>
             {% endif %}
             {% if not rule_set.use_all_broad_themes %}
-            <li><strong>Thèmes larges:</strong>
+            <li><strong>{{ _('Thèmes larges:') }}</strong>
                 {% for theme in rule_set.allowed_broad_themes %}
                 {{ theme.name }}{% if not loop.last %}, {% endif %}
                 {% endfor %}
             </li>
             {% endif %}
             {% if not rule_set.use_all_specific_themes %}
-            <li><strong>Sous-thèmes:</strong>
+            <li><strong>{{ _('Sous-thèmes:') }}</strong>
                 {% for st in rule_set.allowed_specific_themes %}
                 {{ st.name }}{% if not loop.last %}, {% endif %}
                 {% endfor %}
             </li>
             {% endif %}
-            <li><strong>Scoring:</strong> {{ rule_set.scoring_base_points }} points par question
+            <li><strong>{{ _('Scoring:') }}</strong> {{ rule_set.scoring_base_points }} {{ _('points par question') }}
                 {% if rule_set.scoring_difficulty_bonus_type == 'add' %}
-                + bonus difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {{ _('+ bonus difficulté') }} {{ rule_set.get_difficulty_bonus_map()|tojson }}
                 {% elif rule_set.scoring_difficulty_bonus_type == 'mult' %}
-                × coefficient difficulté {{ rule_set.get_difficulty_bonus_map()|tojson }}
+                {{ _('× coefficient difficulté') }} {{ rule_set.get_difficulty_bonus_map()|tojson }}
                 {% endif %}
                 {% if rule_set.combo_bonus_enabled %}
-                + combo (palier {{ rule_set.combo_step }}, +{{ rule_set.combo_bonus_points }})
+                {{ _('+ combo (palier') }} {{ rule_set.combo_step }}, {{ _('+') }}{{ rule_set.combo_bonus_points }})
                 {% endif %}
                 {% if rule_set.perfect_quiz_bonus %}
-                +{{ rule_set.perfect_quiz_bonus }} si perfect
+                {{ _('+') }}{{ rule_set.perfect_quiz_bonus }} {{ _('si perfect') }}
                 {% endif %}
             </li>
         </ul>
     </div>
 
     <div class="rule-details">
-        <h3>🖥️ Contrôles Clavier</h3>
+        <h3>🖥️ {{ _('Contrôles Clavier') }}</h3>
         <ul>
-            <li><strong>1, 2, 3, 4 :</strong> Sélectionner une réponse (fonctionne avec le pavé numérique)</li>
-            <li><strong>Double appui (1-4) :</strong> Sélectionner et valider immédiatement (si "Double-clic pour valider" activé)</li>
-            <li><strong>Espace :</strong> Action principale (Valider réponse / Question suivante / Démarrer quiz)</li>
-            <li><strong>Entrée :</strong> Valider la réponse sélectionnée</li>
+            <li><strong>1, 2, 3, 4 :</strong> {{ _('Sélectionner une réponse (fonctionne avec le pavé numérique)') }}</li>
+            <li><strong>{{ _('Double appui (1-4) :') }}</strong> {{ _('Sélectionner et valider immédiatement (si "Double-clic pour valider" activé)') }}</li>
+            <li><strong>{{ _('Espace :') }}</strong> {{ _('Action principale (Valider réponse / Question suivante / Démarrer quiz)') }}</li>
+            <li><strong>{{ _('Entrée :') }}</strong> {{ _('Valider la réponse sélectionnée') }}</li>
         </ul>
     </div>
 
     <div class="rule-actions">
-        <a href="/play" class="btn btn-secondary">Choisir un autre Quiz</a>
+        <a href="/play" class="btn btn-secondary">{{ _('Choisir un autre Quiz') }}</a>
     </div>
 </div>
 {% else %}
@@ -242,22 +242,22 @@ endblock %}
     <div class="banner-content">
         <div class="banner-icon">🛡️</div>
         <div class="banner-text">
-            <h4>Protégez votre compte {{ current_user.username }} !</h4>
-            <p>Ajoutez un email et un mot de passe pour bénéficier de :</p>
+            <h4>{{ _('Protégez votre compte') }} {{ current_user.username }} !</h4>
+            <p>{{ _('Ajoutez un email et un mot de passe pour bénéficier de :') }}</p>
             <ul>
-                <li>🛡️ Protection de votre pseudo contre les usurpations</li>
-                <li>📊 Accès à vos statistiques détaillées</li>
-                <li>🎯 Suivi de votre progression</li>
-                <li>🏆 Conservation de vos scores personnels</li>
+                <li>🛡️ {{ _('Protection de votre pseudo contre les usurpations') }}</li>
+                <li>📊 {{ _('Accès à vos statistiques détaillées') }}</li>
+                <li>🎯 {{ _('Suivi de votre progression') }}</li>
+                <li>🏆 {{ _('Conservation de vos scores personnels') }}</li>
             </ul>
         </div>
         <div class="banner-actions">
             <button class="btn btn-primary btn-banner" onclick="showUpgradeModal()">
-                Créer mon compte sécurisé
+                {{ _('Créer mon compte sécurisé') }}
             </button>
             <button class="btn btn-secondary btn-small"
                 onclick="this.parentElement.parentElement.parentElement.style.display='none'">
-                Plus tard
+                {{ _('Plus tard') }}
             </button>
         </div>
     </div>
@@ -265,38 +265,38 @@ endblock %}
 
 <!-- Modal pour upgrade du compte -->
 <div id="upgrade-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Créer votre compte sécurisé</h3>
-            <button class="btn-close" onclick="hideUpgradeModal()">&times;</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>{{ _('Créer votre compte sécurisé') }}</h3>
+                <button class="btn-close" onclick="hideUpgradeModal()">&times;</button>
+            </div>
+            <form id="upgrade-form" hx-post="/auth/upgrade-account" hx-target="#upgrade-form" hx-swap="outerHTML">
+                <div class="form-group">
+                    <label for="email">{{ _('Email (optionnel)') }}</label>
+                    <input type="email" id="email" name="email" placeholder="{{ _('votre.email@exemple.com') }}">
+                    <small>{{ _('Pour récupérer votre compte si nécessaire') }}</small>
+                </div>
+                <div class="form-group">
+                    <label for="password">{{ _('Mot de passe *') }}</label>
+                    <input type="password" id="password" name="password" required placeholder="{{ _('Choisissez un mot de passe') }}">
+                    <small>{{ _('Minimum 6 caractères') }}</small>
+                </div>
+                <div class="form-group">
+                    <label for="password_confirm">{{ _('Confirmer le mot de passe *') }}</label>
+                    <input type="password" id="password_confirm" name="password_confirm" required
+                        placeholder="{{ _('Retapez le mot de passe') }}">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">{{ _('Créer mon compte') }}</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideUpgradeModal()">{{ _('Annuler') }}</button>
+                </div>
+            </form>
         </div>
-        <form id="upgrade-form" hx-post="/auth/upgrade-account" hx-target="#upgrade-form" hx-swap="outerHTML">
-            <div class="form-group">
-                <label for="email">Email (optionnel)</label>
-                <input type="email" id="email" name="email" placeholder="votre.email@exemple.com">
-                <small>Pour récupérer votre compte si nécessaire</small>
-            </div>
-            <div class="form-group">
-                <label for="password">Mot de passe *</label>
-                <input type="password" id="password" name="password" required placeholder="Choisissez un mot de passe">
-                <small>Minimum 6 caractères</small>
-            </div>
-            <div class="form-group">
-                <label for="password_confirm">Confirmer le mot de passe *</label>
-                <input type="password" id="password_confirm" name="password_confirm" required
-                    placeholder="Retapez le mot de passe">
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Créer mon compte</button>
-                <button type="button" class="btn btn-secondary" onclick="hideUpgradeModal()">Annuler</button>
-            </div>
-        </form>
-    </div>
 </div>
 {% endif %}
 
 <div id="quiz-setup" class="rule-sets-selection">
-    <h3>Choisissez votre jeu</h3>
+    <h3>{{ _('Choisissez votre jeu') }}</h3>
     <div class="rule-sets-grid">
         {% for rule_set_item in rule_sets %}
         <div class="rule-set-card">
@@ -368,7 +368,7 @@ endblock %}
             </div>
             {% endif %}
             <div class="card-actions">
-                <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">Lancer ce Quiz</a>
+                <a href="/play?rule_set={{ rule_set_item.slug }}" class="btn btn-primary">{{ _('Lancer ce Quiz') }}</a>
             </div>
         </div>
         {% endfor %}
@@ -1240,7 +1240,7 @@ endblock %}
             document.body.addEventListener('quiz-login-password-error', function (evt) {
                 const detail = evt.detail || {};
                 if (passwordError) {
-                    passwordError.textContent = detail.message || 'Erreur de connexion';
+                    passwordError.textContent = detail.message || '{{ _('Erreur de connexion')|e }}';
                     passwordError.hidden = false;
                 }
                 

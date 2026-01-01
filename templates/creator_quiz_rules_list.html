@@ -7,25 +7,25 @@
                 <h3>{{ rule.name }}</h3>
                 <span class="badge badge-slug">{{ rule.slug or '-' }}</span>
                 {% if rule.visibility_status == 'public' %}
-                <span class="badge badge-published">Public</span>
+                <span class="badge badge-published">{{ _('Public') }}</span>
                 {% elif rule.visibility_status == 'pending' %}
-                <span class="badge badge-pending">En attente</span>
+                <span class="badge badge-pending">{{ _('En attente') }}</span>
                 {% elif rule.visibility_status == 'rejected' %}
-                <span class="badge badge-rejected">Refusé</span>
+                <span class="badge badge-rejected">{{ _('Refusé') }}</span>
                 {% else %}
-                <span class="badge badge-private">Privé</span>
+                <span class="badge badge-private">{{ _('Privé') }}</span>
                 {% endif %}
             </div>
             <div class="rule-actions">
             <button class="btn-icon" type="button"
                 onclick="document.getElementById('rule-form-container').classList.remove('hidden')"
                 hx-get="/creator/quiz-rule/{{ rule.id }}/edit"
-                hx-target="#rule-form-container" hx-swap="innerHTML" title="Éditer">✏️</button>
+                hx-target="#rule-form-container" hx-swap="innerHTML" title="{{ _('Éditer') }}">✏️</button>
             <button class="btn-icon btn-danger"
                 hx-get="/api/creator/quiz-rule/{{ rule.id }}/delete/confirm"
                 hx-target="#modal-root"
                 hx-swap="outerHTML"
-                title="Supprimer">🗑️</button>
+                title="{{ _('Supprimer') }}">🗑️</button>
             </div>
         </div>
 
@@ -35,7 +35,7 @@
 
         {% if rule.intro_image %}
         <div class="rule-image">
-            <img src="{{ rule.intro_image.url }}" alt="Image d'introduction">
+            <img src="{{ rule.intro_image.url }}" alt="{{ _('Image d\'introduction') }}">
             {% if rule.intro_image.copyright_credits or rule.intro_image.copyright_link %}
             <div class="image-copyright">
                 {% if rule.intro_image.copyright_credits and rule.intro_image.copyright_link %}
@@ -45,7 +45,7 @@
                 <small>© {{ rule.intro_image.copyright_credits }}</small>
                 {% elif rule.intro_image.copyright_link %}
                 <small><a href="{{ rule.intro_image.copyright_link }}" target="_blank" rel="noopener noreferrer"
-                        class="copyright-link">🔗 Source</a></small>
+                        class="copyright-link">🔗 {{ _('Source') }}</a></small>
                 {% endif %}
             </div>
             {% endif %}
@@ -59,40 +59,40 @@
         {% endif %}
 
         <div class="rule-summary">
-            <div class="summary-row"><strong>⏱️ Timer :</strong> {{ rule.timer_seconds }}s</div>
+            <div class="summary-row"><strong>⏱️ {{ _('Timer') }} :</strong> {{ rule.timer_seconds }}s</div>
             {% set diffs = rule.get_allowed_difficulties() %}
-            <div class="summary-row"><strong>📊 Difficultés :</strong> {{ diffs|join(', ') if diffs else 'toutes' }}</div>
+            <div class="summary-row"><strong>📊 {{ _('Difficultés') }} :</strong> {{ diffs|join(', ') if diffs else _('toutes') }}</div>
             {% set qmap = rule.get_questions_per_difficulty() %}
             {% if qmap %}
-            <div class="summary-row"><strong>📋 Questions/difficulté :</strong> {{ qmap|tojson }}</div>
+            <div class="summary-row"><strong>📋 {{ _('Questions/difficulté') }} :</strong> {{ qmap|tojson }}</div>
             {% endif %}
-            <div class="summary-row"><strong>🧩 Sélection :</strong> {{ 'Manuelle' if rule.question_selection_mode == 'manual' else 'Automatique' }}</div>
-            <div class="summary-row"><strong>🗂️ Pool :</strong> {{ 'Mes questions' if rule.question_pool_scope == 'mine' else 'Toutes (publiques + mes questions)' }}</div>
+            <div class="summary-row"><strong>🧩 {{ _('Sélection') }} :</strong> {{ _('Manuelle') if rule.question_selection_mode == 'manual' else _('Automatique') }}</div>
+            <div class="summary-row"><strong>🗂️ {{ _('Pool') }} :</strong> {{ _('Mes questions') if rule.question_pool_scope == 'mine' else _('Toutes (publiques + mes questions)') }}</div>
         </div>
 
         <div class="rule-review">
             {% if rule.visibility_status == 'pending' %}
                 <div class="review-line pending">
-                    ⏳ Soumis{% if rule.public_requested_at %} le {{ rule.public_requested_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                    ⏳ {{ _('Soumis') }}{% if rule.public_requested_at %} {{ _('le') }} {{ rule.public_requested_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
                 </div>
             {% elif rule.visibility_status == 'rejected' %}
                 <div class="review-line ko">
-                    ❌ Refusé{% if rule.public_reviewed_at %} le {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                    ❌ {{ _('Refusé') }}{% if rule.public_reviewed_at %} {{ _('le') }} {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
                 </div>
                 {% if rule.public_review_note %}
                 <div class="review-note">
-                    <strong>Motif :</strong> {{ rule.public_review_note }}
+                    <strong>{{ _('Motif') }} :</strong> {{ rule.public_review_note }}
                 </div>
                 {% else %}
-                <div class="review-note muted">Motif : (voir la messagerie pour le détail)</div>
+                <div class="review-note muted">{{ _('Motif') }} : {{ _('(voir la messagerie pour le détail)') }}</div>
                 {% endif %}
             {% elif rule.visibility_status == 'public' %}
                 <div class="review-line ok">
-                    ✅ Validé{% if rule.public_reviewed_at %} le {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
+                    ✅ {{ _('Validé') }}{% if rule.public_reviewed_at %} {{ _('le') }} {{ rule.public_reviewed_at.strftime('%d/%m/%Y %H:%M') }}{% endif %}
                 </div>
                 {% if rule.public_review_note %}
                 <div class="review-note">
-                    <strong>Message :</strong> {{ rule.public_review_note }}
+                    <strong>{{ _('Message') }} :</strong> {{ rule.public_review_note }}
                 </div>
                 {% endif %}
             {% endif %}
@@ -102,24 +102,24 @@
             {% set public_url = url_for('play_quiz_by_slug', slug=rule.slug, _external=True) %}
             {% if rule.visibility_status == 'public' %}
                 {% set share_url = public_url %}
-                <div class="share-title"><strong>🔗 Lien à partager</strong> (quiz public)</div>
+                <div class="share-title"><strong>🔗 {{ _('Lien à partager') }}</strong> ({{ _('quiz public') }})</div>
             {% else %}
                 {% if rule.private_access_key %}
                     {% set share_url = public_url ~ '?access_key=' ~ rule.private_access_key %}
-                    <div class="share-title"><strong>🔒 Lien à partager</strong> (quiz privé jouable via ce lien)</div>
+                    <div class="share-title"><strong>🔒 {{ _('Lien à partager') }}</strong> ({{ _('quiz privé jouable via ce lien') }})</div>
                 {% else %}
                     {% set share_url = '' %}
-                    <div class="share-title"><strong>🔒 Lien à partager</strong></div>
+                    <div class="share-title"><strong>🔒 {{ _('Lien à partager') }}</strong></div>
                 {% endif %}
             {% endif %}
 
             {% if share_url %}
             <div class="share-row">
                 <input id="share-link-{{ rule.id }}" class="share-input" type="text" readonly value="{{ share_url }}">
-                <button class="btn btn-outline btn-small" type="button" onclick="copyShareLink('share-link-{{ rule.id }}')">Copier</button>
+                <button class="btn btn-outline btn-small" type="button" onclick="copyShareLink('share-link-{{ rule.id }}')">{{ _('Copier') }}</button>
             </div>
             {% else %}
-            <div class="text-muted">Enregistrez le quiz (ou ré-éditez/sauvegardez) pour générer le lien.</div>
+            <div class="text-muted">{{ _('Enregistrez le quiz (ou ré-éditez/sauvegardez) pour générer le lien.') }}</div>
             {% endif %}
         </div>
 
@@ -131,19 +131,19 @@
                     hx-get="/api/creator/quiz-rule/{{ rule.id }}/request-public/confirm"
                     hx-target="#modal-root"
                     hx-swap="outerHTML">
-                    📣 Demander publication
+                    📣 {{ _('Demander publication') }}
                 </button>
                 {% elif rule.visibility_status == 'pending' %}
-                <span class="text-muted">En attente de review admin</span>
+                <span class="text-muted">{{ _('En attente de review admin') }}</span>
                 {% endif %}
-                <a class="btn btn-outline btn-small" href="/play/{{ rule.slug }}" title="Tester ce quiz">▶️ Tester</a>
+                <a class="btn btn-outline btn-small" href="/play/{{ rule.slug }}" title="{{ _('Tester ce quiz') }}">▶️ {{ _('Tester') }}</a>
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<div class="no-rules"><p>Aucun quiz pour le moment.</p></div>
+<div class="no-rules"><p>{{ _('Aucun quiz pour le moment.') }}</p></div>
 {% endif %}
 
 <style>
@@ -206,19 +206,19 @@ function copyShareLink(inputId) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text)
             .then(() => {
-                if (typeof showAppModal === 'function') showAppModal('Lien copié dans le presse-papiers.');
+                if (typeof showAppModal === 'function') showAppModal({{ _('\'Lien copié dans le presse-papiers.\'|tojson') }});
             })
             .catch(() => {
                 // fallback
                 input.select();
                 document.execCommand('copy');
-                if (typeof showAppModal === 'function') showAppModal('Lien copié.');
+                if (typeof showAppModal === 'function') showAppModal({{ _('\'Lien copié.\'|tojson') }});
             });
     } else {
         // fallback
         input.select();
         document.execCommand('copy');
-        if (typeof showAppModal === 'function') showAppModal('Lien copié.');
+        if (typeof showAppModal === 'function') showAppModal({{ _('\'Lien copié.\'|tojson') }});
     }
 }
 </script>
