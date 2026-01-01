@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ current_locale }}">
 
 <head>
     <meta charset="UTF-8">
@@ -9,7 +9,7 @@
     {% block meta_tags %}
     <!-- Meta tags par défaut -->
     <meta name="description"
-        content="Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.">
+        content="{{ _('Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.') }}">
     <meta property="og:site_name" content="CacheQuiz">
     <meta property="og:type" content="website">
     {% endblock %}
@@ -47,10 +47,21 @@
                     <h1><img src="{{ url_for('static', filename='images/logo_geoquiz.png') }}" alt="CacheQuiz"
                             class="app-logo"> CacheQuiz</h1>
                 </a>
+                <div class="header-actions">
                 {% block auth_widget %}
                 <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget"
                     hx-swap="outerHTML"></div>
                 {% endblock %}
+                <form class="lang-switcher" method="get" action="{{ url_for('set_language') }}">
+                    <input type="hidden" name="next" value="{{ request.full_path }}">
+                    <span class="lang-label">{{ _('Langue') }}</span>
+                    <label class="sr-only" for="lang-select">{{ _('Langue') }}</label>
+                    <select id="lang-select" name="lang" onchange="this.form.submit()">
+                        <option value="fr" {% if current_locale == 'fr' %}selected{% endif %}>FR</option>
+                        <option value="en" {% if current_locale == 'en' %}selected{% endif %}>EN</option>
+                    </select>
+                </form>
+                </div>
             </div>
         </div>
     </header>
@@ -60,13 +71,13 @@
         <div class="container">
             <div class="creator-nav-inner">
                 <div class="creator-nav-left">
-                    <span class="creator-nav-title">Espace créateur</span>
+                    <span class="creator-nav-title">{{ _('Espace créateur') }}</span>
                 </div>
                 <div class="creator-nav-links">
-                    <a class="creator-nav-link {% if request.path.startswith('/creator/questions') %}active{% endif %}" href="/creator/questions">❓ Questions</a>
-                    <a class="creator-nav-link {% if request.path.startswith('/creator/images') %}active{% endif %}" href="/creator/images">🖼️ Images</a>
-                    <a class="creator-nav-link {% if request.path.startswith('/creator/quiz-rules') or request.path.startswith('/creator/quiz-rule') %}active{% endif %}" href="/creator/quiz-rules">🧩 Quiz</a>
-                    <a class="creator-nav-link exit" href="/play">▶️ Retour au jeu</a>
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/questions') %}active{% endif %}" href="/creator/questions">❓ {{ _('Questions') }}</a>
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/images') %}active{% endif %}" href="/creator/images">🖼️ {{ _('Images') }}</a>
+                    <a class="creator-nav-link {% if request.path.startswith('/creator/quiz-rules') or request.path.startswith('/creator/quiz-rule') %}active{% endif %}" href="/creator/quiz-rules">🧩 {{ _('Quiz') }}</a>
+                    <a class="creator-nav-link exit" href="/play">▶️ {{ _('Retour au jeu') }}</a>
                 </div>
             </div>
         </div>
@@ -84,22 +95,22 @@
                     <div class="footer-section">
                         <h3 class="footer-title">CacheQuiz</h3>
                         <p class="footer-description">
-                            Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.
+                            {{ _('Application de Quiz Geocaching pour tester vos connaissances ou créer une Mystery.') }}
                         </p>
                     </div>
 
                     <div class="footer-section">
-                        <h4 class="footer-subtitle">Navigation</h4>
+                        <h4 class="footer-subtitle">{{ _('Navigation') }}</h4>
                         <nav class="footer-nav">
-                            <a href="/" class="footer-link">Accueil</a>
-                            <a href="/contact" class="footer-link">Contact</a>
+                            <a href="/" class="footer-link">{{ _('Accueil') }}</a>
+                            <a href="/contact" class="footer-link">{{ _('Contact') }}</a>
                         </nav>
                     </div>
 
                     <div class="footer-section">
-                        <h4 class="footer-subtitle">À propos</h4>
+                        <h4 class="footer-subtitle">{{ _('À propos') }}</h4>
                         <nav class="footer-nav">
-                            <a href="{{ url_for('about_page') }}" class="footer-link">À propos</a>
+                            <a href="{{ url_for('about_page') }}" class="footer-link">{{ _('À propos') }}</a>
                         </nav>
                     </div>
                 </div>
@@ -118,16 +129,16 @@
     <div id="header-quit-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Quitter le quiz ?</h3>
+                <h3>{{ _('Quitter le quiz ?') }}</h3>
                 <button class="btn-close" onclick="hideHeaderQuitModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir quitter ce quiz ?</p>
-                <p>Votre progression sera perdue.</p>
+                <p>{{ _('Êtes-vous sûr de vouloir quitter ce quiz ?') }}</p>
+                <p>{{ _('Votre progression sera perdue.') }}</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="hideHeaderQuitModal()">Annuler</button>
-                <button class="btn btn-danger" id="confirm-quit-btn">Quitter définitivement</button>
+                <button class="btn btn-secondary" onclick="hideHeaderQuitModal()">{{ _('Annuler') }}</button>
+                <button class="btn btn-danger" id="confirm-quit-btn">{{ _('Quitter définitivement') }}</button>
             </div>
         </div>
     </div>
@@ -144,7 +155,9 @@
         function showAppModal(opts) {
             const root = document.getElementById('modal-root');
             if (!root) return;
-            const title = (opts && opts.title) ? String(opts.title) : 'Information';
+            const defaultTitle = {{ _('Information')|tojson }};
+            const okLabel = {{ _('OK')|tojson }};
+            const title = (opts && opts.title) ? String(opts.title) : defaultTitle;
             const message = (opts && opts.message) ? String(opts.message) : '';
             const variant = (opts && opts.variant) ? String(opts.variant) : 'info'; // info|success|warning|danger
             const border = variant === 'danger' ? 'rgba(229,62,62,.25)' : 'var(--border-color)';
@@ -160,7 +173,7 @@
                 <div class="modal-body" style="padding: 1.25rem">
                   <div class="alert alert-${variant}" style="margin:0 0 1rem 0">${message}</div>
                   <div style="display:flex; justify-content:flex-end">
-                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">OK</button>
+                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">${okLabel}</button>
                   </div>
                 </div>
               </div>

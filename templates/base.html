@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ current_locale }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,31 +21,42 @@
     <header>
         <div class="container">
             <div class="header-content">
-                <h1>🗺️ Quiz Géocaching - Gestion des Questions</h1>
-                {% block auth_widget %}
-                <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
-                {% endblock %}
+                <h1>🗺️ {{ _('Quiz Géocaching - Gestion des Questions') }}</h1>
+                <div class="header-actions">
+                    {% block auth_widget %}
+                    <div id="auth-widget" hx-get="/auth/widget" hx-trigger="load" hx-target="#auth-widget" hx-swap="outerHTML"></div>
+                    {% endblock %}
+                    <form class="lang-switcher" method="get" action="{{ url_for('set_language') }}">
+                        <input type="hidden" name="next" value="{{ request.full_path }}">
+                        <span class="lang-label">{{ _('Langue') }}</span>
+                        <label class="sr-only" for="lang-select">{{ _('Langue') }}</label>
+                        <select id="lang-select" name="lang" onchange="this.form.submit()">
+                            <option value="fr" {% if current_locale == 'fr' %}selected{% endif %}>FR</option>
+                            <option value="en" {% if current_locale == 'en' %}selected{% endif %}>EN</option>
+                        </select>
+                    </form>
+                </div>
             </div>
             <nav>
-                <a href="/admin" class="nav-link">Questions</a>
-                <a href="/themes" class="nav-link">Thèmes</a>
-                <a href="/countries" class="nav-link">Pays</a>
-                <a href="/images" class="nav-link">Images</a>
-                <a href="/users" class="nav-link">Utilisateurs</a>
+                <a href="/admin" class="nav-link">{{ _('Questions') }}</a>
+                <a href="/themes" class="nav-link">{{ _('Thèmes') }}</a>
+                <a href="/countries" class="nav-link">{{ _('Pays') }}</a>
+                <a href="/images" class="nav-link">{{ _('Images') }}</a>
+                <a href="/users" class="nav-link">{{ _('Utilisateurs') }}</a>
                 {% if current_user and current_user.has_perm('can_manage_profiles') %}
-                <a href="/profiles" class="nav-link">Profils</a>
+                <a href="/profiles" class="nav-link">{{ _('Profils') }}</a>
                 {% endif %}
-                <a href="/quiz-rules" class="nav-link">Règles du Quiz</a>
+                <a href="/quiz-rules" class="nav-link">{{ _('Règles du Quiz') }}</a>
                 {% if current_user and current_user.has_perm('can_manage_profiles') %}
                 <a href="/admin/validation" class="nav-link">
-                    Validation
+                    {{ _('Validation') }}
                     {% if pending_validation_count and pending_validation_count > 0 %}
                     <span class="nav-badge">{{ pending_validation_count }}</span>
                     {% endif %}
                 </a>
                 {% endif %}
-                <a href="/analysis" class="nav-link">Analyse</a>
-                <a href="/export" class="nav-link">Export</a>
+                <a href="/analysis" class="nav-link">{{ _('Analyse') }}</a>
+                <a href="/export" class="nav-link">{{ _('Export') }}</a>
             </nav>
         </div>
     </header>
@@ -56,7 +67,7 @@
     
     <footer>
         <div class="container">
-            <p>&copy; 2025 Quiz Géocaching - Propulsé par Flask, HTMX & hyperscript</p>
+            <p>&copy; 2025 {{ _('Quiz Géocaching') }} - {{ _('Propulsé par Flask, HTMX & hyperscript') }}</p>
         </div>
     </footer>
 
@@ -69,6 +80,40 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
+    }
+    .header-actions{
+        display:flex;
+        align-items:center;
+        gap:.75rem;
+        flex-wrap:wrap;
+        justify-content:flex-end;
+    }
+    .lang-switcher select{
+        height: 38px;
+        padding: 0 0.6rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.35);
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        outline: none;
+    }
+    .lang-label{
+        color:#fff;
+        opacity:.9;
+        font-weight:600;
+        font-size:.9rem;
+    }
+    .lang-switcher option{ color: #111; }
+    .sr-only{
+        position:absolute;
+        width:1px;
+        height:1px;
+        padding:0;
+        margin:-1px;
+        overflow:hidden;
+        clip:rect(0,0,0,0);
+        white-space:nowrap;
+        border:0;
     }
 
     .modal-overlay {
@@ -111,7 +156,9 @@
         function showAppModal(opts) {
             const root = document.getElementById('modal-root');
             if (!root) return;
-            const title = (opts && opts.title) ? String(opts.title) : 'Information';
+            const defaultTitle = {{ _('Information')|tojson }};
+            const okLabel = {{ _('OK')|tojson }};
+            const title = (opts && opts.title) ? String(opts.title) : defaultTitle;
             const message = (opts && opts.message) ? String(opts.message) : '';
             const variant = (opts && opts.variant) ? String(opts.variant) : 'info'; // info|success|warning|danger
             const border = variant === 'danger' ? 'rgba(229,62,62,.25)' : 'var(--border-color)';
@@ -127,7 +174,7 @@
                 <div class="modal-body" style="padding: 1.25rem">
                   <div class="alert alert-${variant}" style="margin:0 0 1rem 0">${message}</div>
                   <div style="display:flex; justify-content:flex-end">
-                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">OK</button>
+                    <button class="btn btn-primary" type="button" onclick="closeAppModal()">${okLabel}</button>
                   </div>
                 </div>
               </div>

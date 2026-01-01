@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, session, g, url_for, make_response, flash
+from flask_babel import Babel, gettext
 from models import db, Question, BroadTheme, SpecificTheme, User, Country, ImageAsset, AnswerImageLink, QuizRuleSet, UserQuestionStat, UserQuizSession, QuestionAnswerStat, Profile, Conversation, ConversationParticipant, ConversationMessage, QuestionReport, ContactMessage, Keyword, QuizShareLink, SavedQuestion
 from datetime import datetime
 import random
@@ -6,6 +7,7 @@ import os
 import re
 import json
 import uuid
+from urllib.parse import urlsplit
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func, text, or_
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -100,6 +102,66 @@ app.config.from_object(config[config_name])
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 app.config['SOUNDS_FOLDER'] = os.path.join(os.getcwd(), 'ressources', 'sounds')
+
+# ===== i18n (Flask-Babel) =====
+# NB: L'i18n ici concerne l'interface (templates/messages), pas le système de "translation_id"
+# des questions/thèmes (contenus) déjà présent dans la base.
+SUPPORTED_LOCALES = ['fr', 'en']  # 'de' viendra plus tard
+app.config.setdefault('BABEL_DEFAULT_LOCALE', 'fr')
+app.config.setdefault('BABEL_SUPPORTED_LOCALES', SUPPORTED_LOCALES)
+
+
+def _safe_next_url(next_url: str) -> str:
+    """Empêche les open-redirects (n'autorise que des URLs internes)."""
+    if not next_url:
+        return url_for('index')
+    try:
+        parts = urlsplit(next_url)
+        # Si next est une URL absolue, on garde uniquement path + query
+        if parts.scheme or parts.netloc:
+            path = parts.path or '/'
+            if parts.query:
+                path = f"{path}?{parts.query}"
+            return path
+        # URL relative: doit commencer par /
+        if isinstance(next_url, str) and next_url.startswith('/'):
+            return next_url
+    except Exception:
+        pass
+    return url_for('index')
+
+
+def get_locale():
+    """Sélection de locale: ?lang=xx > cookie 'lang' > Accept-Language > défaut."""
+    try:
+        # 1) Querystring
+        q = (request.args.get('lang') or '').strip().lower()
+        if q in SUPPORTED_LOCALES:
+            return q
+        # 2) Cookie utilisateur
+        c = (request.cookies.get('lang') or '').strip().lower()
+        if c in SUPPORTED_LOCALES:
+            return c
+        # 3) Accept-Language
+        best = request.accept_languages.best_match(SUPPORTED_LOCALES)
+        if best:
+            return best
+    except Exception:
+        pass
+    return app.config.get('BABEL_DEFAULT_LOCALE', 'fr')
+
+
+babel = Babel(app, locale_selector=get_locale)
+# Assurer l'alias _() dans les templates Jinja (par confort)
+app.jinja_env.globals.update(_=gettext)
+
+
+@app.context_processor
+def inject_i18n():
+    return {
+        'current_locale': str(get_locale()),
+        'supported_locales': list(SUPPORTED_LOCALES),
+    }
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -517,6 +579,21 @@ def index():
     if getattr(g, 'current_user', None):
         return redirect(url_for('play_quiz'))
     return render_template('home_public.html')
+
+
+@app.get('/set-language')
+def set_language():
+    """Fixe la langue via cookie puis redirige sur la page demandée.
+
+    Utilisation: /set-language?lang=en&next=/play
+    """
+    lang = (request.args.get('lang') or '').strip().lower()
+    if lang not in SUPPORTED_LOCALES:
+        lang = app.config.get('BABEL_DEFAULT_LOCALE', 'fr')
+    next_url = _safe_next_url(request.args.get('next') or request.referrer or url_for('index'))
+    resp = redirect(next_url)
+    resp.set_cookie('lang', lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
+    return resp
 
 
 @app.route('/a-propos')

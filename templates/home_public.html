@@ -7,23 +7,23 @@
       <img src="{{ url_for('static', filename='images/CacheQuiz_intro.jpg') }}" alt="CacheQuiz" class="hero-image">
     </div>
     <div class="hero-text">
-      <h2>Bienvenue sur CacheQuiz</h2>
+      <h2>{{ _('Bienvenue sur CacheQuiz') }}</h2>
       <p class="hero-lead">
-        Testez vos connaissances en Géocaching avec des questions thématiques et des difficultés progressives.
-        Attention, le site est en cours de développement, il peut y avoir quelques bugs.
+        {{ _('Testez vos connaissances en Géocaching avec des questions thématiques et des difficultés progressives.') }}
+        {{ _("Attention, le site est en cours de développement, il peut y avoir quelques bugs.") }}
       </p>
       <div class="feature-section">
-        <h3 class="feature-title">Les fonctionnalités à venir :</h3>
+        <h3 class="feature-title">{{ _('Les fonctionnalités à venir :') }}</h3>
         <ul class="feature-list">
-          <li>Traductions de l'interface et des questions en anglais (d'autres langues à venir)</li>
-          <li>Utilisation du quiz dans vos géocaches Mystery avec vos questions</li>
-          <li>Affichage enrichi des statistiques</li>
-          <li>Ajout de nouvelles questions</li>
+          <li>{{ _("Traductions de l'interface et des questions en anglais (d'autres langues à venir)") }}</li>
+          <li>{{ _('Utilisation du quiz dans vos géocaches Mystery avec vos questions') }}</li>
+          <li>{{ _('Affichage enrichi des statistiques') }}</li>
+          <li>{{ _('Ajout de nouvelles questions') }}</li>
         </ul>
       </div>
       <div class="cta">
-        <a href="/play" class="btn btn-primary">Commencer à jouer</a>
-        <a href="/register" class="btn btn-secondary">Créer un compte</a>
+        <a href="/play" class="btn btn-primary">{{ _('Commencer à jouer') }}</a>
+        <a href="/register" class="btn btn-secondary">{{ _('Créer un compte') }}</a>
       </div>
     </div>
   </div>
@@ -32,16 +32,16 @@
 <section class="public-info">
   <div class="info-grid">
     <div class="info-card">
-      <h3>Comment ça marche ?</h3>
-      <p>Choisissez un Quiz, répondez aux questions, et progressez. Votre score est calculé selon la difficulté et vos séries de bonnes réponses.</p>
+      <h3>{{ _('Comment ça marche ?') }}</h3>
+      <p>{{ _('Choisissez un Quiz, répondez aux questions, et progressez. Votre score est calculé selon la difficulté et vos séries de bonnes réponses.') }}</p>
     </div>
     <div class="info-card">
-      <h3>Pourquoi créer un compte ?</h3>
-      <p>Un compte vous permet de sauvegarder vos statistiques, protéger votre pseudo, reprendre plus tard, et accéder à des options avancées.</p>
+      <h3>{{ _('Pourquoi créer un compte ?') }}</h3>
+      <p>{{ _('Un compte vous permet de sauvegarder vos statistiques, protéger votre pseudo, reprendre plus tard, et accéder à des options avancées.') }}</p>
     </div>
     <div class="info-card">
-      <h3>Jouer sans compte</h3>
-      <p>Vous pouvez jouer immédiatement sans inscription. Entrez simplement un pseudo dans la barre du haut.</p>
+      <h3>{{ _('Jouer sans compte') }}</h3>
+      <p>{{ _('Vous pouvez jouer immédiatement sans inscription. Entrez simplement un pseudo dans la barre du haut.') }}</p>
     </div>
   </div>
 </section>

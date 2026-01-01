@@ -1,0 +1,223 @@
+# English translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-01-01 18:21+0100\n"
+"PO-Revision-Date: 2026-01-01 18:02+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: templates/base.html:24
+msgid "Quiz Géocaching - Gestion des Questions"
+msgstr "Geocaching Quiz - Question Management"
+
+#: templates/base.html:31 templates/base.html:32 templates/base_public.html:57
+#: templates/base_public.html:58
+msgid "Langue"
+msgstr "Language"
+
+#: templates/base.html:41 templates/base_public.html:77
+msgid "Questions"
+msgstr "Questions"
+
+#: templates/base.html:42
+msgid "Thèmes"
+msgstr "Themes"
+
+#: templates/base.html:43
+msgid "Pays"
+msgstr "Countries"
+
+#: templates/base.html:44 templates/base_public.html:78
+msgid "Images"
+msgstr "Images"
+
+#: templates/base.html:45
+msgid "Utilisateurs"
+msgstr "Users"
+
+#: templates/base.html:47
+msgid "Profils"
+msgstr "Profiles"
+
+#: templates/base.html:49
+msgid "Règles du Quiz"
+msgstr "Quiz rules"
+
+#: templates/base.html:52
+msgid "Validation"
+msgstr "Validation"
+
+#: templates/base.html:58
+msgid "Analyse"
+msgstr "Analysis"
+
+#: templates/base.html:59
+msgid "Export"
+msgstr "Export"
+
+#: templates/base.html:70
+msgid "Quiz Géocaching"
+msgstr "Geocaching Quiz"
+
+#: templates/base.html:70
+msgid "Propulsé par Flask, HTMX & hyperscript"
+msgstr "Powered by Flask, HTMX & hyperscript"
+
+#: templates/base.html:159 templates/base_public.html:158
+msgid "Information"
+msgstr "Information"
+
+#: templates/base.html:160 templates/base_public.html:159
+msgid "OK"
+msgstr "OK"
+
+#: templates/base_public.html:12 templates/base_public.html:98
+msgid ""
+"Application de Quiz Geocaching pour tester vos connaissances ou créer une"
+" Mystery."
+msgstr "Geocaching quiz app to test your knowledge or create a Mystery."
+
+#: templates/base_public.html:74
+msgid "Espace créateur"
+msgstr "Creator area"
+
+#: templates/base_public.html:79
+msgid "Quiz"
+msgstr "Quiz"
+
+#: templates/base_public.html:80
+msgid "Retour au jeu"
+msgstr "Back to game"
+
+#: templates/base_public.html:103
+msgid "Navigation"
+msgstr "Navigation"
+
+#: templates/base_public.html:105
+msgid "Accueil"
+msgstr "Home"
+
+#: templates/base_public.html:106
+msgid "Contact"
+msgstr "Contact"
+
+#: templates/base_public.html:111 templates/base_public.html:113
+msgid "À propos"
+msgstr "About"
+
+#: templates/base_public.html:132
+msgid "Quitter le quiz ?"
+msgstr "Quit the quiz?"
+
+#: templates/base_public.html:136
+msgid "Êtes-vous sûr de vouloir quitter ce quiz ?"
+msgstr "Are you sure you want to quit this quiz?"
+
+#: templates/base_public.html:137
+msgid "Votre progression sera perdue."
+msgstr "Your progress will be lost."
+
+#: templates/base_public.html:140
+msgid "Annuler"
+msgstr "Cancel"
+
+#: templates/base_public.html:141
+msgid "Quitter définitivement"
+msgstr "Quit for good"
+
+#: templates/home_public.html:10
+msgid "Bienvenue sur CacheQuiz"
+msgstr "Welcome to CacheQuiz"
+
+#: templates/home_public.html:12
+msgid ""
+"Testez vos connaissances en Géocaching avec des questions thématiques et "
+"des difficultés progressives."
+msgstr ""
+"Test your geocaching knowledge with themed questions and progressive "
+"difficulty."
+
+#: templates/home_public.html:13
+msgid ""
+"Attention, le site est en cours de développement, il peut y avoir "
+"quelques bugs."
+msgstr "Note: the site is under development, so you may encounter a few bugs."
+
+#: templates/home_public.html:16
+msgid "Les fonctionnalités à venir :"
+msgstr "Upcoming features:"
+
+#: templates/home_public.html:18
+msgid ""
+"Traductions de l'interface et des questions en anglais (d'autres langues "
+"à venir)"
+msgstr "Interface and question translations in English (more languages coming)"
+
+#: templates/home_public.html:19
+msgid "Utilisation du quiz dans vos géocaches Mystery avec vos questions"
+msgstr "Use the quiz in your Mystery geocaches with your own questions"
+
+#: templates/home_public.html:20
+msgid "Affichage enrichi des statistiques"
+msgstr "Richer statistics display"
+
+#: templates/home_public.html:21
+msgid "Ajout de nouvelles questions"
+msgstr "Add new questions"
+
+#: templates/home_public.html:25
+msgid "Commencer à jouer"
+msgstr "Start playing"
+
+#: templates/home_public.html:26
+msgid "Créer un compte"
+msgstr "Create an account"
+
+#: templates/home_public.html:35
+msgid "Comment ça marche ?"
+msgstr "How does it work?"
+
+#: templates/home_public.html:36
+msgid ""
+"Choisissez un Quiz, répondez aux questions, et progressez. Votre score "
+"est calculé selon la difficulté et vos séries de bonnes réponses."
+msgstr ""
+"Choose a quiz, answer questions, and make progress. Your score is "
+"calculated based on difficulty and your streaks of correct answers."
+
+#: templates/home_public.html:39
+msgid "Pourquoi créer un compte ?"
+msgstr "Why create an account?"
+
+#: templates/home_public.html:40
+msgid ""
+"Un compte vous permet de sauvegarder vos statistiques, protéger votre "
+"pseudo, reprendre plus tard, et accéder à des options avancées."
+msgstr ""
+"An account lets you save your stats, protect your username, come back "
+"later, and access advanced options."
+
+#: templates/home_public.html:43
+msgid "Jouer sans compte"
+msgstr "Play without an account"
+
+#: templates/home_public.html:44
+msgid ""
+"Vous pouvez jouer immédiatement sans inscription. Entrez simplement un "
+"pseudo dans la barre du haut."
+msgstr ""
+"You can play right away without signing up. Just enter a username in the "
+"top bar."
+

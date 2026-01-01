@@ -49,3 +49,6 @@ instance/
 # Logs
 *.log
 
+# i18n (Babel)
+translations/**/messages.mo
+
