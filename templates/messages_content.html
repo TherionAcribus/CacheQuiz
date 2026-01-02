@@ -2,7 +2,7 @@
   <div class="messages-layout" id="messages-layout">
     <div class="conversations" id="conversations" hx-get="/api/messages/list" hx-trigger="load" hx-target="#conversations" hx-swap="outerHTML"></div>
     <div class="thread" id="thread">
-      <div class="placeholder">Sélectionnez une conversation pour afficher les messages.</div>
+      <div class="placeholder">{{ _('Sélectionnez une conversation pour afficher les messages.') }}</div>
     </div>
   </div>
 
@@ -11,10 +11,10 @@
     <div class="modal-backdrop" onclick="closeConversationModal()"></div>
     <div class="modal-content">
       <div class="modal-header">
-        <button class="modal-close-btn" onclick="closeConversationModal()" aria-label="Fermer">✕</button>
+        <button class="modal-close-btn" onclick="closeConversationModal()" aria-label="{{ _('Fermer') }}">✕</button>
       </div>
       <div class="modal-body" id="modal-thread">
-        <div class="placeholder">Sélectionnez une conversation pour afficher les messages.</div>
+        <div class="placeholder">{{ _('Sélectionnez une conversation pour afficher les messages.') }}</div>
       </div>
     </div>
   </div>
@@ -22,23 +22,23 @@
   <!-- Modale de confirmation de suppression de conversation -->
   <div id="deleteConversationModal" class="modal-overlay" style="display: none;">
     <div class="modal-content" style="padding: 2rem; max-width: 500px;">
-      <h3 style="color: var(--danger-color); margin-bottom: 1rem;">⚠️ Confirmer la suppression</h3>
+      <h3 style="color: var(--danger-color); margin-bottom: 1rem;">⚠️ {{ _('Confirmer la suppression') }}</h3>
       <p style="margin-bottom: 1.5rem; line-height: 1.6;">
-        Vous êtes sur le point de supprimer cette conversation de votre boîte de réception.<br><br>
-        Cette action entraînera :
+        {{ _('Vous êtes sur le point de supprimer cette conversation de votre boîte de réception.') }}<br><br>
+        {{ _('Cette action entraînera :') }}
       </p>
       <ul style="margin-bottom: 2rem; color: var(--text-color);">
-        <li>• La suppression définitive de tous les messages</li>
-        <li>• La perte de l'historique de cette conversation</li>
-        <li>• L'impossibilité de récupérer ces données</li>
+        <li>• {{ _('La suppression définitive de tous les messages') }}</li>
+        <li>• {{ _("La perte de l'historique de cette conversation") }}</li>
+        <li>• {{ _('L\'impossibilité de récupérer ces données') }}</li>
       </ul>
       <p style="color: var(--danger-color); font-weight: bold; margin-bottom: 2rem;">
-        Cette action est IRRÉVERSIBLE !
+        {{ _('Cette action est IRRÉVERSIBLE !') }}
       </p>
       <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="hideDeleteConversationModal()">Annuler</button>
+        <button type="button" class="btn btn-secondary" onclick="hideDeleteConversationModal()">{{ _('Annuler') }}</button>
         <button type="button" class="btn btn-danger" id="confirmDeleteBtn" style="min-width: 120px;" onclick="confirmDeleteConversation()">
-          Supprimer
+          {{ _('Supprimer') }}
         </button>
       </div>
     </div>
@@ -374,7 +374,7 @@ function confirmDeleteConversation() {
 
   // Utiliser HTMX pour effectuer la suppression
   confirmBtn.disabled = true;
-  confirmBtn.textContent = 'Suppression...';
+  confirmBtn.textContent = '{{ _('Suppression...')|tojson }}';
 
   // Déterminer la target appropriée : #messages-layout pour desktop, #modal-thread pour mobile
   const isMobileModalOpen = document.getElementById('conversation-modal').style.display !== 'none';
@@ -398,7 +398,7 @@ function confirmDeleteConversation() {
     confirmBtn.disabled = false;
     confirmBtn.textContent = 'Supprimer';
     if (window.showAppModal) {
-      showAppModal({ title: "Erreur", message: "Erreur lors de la suppression. Veuillez réessayer.", variant: "danger" });
+      showAppModal({ title: "{{ _('Erreur')|tojson }}", message: "{{ _('Erreur lors de la suppression. Veuillez réessayer.')|tojson }}", variant: "danger" });
     }
   });
 }

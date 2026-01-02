@@ -2,31 +2,31 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>🚫 Accès refusé</h2>
+    <h2>🚫 {{ _('Accès refusé') }}</h2>
 </div>
 
 <div class="access-denied-container">
     <div class="access-denied-card">
-        <h3>Vous n'avez pas accès à cette page</h3>
-        <p>Vous devez avoir un profil avec accès à l'administration.</p>
+        <h3>{{ _("Vous n'avez pas accès à cette page") }}</h3>
+        <p>{{ _('Vous devez avoir un profil avec accès à l\'administration.') }}</p>
 
         {% if current_user %}
             <div class="user-info">
-                <p><strong>Votre profil actuel:</strong> {{ current_user.profile.name if current_user.profile else "Aucun profil" }}</p>
+                <p><strong>{{ _('Votre profil actuel:') }}</strong> {{ current_user.profile.name if current_user.profile else _('Aucun profil') }}</p>
                 {% if current_user.is_admin %}
-                    <p><em>Vous êtes administrateur, vérifiez vos droits ou contactez le support technique.</em></p>
+                    <p><em>{{ _('Vous êtes administrateur, vérifiez vos droits ou contactez le support technique.') }}</em></p>
                 {% else %}
-                    <p><em>Contactez un administrateur pour obtenir les droits nécessaires ou changer votre profil.</em></p>
+                    <p><em>{{ _('Contactez un administrateur pour obtenir les droits nécessaires ou changer votre profil.') }}</em></p>
                 {% endif %}
             </div>
         {% else %}
-            <p><em>Vous devez être connecté pour accéder à cette zone.</em></p>
+            <p><em>{{ _('Vous devez être connecté pour accéder à cette zone.') }}</em></p>
         {% endif %}
 
         <div class="actions">
-            <a href="/play" class="btn btn-primary">Retour au quiz</a>
+            <a href="/play" class="btn btn-primary">{{ _('Retour au quiz') }}</a>
             {% if not current_user %}
-                <a href="/login" class="btn btn-secondary">Se connecter</a>
+                <a href="/login" class="btn btn-secondary">{{ _('Se connecter') }}</a>
             {% endif %}
         </div>
     </div>

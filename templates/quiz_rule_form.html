@@ -1,6 +1,6 @@
 <div class="form-wrapper">
     <div class="form-header">
-        <h2>{% if rule %}Éditer le set de règles{% else %}Nouveau set de règles{% endif %}</h2>
+        <h2>{% if rule %}{{ _('Éditer le set de règles') }}{% else %}{{ _('Nouveau set de règles') }}{% endif %}</h2>
         <button class="btn-close" type="button" onclick="document.getElementById('rule-form-container').classList.add('hidden')">✕</button>
     </div>
 
@@ -53,25 +53,25 @@
 
         <div class="tabs" hx-on:click="var btn=event.target.closest('.tab, .tab-next'); if(!btn) return; var wrap=event.currentTarget; var nav=wrap.querySelector('.tabs-nav'); var key=btn.classList.contains('tab')?btn.getAttribute('data-tab'):btn.getAttribute('data-next-tab'); if(key){nav.querySelectorAll('.tab').forEach(function(b){var on=b.getAttribute('data-tab')===key; b.classList.toggle('active',on); b.setAttribute('aria-selected',on?'true':'false')}); wrap.querySelectorAll('.tabs-panels .tab-panel').forEach(function(p){p.classList.toggle('active', p.getAttribute('data-tab')===key)});}">
             <div class="tabs-nav" role="tablist" aria-label="Règles - onglets">
-                <button type="button" class="tab active" data-tab="general" aria-selected="true">Général</button>
-                <button type="button" class="tab" data-tab="themes" aria-selected="false">Filtres</button>
-                <button type="button" class="tab" data-tab="questions" aria-selected="false">Questions (avancé)</button>
-                <button type="button" class="tab" data-tab="timing" aria-selected="false">Timer & Difficultés</button>
-                <button type="button" class="tab" data-tab="scoring" aria-selected="false">Scoring</button>
-                <button type="button" class="tab" data-tab="messages" aria-selected="false">Messages</button>
+                <button type="button" class="tab active" data-tab="general" aria-selected="true">{{ _('Général') }}</button>
+                <button type="button" class="tab" data-tab="themes" aria-selected="false">{{ _('Filtres') }}</button>
+                <button type="button" class="tab" data-tab="questions" aria-selected="false">{{ _('Questions (avancé)') }}</button>
+                <button type="button" class="tab" data-tab="timing" aria-selected="false">{{ _('Timer & Difficultés') }}</button>
+                <button type="button" class="tab" data-tab="scoring" aria-selected="false">{{ _('Scoring') }}</button>
+                <button type="button" class="tab" data-tab="messages" aria-selected="false">{{ _('Messages') }}</button>
             </div>
             <div class="tabs-panels">
                 <div class="tab-panel active" data-tab="general">
             <div class="form-column">
                 <div class="form-group">
-                    <label for="name">Nom *</label>
+                    <label for="name">{{ _('Nom') }} *</label>
                             <input id="name" name="name" type="text" required value="{{ rule.name if rule else '' }}"
                                    onblur="checkRuleName(this)">
                             <div id="name-error" class="field-error"></div>
                 </div>
 
                 <div class="form-group">
-                    <label for="slug">Slug</label>
+                    <label for="slug">{{ _('Slug') }}</label>
                             <input id="slug" name="slug" type="text" placeholder="mode-expert" value="{{ rule.slug if rule and rule.slug else '' }}"
                                    onblur="checkRuleSlug(this)"
                                    oninput="handleSlugInput(this)">
@@ -80,30 +80,30 @@
 
 
                 <div class="form-group">
-                    <label for="description">Description</label>
+                    <label for="description">{{ _('Description') }}</label>
                     <textarea id="description" name="description" rows="3">{{ rule.description if rule else '' }}</textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="comment">Commentaire interne</label>
+                    <label for="comment">{{ _('Commentaire interne') }}</label>
                     <textarea id="comment" name="comment" rows="2">{{ rule.comment if rule else '' }}</textarea>
                 </div>
 
                 <div class="form-group">
-                            <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule %}{% if rule.is_active %}checked{% endif %}{% else %}{% if defaults.get('is_active', true) %}checked{% endif %}{% endif %}> Actif</label>
+                            <label class="checkbox-label"><input type="checkbox" name="is_active" {% if rule %}{% if rule.is_active %}checked{% endif %}{% else %}{% if defaults.get('is_active', true) %}checked{% endif %}{% endif %}> {{ _('Actif') }}</label>
                         </div>
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="themes">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="themes">{{ _('Suivant') }} →</button>
                     </div>
                 </div>
 
                 <div class="tab-panel" data-tab="themes">
                     <div class="form-column">
                         <fieldset class="fieldset">
-                            <legend>Pays utilisés</legend>
-                            <label class="checkbox-label"><input type="checkbox" id="use_all_countries" name="use_all_countries" {% if rule %}{% if rule.use_all_countries %}checked{% endif %}{% else %}{% if defaults.get('use_all_countries', true) %}checked{% endif %}{% endif %} onchange="toggleCountryCheckboxes(this)"> Inclure les questions de tous les pays</label>
+                            <legend>{{ _('Pays utilisés') }}</legend>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_countries" name="use_all_countries" {% if rule %}{% if rule.use_all_countries %}checked{% endif %}{% else %}{% if defaults.get('use_all_countries', true) %}checked{% endif %}{% endif %} onchange="toggleCountryCheckboxes(this)"> {{ _('Inclure les questions de tous les pays') }}</label>
                             <div class="countries-grid">
                                 {% for country in countries %}
                                 <label class="country-checkbox">
@@ -120,42 +120,42 @@
                         </fieldset>
 
                         <fieldset class="fieldset">
-                            <legend>Thèmes utilisés</legend>
+                            <legend>{{ _('Thèmes utilisés') }}</legend>
                             
                             {% if creator_mode %}
                             <!-- Mode simple (recommandé) -->
                             <div class="creator-quick-theme">
                                 <div class="quick-theme-row">
                                     <div class="form-group" style="margin:0; min-width: 260px; flex: 1;">
-                                        <label for="creator-broad-theme-select">Filtre principal (thème) — mode simple</label>
+                                        <label for="creator-broad-theme-select">{{ _('Filtre principal (thème) — mode simple') }}</label>
                                         <select id="creator-broad-theme-select">
-                                            <option value="__custom__">— Sélection personnalisée (ne rien changer) —</option>
-                                            <option value="__all__">🌍 Tous les thèmes</option>
+                                            <option value="__custom__">{{ _('— Sélection personnalisée (ne rien changer) —') }}</option>
+                                            <option value="__all__">🌍 {{ _('Tous les thèmes') }}</option>
                                             {% for theme in themes %}
                                             <option value="{{ theme.id }}">{% if theme.icon %}{{ theme.icon }} {% endif %}{{ theme.name }}</option>
                                             {% endfor %}
                                         </select>
-                                        <small>Choisis un thème, et on ajuste automatiquement les sous-thèmes. Tu peux toujours affiner en “Options avancées”.</small>
+                                        <small>{{ _('Choisis un thème, et on ajuste automatiquement les sous-thèmes. Tu peux toujours affiner en "Options avancées".') }}</small>
                                     </div>
                                     <div class="form-group" style="margin:0; flex: 1; min-width: 240px;">
                                         <label class="checkbox-label" style="margin-top: 1.8rem;">
                                             <input type="checkbox" id="creator-include-all-subthemes" checked>
-                                            Inclure tous les sous-thèmes du thème choisi
+                                            {{ _('Inclure tous les sous-thèmes du thème choisi') }}
                                         </label>
-                                        <small>Décoche pour choisir des sous-thèmes spécifiques (avancé).</small>
+                                        <small>{{ _('Décoche pour choisir des sous-thèmes spécifiques (avancé).') }}</small>
                                     </div>
                                 </div>
                                 <div class="quick-theme-actions">
-                                    <button type="button" class="btn btn-outline btn-small" onclick="openCreatorAdvancedThemeOptions()">⚙️ Options avancées…</button>
+                                    <button type="button" class="btn btn-outline btn-small" onclick="openCreatorAdvancedThemeOptions()">⚙️ {{ _('Options avancées…') }}</button>
                                 </div>
                             </div>
                             {% endif %}
 
                             {% if creator_mode %}
                             <details id="creator-advanced-theme-details" class="advanced-details">
-                                <summary>Options avancées (thèmes & sous-thèmes)</summary>
+                                <summary>{{ _('Options avancées (thèmes & sous-thèmes)') }}</summary>
                             {% endif %}
-                            <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les thèmes larges</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_broad_themes" name="use_all_broad_themes" {% if rule %}{% if rule.use_all_broad_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_broad_themes', true) %}checked{% endif %}{% endif %}> {{ _('Utiliser tous les thèmes larges') }}</label>
                             <!-- Debug: defaults={{ defaults }}, check_all_broad_themes={{ defaults.get('check_all_broad_themes', 'NOT_SET') }} -->
                             <div class="themes-grid-select" data-theme-relations='{
                                 {% for theme in themes %}
@@ -175,7 +175,7 @@
                                 {% endfor %}
                             </div>
 
-                            <label class="checkbox-label"><input type="checkbox" id="use_all_specific_themes" name="use_all_specific_themes" {% if rule %}{% if rule.use_all_specific_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_specific_themes', true) %}checked{% endif %}{% endif %}> Utiliser tous les sous-thèmes</label>
+                            <label class="checkbox-label"><input type="checkbox" id="use_all_specific_themes" name="use_all_specific_themes" {% if rule %}{% if rule.use_all_specific_themes %}checked{% endif %}{% else %}{% if defaults.get('use_all_specific_themes', true) %}checked{% endif %}{% endif %}> {{ _('Utiliser tous les sous-thèmes') }}</label>
                             <div class="themes-grid-select">
                                 {% for st in specific_themes %}
                                 <label class="chip"><input type="checkbox" name="allowed_specific_theme_ids" value="{{ st.id }}" {% if rule %}{% if (not rule.use_all_specific_themes) and (st in rule.allowed_specific_themes) %}checked{% endif %}{% else %}{% if defaults.get('check_all_specific_themes', true) %}checked{% endif %}{% endif %}> {% if st.icon %}{{ st.icon }} {% endif %}{{ st.name }} ({{ st.broad_theme.name }})</label>
@@ -197,48 +197,48 @@
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="questions">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="questions">{{ _('Suivant') }} →</button>
                     </div>
                 </div>
 
                 <div class="tab-panel" data-tab="questions">
                     <div class="form-column">
                         <fieldset class="fieldset">
-                            <legend>Sélection des questions</legend>
-                            
+                            <legend>{{ _('Sélection des questions') }}</legend>
+
                             <div class="question-selection-info">
-                                <p><strong>Instructions :</strong> Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les questions affichées correspondent aux sous-thèmes et difficultés sélectionnés dans les onglets précédents.</p>
-                                <p><strong>Mode automatique :</strong> Si toutes les questions restent sélectionnées, le quiz utilisera automatiquement toutes les questions correspondant aux thèmes et difficultés choisis (y compris les nouvelles questions ajoutées ultérieurement).</p>
-                                <p><strong>Mode manuel :</strong> Si vous désélectionnez des questions, le quiz utilisera uniquement la liste spécifique de questions que vous avez sélectionnées.</p>
+                                <p><strong>{{ _('Instructions :') }}</strong> {{ _('Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les questions affichées correspondent aux sous-thèmes et difficultés sélectionnés dans les onglets précédents.') }}</p>
+                                <p><strong>{{ _('Mode automatique :') }}</strong> {{ _('Si toutes les questions restent sélectionnées, le quiz utilisera automatiquement toutes les questions correspondant aux thèmes et difficultés choisis (y compris les nouvelles questions ajoutées ultérieurement).') }}</p>
+                                <p><strong>{{ _('Mode manuel :') }}</strong> {{ _('Si vous désélectionnez des questions, le quiz utilisera uniquement la liste spécifique de questions que vous avez sélectionnées.') }}</p>
             </div>
 
                             <div id="selection-mode-indicator" class="selection-mode-indicator">
-                                <span class="mode-badge mode-auto">Mode: Automatique</span>
-                                <span class="mode-description">Toutes les questions correspondant aux critères seront utilisées</span>
+                                <span class="mode-badge mode-auto">{{ _('Mode: Automatique') }}</span>
+                                <span class="mode-description">{{ _('Toutes les questions correspondant aux critères seront utilisées') }}</span>
                             </div>
 
                             <!-- Compteur de questions (visible aussi dans cet onglet) -->
                             <div class="question-counter" style="margin: .75rem 0 1rem 0;">
                                 <div id="question-count-questions-tab" class="question-count-info">
                                     <span class="count-icon">🔢</span>
-                                    <span id="question-count-text-questions-tab">Calcul en cours...</span>
+                                    <span id="question-count-text-questions-tab">{{ _('Calcul en cours...') }}</span>
                                 </div>
                             </div>
 
                             {% if creator_mode %}
                             <div class="form-group" style="margin: .75rem 0 1rem 0;">
-                                <label>Pool de questions</label>
+                                <label>{{ _('Pool de questions') }}</label>
                                 <div class="radio-group" style="display:flex; gap:.75rem; flex-wrap:wrap">
                                     {% set pool_scope = (rule.question_pool_scope if rule else 'all') %}
                                     <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
                                         <input type="radio" name="question_pool_scope" value="all" {% if pool_scope != 'mine' %}checked{% endif %}>
-                                        <span class="option-title">Toutes les questions disponibles</span>
-                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Questions publiques + vos questions</span>
+                                        <span class="option-title">{{ _('Toutes les questions disponibles') }}</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">{{ _('Questions publiques + vos questions') }}</span>
                                     </label>
                                     <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
                                         <input type="radio" name="question_pool_scope" value="mine" {% if pool_scope == 'mine' %}checked{% endif %}>
-                                        <span class="option-title">Mes questions uniquement</span>
-                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Uniquement vos questions (même non publiées)</span>
+                                        <span class="option-title">{{ _('Mes questions uniquement') }}</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">{{ _('Uniquement vos questions (même non publiées)') }}</span>
                                     </label>
                                 </div>
                             </div>
@@ -246,24 +246,24 @@
 
                             {% set ui_sel_mode = 'manual' if (rule and rule.question_selection_mode == 'manual') else 'auto' %}
                             <div class="form-group" style="margin: .75rem 0 1rem 0;">
-                                <label>Mode de sélection (UX)</label>
+                                <label>{{ _('Mode de sélection (UX)') }}</label>
                                 <div class="radio-group" style="display:flex; gap:.75rem; flex-wrap:wrap">
                                     <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
                                         <input type="radio" name="question_selection_ui_mode" value="auto" {% if ui_sel_mode == 'auto' %}checked{% endif %}>
-                                        <span class="option-title">Automatique (recommandé)</span>
-                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Pas besoin de choisir des questions : on utilise tout le pool selon thèmes/pays/difficultés.</span>
+                                        <span class="option-title">{{ _('Automatique (recommandé)') }}</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">{{ _('Pas besoin de choisir des questions : on utilise tout le pool selon thèmes/pays/difficultés.') }}</span>
                                     </label>
                                     <label class="radio-option" style="padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.75rem;">
                                         <input type="radio" name="question_selection_ui_mode" value="manual" {% if ui_sel_mode == 'manual' %}checked{% endif %}>
-                                        <span class="option-title">Manuel (avancé)</span>
-                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">Choisir précisément les questions (en excluant certaines).</span>
+                                        <span class="option-title">{{ _('Manuel (avancé)') }}</span>
+                                        <span class="option-description" style="display:block;color:var(--text-light);font-size:.85rem;">{{ _('Choisir précisément les questions (en excluant certaines).') }}</span>
                                     </label>
                                 </div>
                             </div>
 
                             <div id="auto-selection-hint" class="auto-selection-hint" {% if ui_sel_mode != 'auto' %}style="display:none"{% endif %}>
                                 <div class="alert alert-info" style="margin: 0;">
-                                    <strong>Mode automatique :</strong> tu peux passer à l’onglet suivant. (Tu peux toujours revenir ici si tu veux exclure quelques questions.)
+                                    <strong>{{ _('Mode automatique :') }}</strong> {{ _('tu peux passer à l\'onglet suivant. (Tu peux toujours revenir ici si tu veux exclure quelques questions.)') }}
                                 </div>
                             </div>
 
@@ -275,41 +275,41 @@
                                 <div class="search-container" style="width: 100%; margin-bottom: 1rem;">
                                     <div class="search-wrapper">
                                         <div id="search-chips" class="search-chips"></div>
-                                        <input type="text" id="search-input" placeholder="Rechercher une question... (tapez @ pour filtrer)" autocomplete="off">
+                                        <input type="text" id="search-input" placeholder="{{ _('Rechercher une question... (tapez @ pour filtrer)') }}" autocomplete="off">
                                     </div>
                                     <!-- Dropdown pour le type de filtre -->
                                     <div id="filter-type-dropdown" class="search-dropdown hidden">
-                                        <div class="dropdown-header">Filtrer par...</div>
-                                        <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="{% if creator_mode %}/api/creator/themes/json{% else %}/api/themes/json{% endif %}">📂 Thème</div>
-                                        <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="{% if creator_mode %}/api/creator/subthemes/json{% else %}/api/subthemes/json{% endif %}">ue Sous-thème</div>
-                                        <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ Mot-clé</div>
+                                        <div class="dropdown-header">{{ _('Filtrer par...') }}</div>
+                                        <div class="dropdown-item" data-type="broad_theme_id" data-endpoint="{% if creator_mode %}/api/creator/themes/json{% else %}/api/themes/json{% endif %}">📂 {{ _('Thème') }}</div>
+                                        <div class="dropdown-item" data-type="specific_theme_id" data-endpoint="{% if creator_mode %}/api/creator/subthemes/json{% else %}/api/subthemes/json{% endif %}">📂 {{ _('Sous-thème') }}</div>
+                                        <div class="dropdown-item" data-type="keyword_id" data-endpoint="/api/keywords/json">🏷️ {{ _('Mot-clé') }}</div>
                                         {% if not creator_mode %}
-                                        <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 Auteur</div>
+                                        <div class="dropdown-item" data-type="author_id" data-endpoint="/api/authors/json">👤 {{ _('Auteur') }}</div>
                                         {% endif %}
-                                        <div class="dropdown-item" data-type="difficulty_level" data-endpoint="{% if creator_mode %}/api/creator/difficulties/json{% else %}/api/difficulties/json{% endif %}">⭐ Niveau</div>
+                                        <div class="dropdown-item" data-type="difficulty_level" data-endpoint="{% if creator_mode %}/api/creator/difficulties/json{% else %}/api/difficulties/json{% endif %}">⭐ {{ _('Niveau') }}</div>
                                     </div>
                                     <!-- Dropdown pour les valeurs de filtre -->
                                     <div id="filter-value-dropdown" class="search-dropdown hidden">
-                                        <div class="dropdown-header">Sélectionner...</div>
+                                        <div class="dropdown-header">{{ _('Sélectionner...') }}</div>
                                         <div id="filter-value-list"></div>
                                     </div>
                                 </div>
 
                             {% set order_mode = rule.question_order_mode if rule else defaults.get('question_order_mode', 'difficulty_ascending') %}
                             <div class="form-group question-order-group">
-                                <label>Ordre des questions (mode automatique)</label>
+                                <label>{{ _('Ordre des questions (mode automatique)') }}</label>
                                 <div class="radio-group">
                                     <label class="radio-option">
                                         <input type="radio" name="question_order_mode" value="difficulty_ascending"
                                                {% if order_mode == 'difficulty_ascending' %}checked{% endif %}>
-                                        <span class="option-title">Difficulté croissante</span>
-                                        <span class="option-description">Les questions sont mélangées à l'intérieur de chaque niveau mais les niveaux restent triés du plus facile au plus difficile.</span>
+                                        <span class="option-title">{{ _('Difficulté croissante') }}</span>
+                                        <span class="option-description">{{ _('Les questions sont mélangées à l\'intérieur de chaque niveau mais les niveaux restent triés du plus facile au plus difficile.') }}</span>
                                     </label>
                                     <label class="radio-option">
                                         <input type="radio" name="question_order_mode" value="full_shuffle"
                                                {% if order_mode == 'full_shuffle' %}checked{% endif %}>
-                                        <span class="option-title">Mélange complet</span>
-                                        <span class="option-description">Toutes les difficultés sont entièrement mélangées pour une progression plus imprévisible.</span>
+                                        <span class="option-title">{{ _('Mélange complet') }}</span>
+                                        <span class="option-description">{{ _('Toutes les difficultés sont entièrement mélangées pour une progression plus imprévisible.') }}</span>
                                     </label>
                                 </div>
                             </div>
@@ -319,19 +319,19 @@
                                     <thead>
                                         <tr>
                                             <th style="width: 50px;">
-                                                <input type="checkbox" id="select-all-questions" title="Tout sélectionner / Tout désélectionner">
+                                                <input type="checkbox" id="select-all-questions" title="{{ _('Tout sélectionner / Tout désélectionner') }}">
                                             </th>
-                                            <th style="width: 60px;">ID</th>
-                                            <th>Question</th>
-                                            <th style="width: 150px;">Thème large</th>
-                                            <th style="width: 150px;">Sous-thème</th>
-                                            <th style="width: 80px;">Difficulté</th>
+                                            <th style="width: 60px;">{{ _('ID') }}</th>
+                                            <th>{{ _('Question') }}</th>
+                                            <th style="width: 150px;">{{ _('Thème large') }}</th>
+                                            <th style="width: 150px;">{{ _('Sous-thème') }}</th>
+                                            <th style="width: 80px;">{{ _('Difficulté') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody id="questions-table-body">
                                         <tr>
                                             <td colspan="6" class="loading-message">
-                                                Chargement des questions...
+                                                {{ _('Chargement des questions...') }}
                                             </td>
                                         </tr>
                                     </tbody>
@@ -346,7 +346,7 @@
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="timing">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="timing">{{ _('Suivant') }} →</button>
                     </div>
                 </div>
 
@@ -355,11 +355,11 @@
                     <div class="question-modal-overlay" onclick="closeQuestionDetailModal()"></div>
                     <div class="question-modal-content">
                         <div class="question-modal-header">
-                            <h3>Détail de la question</h3>
+                            <h3>{{ _('Détail de la question') }}</h3>
                             <button type="button" class="btn-close" onclick="closeQuestionDetailModal()">✕</button>
                         </div>
                         <div class="question-modal-body" id="question-detail-body">
-                            <div class="loading-message">Chargement...</div>
+                            <div class="loading-message">{{ _('Chargement...') }}</div>
                         </div>
                     </div>
                 </div>
@@ -367,15 +367,15 @@
                 <div class="tab-panel" data-tab="timing">
             <div class="form-column">
                 <fieldset class="fieldset">
-                    <legend>Timer</legend>
+                    <legend>{{ _('Timer') }}</legend>
                     <div class="form-group">
-                        <label for="timer_seconds">Durée par question (secondes)</label>
+                        <label for="timer_seconds">{{ _('Durée par question (secondes)') }}</label>
                                 <input id="timer_seconds" name="timer_seconds" type="number" min="5" step="1" value="{{ rule.timer_seconds if rule else defaults.get('timer_seconds', 30) }}">
                     </div>
                 </fieldset>
 
                 <fieldset class="fieldset">
-                    <legend>Difficultés utilisées</legend>
+                    <legend>{{ _('Difficultés utilisées') }}</legend>
                     <div class="checkboxes-inline">
                                 {% set selected = rule.get_allowed_difficulties() if rule else defaults.get('allowed_difficulties', [1,2,3,4,5]) %}
                         {% for d in [1,2,3,4,5] %}
@@ -383,11 +383,11 @@
                         {% endfor %}
                     </div>
                     <div class="form-group">
-                        <label>Nombre de questions par difficulté</label>
+                        <label>{{ _('Nombre de questions par difficulté') }}</label>
                         <div class="grid-5">
                             {% for d in [1,2,3,4,5] %}
                             <div>
-                                <label for="qpd{{ d }}" class="small">Diff {{ d }}</label>
+                                <label for="qpd{{ d }}" class="small">{{ _('Diff') }} {{ d }}</label>
                                         {% set qmap = rule.get_questions_per_difficulty() if rule else defaults.get('questions_per_difficulty', {}) %}
                                         <input id="qpd{{ d }}" name="questions_per_difficulty_{{ d }}" type="number" min="0" step="1" value="{{ qmap.get(d|string, '') }}">
                             </div>
@@ -398,67 +398,67 @@
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="scoring">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="scoring">{{ _('Suivant') }} →</button>
                     </div>
                 </div>
 
                 <div class="tab-panel" data-tab="scoring">
                     <div class="form-column">
                 <fieldset class="fieldset">
-                    <legend>Scoring</legend>
+                    <legend>{{ _('Scoring') }}</legend>
                     <div class="form-group">
-                        <label for="scoring_base_points">Points par question</label>
+                        <label for="scoring_base_points">{{ _('Points par question') }}</label>
                                 <input id="scoring_base_points" name="scoring_base_points" type="number" min="0" step="1" value="{{ rule.scoring_base_points if rule else defaults.get('scoring_base_points', 10) }}">
                     </div>
                     <div class="form-group">
-                        <label for="scoring_difficulty_bonus_type">Bonus difficulté</label>
+                        <label for="scoring_difficulty_bonus_type">{{ _('Bonus difficulté') }}</label>
                         <select id="scoring_difficulty_bonus_type" name="scoring_difficulty_bonus_type">
                                     {% set s = rule.scoring_difficulty_bonus_type if rule else defaults.get('scoring_difficulty_bonus_type', 'add') %}
-                            <option value="none" {% if s == 'none' %}selected{% endif %}>Aucun</option>
-                            <option value="add" {% if s == 'add' %}selected{% endif %}>Addition (+N)</option>
-                            <option value="mult" {% if s == 'mult' %}selected{% endif %}>Multiplicatif (×N)</option>
+                            <option value="none" {% if s == 'none' %}selected{% endif %}>{{ _('Aucun') }}</option>
+                            <option value="add" {% if s == 'add' %}selected{% endif %}>{{ _('Addition (+N)') }}</option>
+                            <option value="mult" {% if s == 'mult' %}selected{% endif %}>{{ _('Multiplicatif (×N)') }}</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Valeurs bonus par difficulté</label>
+                        <label>{{ _('Valeurs bonus par difficulté') }}</label>
                         <div class="grid-5">
                                     {% set bmap = rule.get_difficulty_bonus_map() if rule else defaults.get('difficulty_bonus_map', {}) %}
                             {% for d in [1,2,3,4,5] %}
                             <div>
-                                <label for="bonus{{ d }}" class="small">Diff {{ d }}</label>
+                                <label for="bonus{{ d }}" class="small">{{ _('Diff') }} {{ d }}</label>
                                         <input id="bonus{{ d }}" name="difficulty_bonus_{{ d }}" type="number" step="0.1" value="{{ bmap.get(d|string, '') }}">
                             </div>
                             {% endfor %}
                         </div>
                     </div>
                     <div class="form-group">
-                                <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule %}{% if rule.combo_bonus_enabled %}checked{% endif %}{% else %}{% if defaults.get('combo_bonus_enabled', true) %}checked{% endif %}{% endif %}> Activer bonus de combo</label>
+                                <label class="checkbox-label"><input type="checkbox" name="combo_bonus_enabled" {% if rule %}{% if rule.combo_bonus_enabled %}checked{% endif %}{% else %}{% if defaults.get('combo_bonus_enabled', true) %}checked{% endif %}{% endif %}> {{ _('Activer bonus de combo') }}</label>
                         <div class="grid-2">
                             <div>
-                                <label for="combo_step" class="small">Taille du palier</label>
+                                <label for="combo_step" class="small">{{ _('Taille du palier') }}</label>
                                         <input id="combo_step" name="combo_step" type="number" min="2" step="1" value="{{ rule.combo_step if rule else defaults.get('combo_step', 3) }}">
                             </div>
                             <div>
-                                <label for="combo_bonus_points" class="small">Points par palier</label>
+                                <label for="combo_bonus_points" class="small">{{ _('Points par palier') }}</label>
                                         <input id="combo_bonus_points" name="combo_bonus_points" type="number" min="0" step="1" value="{{ rule.combo_bonus_points if rule else defaults.get('combo_bonus_points', 5) }}">
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="perfect_quiz_bonus">Bonus perfect</label>
+                        <label for="perfect_quiz_bonus">{{ _('Bonus perfect') }}</label>
                                 <input id="perfect_quiz_bonus" name="perfect_quiz_bonus" type="number" min="0" step="1" value="{{ rule.perfect_quiz_bonus if rule else defaults.get('perfect_quiz_bonus', 50) }}">
                             </div>
                             <div class="form-group">
-                                <label for="min_correct_answers_to_win">Nombre minimum de bonnes réponses pour gagner</label>
+                                <label for="min_correct_answers_to_win">{{ _('Nombre minimum de bonnes réponses pour gagner') }}</label>
                                 <input id="min_correct_answers_to_win" name="min_correct_answers_to_win" type="number" min="0" step="1" value="{{ rule.min_correct_answers_to_win if rule else defaults.get('min_correct_answers_to_win', 0) }}" onchange="validateMinCorrectAnswers()">
-                                <div class="small">0 = toujours gagné si le quiz est terminé</div>
+                                <div class="small">{{ _('0 = toujours gagné si le quiz est terminé') }}</div>
                                 <div id="min-answers-warning" class="field-error" style="display: none;"></div>
                             </div>
 
                             <!-- Résumé score maximum -->
                             <div class="score-summary">
                                 <div class="score-line">
-                                    Score max théorique: <strong id="max-score-value">0</strong> points
+                                    {{ _('Score max théorique:') }} <strong id="max-score-value">0</strong> {{ _('points') }}
                                 </div>
                                 <div id="max-score-breakdown" class="score-breakdown small"></div>
                             </div>
@@ -466,20 +466,20 @@
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-primary tab-next" data-next-tab="messages">Suivant →</button>
+                        <button type="button" class="btn btn-primary tab-next" data-next-tab="messages">{{ _('Suivant') }} →</button>
                     </div>
                 </div>
 
                 <div class="tab-panel" data-tab="messages">
                     <div class="form-column">
                 <fieldset class="fieldset">
-                    <legend>Messages</legend>
+                    <legend>{{ _('Messages') }}</legend>
                     <div class="form-group">
-                        <label for="intro_message">Message d'introduction</label>
+                        <label for="intro_message">{{ _('Message d\'introduction') }}</label>
                                 <textarea id="intro_message" name="intro_message" rows="2">{{ rule.intro_message if rule else defaults.get('intro_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label for="intro_image_id">Image du message d'introduction (optionnel)</label>
+                                <label for="intro_image_id">{{ _('Image du message d\'introduction (optionnel)') }}</label>
                                 <div class="input-with-action">
                                 <select id="intro_image_id" name="intro_image_id" class="answer-image-select"
                                         onchange="(function(sel){
@@ -503,21 +503,21 @@
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('intro_image_id')">+ Ajouter une image</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('intro_image_id')" title="Ouvrir la galerie">🖼️</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('intro_image_id')">+ {{ _('Ajouter une image') }}</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('intro_image_id')" title="{{ _('Ouvrir la galerie') }}">🖼️</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="{{ _('Rafraîchir la liste des images') }}">↻</button>
                                 </div>
                                 <div id="intro-image-preview" class="image-preview" style="{% if rule and rule.intro_image %}display: inline-block;{% else %}display: none;{% endif %}">
-                                    <img id="intro-image-thumb" src="{% if rule and rule.intro_image %}/uploads/{{ rule.intro_image.filename }}{% endif %}" alt="Aperçu">
+                                    <img id="intro-image-thumb" src="{% if rule and rule.intro_image %}/uploads/{{ rule.intro_image.filename }}{% endif %}" alt="{{ _('Aperçu') }}">
                                 </div>
-                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les images') }}</a></small>
                     </div>
                     <div class="form-group">
-                        <label for="success_message">Message de réussite</label>
+                        <label for="success_message">{{ _('Message de réussite') }}</label>
                                 <textarea id="success_message" name="success_message" rows="2">{{ rule.success_message if rule else defaults.get('success_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label for="success_image_id">Image du message de réussite (optionnel)</label>
+                                <label for="success_image_id">{{ _('Image du message de réussite (optionnel)') }}</label>
                                 <div class="input-with-action">
                                 <select id="success_image_id" name="success_image_id" class="answer-image-select"
                                         onchange="(function(sel){
@@ -541,21 +541,21 @@
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('success_image_id')">+ Ajouter une image</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('success_image_id')" title="Ouvrir la galerie">🖼️</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('success_image_id')">+ {{ _('Ajouter une image') }}</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('success_image_id')" title="{{ _('Ouvrir la galerie') }}">🖼️</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="{{ _('Rafraîchir la liste des images') }}">↻</button>
                                 </div>
                                 <div id="success-image-preview" class="image-preview" style="{% if rule and rule.success_image %}display: inline-block;{% else %}display: none;{% endif %}">
-                                    <img id="success-image-thumb" src="{% if rule and rule.success_image %}/uploads/{{ rule.success_image.filename }}{% endif %}" alt="Aperçu">
+                                    <img id="success-image-thumb" src="{% if rule and rule.success_image %}/uploads/{{ rule.success_image.filename }}{% endif %}" alt="{{ _('Aperçu') }}">
                                 </div>
-                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les images') }}</a></small>
                             </div>
                             <div class="form-group">
-                                <label for="failure_message">Message d'échec</label>
+                                <label for="failure_message">{{ _('Message d\'échec') }}</label>
                                 <textarea id="failure_message" name="failure_message" rows="2">{{ rule.failure_message if rule else defaults.get('failure_message', '') }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label for="failure_image_id">Image du message d'échec (optionnel)</label>
+                                <label for="failure_image_id">{{ _('Image du message d\'échec (optionnel)') }}</label>
                                 <div class="input-with-action">
                                 <select id="failure_image_id" name="failure_image_id" class="answer-image-select"
                                         onchange="(function(sel){
@@ -579,21 +579,21 @@
                                     </option>
                                     {% endfor %}
                                 </select>
-                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('failure_image_id')">+ Ajouter une image</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('failure_image_id')" title="Ouvrir la galerie">🖼️</button>
-                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="Rafraîchir la liste des images">↻</button>
+                                <button type="button" class="btn btn-small" onclick="openEmbeddedImageModal('failure_image_id')">+ {{ _('Ajouter une image') }}</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="openImageGalleryModal('failure_image_id')" title="{{ _('Ouvrir la galerie') }}">🖼️</button>
+                                <button type="button" class="btn btn-small btn-outline" onclick="refreshImageSelects()" title="{{ _('Rafraîchir la liste des images') }}">↻</button>
                                 </div>
                                 <div id="failure-image-preview" class="image-preview" style="{% if rule and rule.failure_image %}display: inline-block;{% else %}display: none;{% endif %}">
-                                    <img id="failure-image-thumb" src="{% if rule and rule.failure_image %}/uploads/{{ rule.failure_image.filename }}{% endif %}" alt="Aperçu">
+                                    <img id="failure-image-thumb" src="{% if rule and rule.failure_image %}/uploads/{{ rule.failure_image.filename }}{% endif %}" alt="{{ _('Aperçu') }}">
                                 </div>
-                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a></small>
+                                <small><a href="/images" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les images') }}</a></small>
                             </div>
                         </fieldset>
                     </div>
 
                     <div class="tab-actions">
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('rule-form-container').classList.add('hidden')">Annuler</button>
-                        <button type="submit" class="btn btn-primary">{% if rule %}Mettre à jour{% else %}Créer{% endif %}</button>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('rule-form-container').classList.add('hidden')">{{ _('Annuler') }}</button>
+                        <button type="submit" class="btn btn-primary">{% if rule %}{{ _('Mettre à jour') }}{% else %}{{ _('Créer') }}{% endif %}</button>
                     </div>
                 </div>
             </div>

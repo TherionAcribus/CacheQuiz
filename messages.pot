@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-01 21:01+0100\n"
+"POT-Creation-Date: 2026-01-02 13:25+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,138 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
+
+#: auth.py:14
+msgid "Pseudo requis"
+msgstr ""
+
+#: auth.py:78 auth.py:84
+msgid "Pseudo et mot de passe requis"
+msgstr ""
+
+#: auth.py:104 auth.py:111 auth.py:229
+msgid "Identifiants invalides"
+msgstr ""
+
+#: auth.py:137
+msgid ""
+"Si un email est associé à ce compte, un lien de réinitialisation a été "
+"envoyé."
+msgstr ""
+
+#: auth.py:145
+msgid "Vous devez être connecté pour effectuer cette action."
+msgstr ""
+
+#: auth.py:149
+msgid "Votre compte est déjà sécurisé avec un mot de passe."
+msgstr ""
+
+#: auth.py:159
+msgid "Format d'email invalide"
+msgstr ""
+
+#: auth.py:163
+msgid "Le mot de passe est requis"
+msgstr ""
+
+#: auth.py:165
+msgid "Le mot de passe doit contenir au moins 6 caractères"
+msgstr ""
+
+#: auth.py:167 auth.py:247
+msgid "Les mots de passe ne correspondent pas"
+msgstr ""
+
+#: auth.py:209
+msgid "Compte sécurisé !"
+msgstr ""
+
+#: auth.py:210
+msgid "Votre compte est maintenant protégé par un mot de passe."
+msgstr ""
+
+#: auth.py:211
+msgid ""
+"Vous pouvez accéder à vos statistiques détaillées et votre progression "
+"est sauvegardée."
+msgstr ""
+
+#: auth.py:213
+msgid "Continuer à jouer"
+msgstr ""
+
+#: auth.py:226
+msgid "Identifiants requis"
+msgstr ""
+
+#: auth.py:245
+msgid "Nom d'utilisateur et mot de passe requis"
+msgstr ""
+
+#: auth.py:249
+msgid "Ce nom d'utilisateur est déjà pris"
+msgstr ""
+
+#: auth.py:285
+msgid "Accès à l'administration requis"
+msgstr ""
+
+#: auth.py:288
+#, python-format
+msgid "Permission '%(p)s' requise"
+msgstr ""
+
+#: auth.py:320
+msgid "Accès Créateur requis (compte protégé par mot de passe)"
+msgstr ""
+
+#: templates/access_denied_full.html:5
+#: templates/creator_access_denied_full.html:5
+msgid "Accès refusé"
+msgstr ""
+
+#: templates/access_denied_full.html:10
+msgid "Vous n'avez pas accès à cette page"
+msgstr ""
+
+#: templates/access_denied_full.html:11
+msgid "Vous devez avoir un profil avec accès à l'administration."
+msgstr ""
+
+#: templates/access_denied_full.html:15
+msgid "Votre profil actuel:"
+msgstr ""
+
+#: templates/access_denied_full.html:15
+msgid "Aucun profil"
+msgstr ""
+
+#: templates/access_denied_full.html:17
+msgid ""
+"Vous êtes administrateur, vérifiez vos droits ou contactez le support "
+"technique."
+msgstr ""
+
+#: templates/access_denied_full.html:19
+msgid ""
+"Contactez un administrateur pour obtenir les droits nécessaires ou "
+"changer votre profil."
+msgstr ""
+
+#: templates/access_denied_full.html:23
+msgid "Vous devez être connecté pour accéder à cette zone."
+msgstr ""
+
+#: templates/access_denied_full.html:27
+#: templates/creator_access_denied_full.html:14
+msgid "Retour au quiz"
+msgstr ""
+
+#: templates/access_denied_full.html:29 templates/auth_widget.html:95
+#: templates/creator_access_denied_full.html:15
+msgid "Se connecter"
+msgstr ""
 
 #: templates/auth_widget.html:4
 msgid "Administration"
@@ -33,7 +165,8 @@ msgstr ""
 msgid "Créateur"
 msgstr ""
 
-#: templates/auth_widget.html:34
+#: templates/auth_widget.html:34 templates/quiz_rule_form.html:61
+#: templates/quiz_rule_form.html:476
 msgid "Messages"
 msgstr ""
 
@@ -66,12 +199,11 @@ msgstr ""
 msgid "Mot de passe oublié ?"
 msgstr ""
 
-#: templates/auth_widget.html:95 templates/creator_access_denied_full.html:15
-msgid "Se connecter"
-msgstr ""
-
 #: templates/auth_widget.html:97 templates/base_public.html:140
-#: templates/play.html:109 templates/play.html:291
+#: templates/image_form.html:58 templates/image_form.html:60
+#: templates/messages_content.html:39 templates/play.html:109
+#: templates/play.html:291 templates/question_form.html:347
+#: templates/quiz_question.html:137 templates/quiz_rule_form.html:595
 msgid "Annuler"
 msgstr ""
 
@@ -174,7 +306,7 @@ msgstr ""
 msgid "Accueil"
 msgstr ""
 
-#: templates/base_public.html:106
+#: templates/base_public.html:106 templates/contact.html:83
 msgid "Contact"
 msgstr ""
 
@@ -182,24 +314,36 @@ msgstr ""
 msgid "À propos"
 msgstr ""
 
-#: templates/base_public.html:132
+#: templates/base_public.html:132 templates/quiz_question.html:129
 msgid "Quitter le quiz ?"
 msgstr ""
 
-#: templates/base_public.html:136
+#: templates/base_public.html:136 templates/quiz_question.html:133
 msgid "Êtes-vous sûr de vouloir quitter ce quiz ?"
 msgstr ""
 
-#: templates/base_public.html:137
+#: templates/base_public.html:137 templates/quiz_question.html:134
 msgid "Votre progression sera perdue."
 msgstr ""
 
-#: templates/base_public.html:141
+#: templates/base_public.html:141 templates/quiz_question.html:138
 msgid "Quitter définitivement"
 msgstr ""
 
-#: templates/creator_access_denied_full.html:5
-msgid "Accès refusé"
+#: templates/contact.html:86 templates/quiz_rule_form.html:67
+msgid "Nom"
+msgstr ""
+
+#: templates/contact.html:90
+msgid "Email"
+msgstr ""
+
+#: templates/contact.html:94 templates/creator_quiz_rules_list.html:95
+msgid "Message"
+msgstr ""
+
+#: templates/contact.html:98 templates/partials/conversation_thread.html:35
+msgid "Envoyer"
 msgstr ""
 
 #: templates/creator_access_denied_full.html:10 templates/creator_home.html:5
@@ -210,10 +354,6 @@ msgstr ""
 msgid ""
 "Vous devez être connecté avec un compte protégé par mot de passe pour "
 "accéder à cette zone."
-msgstr ""
-
-#: templates/creator_access_denied_full.html:14
-msgid "Retour au quiz"
 msgstr ""
 
 #: templates/creator_home.html:6
@@ -241,7 +381,7 @@ msgstr ""
 msgid "Créer des quiz privés. Demander la publication pour relecture admin."
 msgstr ""
 
-#: templates/creator_home.html:27
+#: templates/creator_home.html:27 templates/creator_images.html:5
 msgid "Mes images"
 msgstr ""
 
@@ -249,12 +389,26 @@ msgstr ""
 msgid "Ajouter des images pour illustrer vos questions et messages de quiz."
 msgstr ""
 
+#: templates/creator_images.html:12 templates/image_form.html:3
+msgid "Nouvelle image"
+msgstr ""
+
+#: templates/creator_images.html:20
+msgid "Rechercher une image..."
+msgstr ""
+
+#: templates/creator_images.html:27
+msgid "Chargement des images..."
+msgstr ""
+
 #: templates/creator_questions.html:8 templates/creator_questions.html:19
-#: templates/creator_quiz_rules.html:24
+#: templates/creator_quiz_rules.html:24 templates/question_form.html:843
+#: templates/question_form.html:889 templates/question_form.html:927
+#: templates/question_form.html:1694 templates/quiz_rule_form.html:362
 msgid "Chargement..."
 msgstr ""
 
-#: templates/creator_questions.html:10
+#: templates/creator_questions.html:10 templates/question_form.html:3
 msgid "Nouvelle question"
 msgstr ""
 
@@ -295,7 +449,8 @@ msgstr ""
 msgid "Éditer"
 msgstr ""
 
-#: templates/creator_quiz_rules_list.html:28
+#: templates/creator_quiz_rules_list.html:28 templates/messages_content.html:41
+#: templates/partials/conversation_thread.html:9
 msgid "Supprimer"
 msgstr ""
 
@@ -307,7 +462,7 @@ msgstr ""
 msgid "Source"
 msgstr ""
 
-#: templates/creator_quiz_rules_list.html:62
+#: templates/creator_quiz_rules_list.html:62 templates/quiz_rule_form.html:370
 msgid "Timer"
 msgstr ""
 
@@ -364,10 +519,6 @@ msgstr ""
 
 #: templates/creator_quiz_rules_list.html:91
 msgid "Validé"
-msgstr ""
-
-#: templates/creator_quiz_rules_list.html:95
-msgid "Message"
 msgstr ""
 
 #: templates/creator_quiz_rules_list.html:105
@@ -493,6 +644,125 @@ msgid ""
 "pseudo dans la barre du haut."
 msgstr ""
 
+#: templates/image_form.html:3
+msgid "Éditer l'image"
+msgstr ""
+
+#: templates/image_form.html:19
+msgid "Titre"
+msgstr ""
+
+#: templates/image_form.html:23
+msgid "Texte alternatif"
+msgstr ""
+
+#: templates/image_form.html:24
+msgid "Description de l'image"
+msgstr ""
+
+#: templates/image_form.html:27
+msgid "Crédits"
+msgstr ""
+
+#: templates/image_form.html:28
+msgid "Auteur, source, etc."
+msgstr ""
+
+#: templates/image_form.html:31
+msgid "Lien copyright"
+msgstr ""
+
+#: templates/image_form.html:35
+msgid "Fichier"
+msgstr ""
+
+#: templates/image_form.html:42 templates/quiz_rule_form.html:511
+#: templates/quiz_rule_form.html:549 templates/quiz_rule_form.html:587
+msgid "Aperçu"
+msgstr ""
+
+#: templates/image_form.html:48
+msgid "Nom de fichier:"
+msgstr ""
+
+#: templates/image_form.html:49
+msgid "Taille:"
+msgstr ""
+
+#: templates/image_form.html:49
+msgid "o"
+msgstr ""
+
+#: templates/image_form.html:50
+msgid "Type:"
+msgstr ""
+
+#: templates/image_form.html:62 templates/question_form.html:350
+#: templates/quiz_rule_form.html:596
+msgid "Mettre à jour"
+msgstr ""
+
+#: templates/image_form.html:62 templates/question_form.html:350
+#: templates/quiz_rule_form.html:596
+msgid "Créer"
+msgstr ""
+
+#: templates/image_form.html:124 templates/messages_content.html:401
+#: templates/question_form.html:1137 templates/question_form.html:1188
+#: templates/question_form.html:1232
+msgid "Erreur"
+msgstr ""
+
+#: templates/image_form.html:124 templates/question_form.html:1232
+msgid "Erreur lors de la création de l'image: "
+msgstr ""
+
+#: templates/messages_content.html:5 templates/messages_content.html:17
+msgid "Sélectionnez une conversation pour afficher les messages."
+msgstr ""
+
+#: templates/messages_content.html:14
+msgid "Fermer"
+msgstr ""
+
+#: templates/messages_content.html:25
+msgid "Confirmer la suppression"
+msgstr ""
+
+#: templates/messages_content.html:27
+msgid ""
+"Vous êtes sur le point de supprimer cette conversation de votre boîte de "
+"réception."
+msgstr ""
+
+#: templates/messages_content.html:28
+msgid "Cette action entraînera :"
+msgstr ""
+
+#: templates/messages_content.html:31
+msgid "La suppression définitive de tous les messages"
+msgstr ""
+
+#: templates/messages_content.html:32
+msgid "La perte de l'historique de cette conversation"
+msgstr ""
+
+#: templates/messages_content.html:33
+msgid "L'impossibilité de récupérer ces données"
+msgstr ""
+
+#: templates/messages_content.html:36
+msgid "Cette action est IRRÉVERSIBLE !"
+msgstr ""
+
+#: templates/messages_content.html:377
+msgid "Suppression..."
+msgstr ""
+
+#: templates/messages_content.html:401
+msgid "Erreur lors de la suppression. Veuillez réessayer."
+msgstr ""
+
 #: templates/play.html:94 templates/play.html:98
 msgid "Démarrer le quiz"
 msgstr ""
@@ -527,7 +797,7 @@ msgstr ""
 msgid "Retour"
 msgstr ""
 
-#: templates/play.html:150
+#: templates/play.html:150 templates/quiz_question.html:823
 msgid "Double-clic pour valider"
 msgstr ""
 
@@ -763,5 +1033,685 @@ msgstr ""
 
 #: templates/play.html:1243
 msgid "Erreur de connexion"
+msgstr ""
+
+#: templates/question_form.html:3
+msgid "Éditer la question"
+msgstr ""
+
+#: templates/question_form.html:19 templates/quiz_question.html:20
+#: templates/quiz_rule_form.html:325
+msgid "Question"
+msgstr ""
+
+#: templates/question_form.html:24
+msgid "Image complémentaire de la question (optionnel)"
+msgstr ""
+
+#: templates/question_form.html:39 templates/question_form.html:170
+#: templates/question_form.html:228 templates/question_form.html:1279
+msgid "-- Pas d'image --"
+msgstr ""
+
+#: templates/question_form.html:60
+msgid "Image illustrative complémentaire pour la question"
+msgstr ""
+
+#: templates/question_form.html:63 templates/question_form.html:252
+#: templates/quiz_rule_form.html:513 templates/quiz_rule_form.html:551
+#: templates/quiz_rule_form.html:589
+msgid "Gérer les images"
+msgstr ""
+
+#: templates/question_form.html:71
+msgid "Thématique large"
+msgstr ""
+
+#: templates/question_form.html:74
+msgid "-- Choisir un thème --"
+msgstr ""
+
+#: templates/question_form.html:74
+msgid "-- Aucun thème --"
+msgstr ""
+
+#: templates/question_form.html:92
+msgid "Gérer les thèmes"
+msgstr ""
+
+#: templates/question_form.html:97
+msgid "Sous-thématique"
+msgstr ""
+
+#: templates/question_form.html:100
+msgid "-- Aucun sous-thème --"
+msgstr ""
+
+#: templates/question_form.html:120
+msgid "Gérer les sous-thèmes"
+msgstr ""
+
+#: templates/question_form.html:128
+msgid "Mots-clés / Sujets précis (optionnel)"
+msgstr ""
+
+#: templates/question_form.html:145
+msgid "Tapez pour rechercher ou créer un mot-clé..."
+msgstr ""
+
+#: templates/question_form.html:150
+msgid ""
+"Ajoutez des mots-clés pour identifier les sujets très précis (ex: "
+"\"première cache\", \"mingo\")."
+msgstr ""
+
+#: templates/question_form.html:151
+msgid "Permet d'éviter les doublons dans les quiz."
+msgstr ""
+
+#: templates/question_form.html:157
+msgid "Réponses possibles"
+msgstr ""
+
+#: templates/question_form.html:189
+msgid "Ajouter une réponse"
+msgstr ""
+
+#: templates/question_form.html:195
+msgid "Bonne réponse (numéro)"
+msgstr ""
+
+#: templates/question_form.html:200
+msgid "Indice"
+msgstr ""
+
+#: templates/question_form.html:207
+msgid "Explication détaillée"
+msgstr ""
+
+#: templates/question_form.html:212
+msgid "Image pour l'explication (optionnel)"
+msgstr ""
+
+#: templates/question_form.html:249
+msgid "Image illustrative pour accompagner l'explication détaillée"
+msgstr ""
+
+#: templates/question_form.html:260
+msgid "Source (optionnel)"
+msgstr ""
+
+#: templates/question_form.html:263
+msgid ""
+"URL ou référence où vérifier la réponse (site officiel, documentation, "
+"etc.)"
+msgstr ""
+
+#: templates/question_form.html:266
+msgid "Niveau de difficulté"
+msgstr ""
+
+#: templates/question_form.html:268
+msgid "Très facile"
+msgstr ""
+
+#: templates/question_form.html:269
+msgid "Facile"
+msgstr ""
+
+#: templates/question_form.html:270
+msgid "Moyen"
+msgstr ""
+
+#: templates/question_form.html:271
+msgid "Difficile"
+msgstr ""
+
+#: templates/question_form.html:272
+msgid "Très difficile"
+msgstr ""
+
+#: templates/question_form.html:279
+msgid "Pays concernés"
+msgstr ""
+
+#: templates/question_form.html:290
+msgid "Sélectionnez tous les pays concernés par cette question"
+msgstr ""
+
+#: templates/question_form.html:292
+msgid "Gérer les pays"
+msgstr ""
+
+#: templates/question_form.html:297
+msgid "ID de traduction (question liée)"
+msgstr ""
+
+#: templates/question_form.html:301
+msgid "Utilisé pour lier des questions dans différentes langues"
+msgstr ""
+
+#: templates/question_form.html:311
+msgid "Question en ligne (publiée)"
+msgstr ""
+
+#: templates/question_form.html:320
+msgid "Question privée (utilisable uniquement par son créateur)"
+msgstr ""
+
+#: templates/question_form.html:322
+msgid ""
+"Si cochée, cette question ne sera utilisable que dans les quiz créés par "
+"son auteur"
+msgstr ""
+
+#: templates/question_form.html:330
+msgid "Statistiques:"
+msgstr ""
+
+#: templates/question_form.html:331
+msgid "Réponses:"
+msgstr ""
+
+#: templates/question_form.html:332
+msgid "Succès:"
+msgstr ""
+
+#: templates/question_form.html:333
+msgid "Taux de réussite:"
+msgstr ""
+
+#: templates/question_form.html:338
+msgid "Créé:"
+msgstr ""
+
+#: templates/question_form.html:440
+msgid "-- Erreur --"
+msgstr ""
+
+#: templates/question_form.html:496
+msgid "Listes des thèmes mises à jour"
+msgstr ""
+
+#: templates/question_form.html:500 templates/question_form.html:555
+msgid "Erreur lors du rafraîchissement: "
+msgstr ""
+
+#: templates/question_form.html:551
+msgid "Liste des images mise à jour"
+msgstr ""
+
+#: templates/question_form.html:758 templates/quiz_rule_form.html:285
+msgid "Mot-clé"
+msgstr ""
+
+#: templates/question_form.html:758
+msgid "créé avec succès"
+msgstr ""
+
+#: templates/question_form.html:763
+msgid "Erreur lors de la création du mot-clé"
+msgstr ""
+
+#: templates/question_form.html:1137
+msgid "Erreur lors de la création du sous-thème: "
+msgstr ""
+
+#: templates/question_form.html:1188
+msgid "Erreur lors de la création du thème: "
+msgstr ""
+
+#: templates/quiz_question.html:3
+msgid ""
+"Aucune question disponible avec ces filtres. Essayez d'élargir la "
+"recherche."
+msgstr ""
+
+#: templates/quiz_question.html:4
+msgid "Modifier les filtres"
+msgstr ""
+
+#: templates/quiz_question.html:21
+msgid "Score:"
+msgstr ""
+
+#: templates/quiz_question.html:21
+msgid "pts"
+msgstr ""
+
+#: templates/quiz_question.html:31
+msgid "Signaler"
+msgstr ""
+
+#: templates/quiz_question.html:34
+msgid "Quitter"
+msgstr ""
+
+#: templates/quiz_question.html:48
+msgid "Temps restant:"
+msgstr ""
+
+#: templates/quiz_question.html:66 templates/quiz_rule_form.html:289
+msgid "Niveau"
+msgstr ""
+
+#: templates/quiz_question.html:117
+msgid "Valider ma réponse"
+msgstr ""
+
+#: templates/quiz_question.html:122
+msgid "Indice:"
+msgstr ""
+
+#: templates/quiz_rule_form.html:3
+msgid "Éditer le set de règles"
+msgstr ""
+
+#: templates/quiz_rule_form.html:3
+msgid "Nouveau set de règles"
+msgstr ""
+
+#: templates/quiz_rule_form.html:56
+msgid "Général"
+msgstr ""
+
+#: templates/quiz_rule_form.html:57
+msgid "Filtres"
+msgstr ""
+
+#: templates/quiz_rule_form.html:58
+msgid "Questions (avancé)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:59
+msgid "Timer & Difficultés"
+msgstr ""
+
+#: templates/quiz_rule_form.html:60 templates/quiz_rule_form.html:408
+msgid "Scoring"
+msgstr ""
+
+#: templates/quiz_rule_form.html:74
+msgid "Slug"
+msgstr ""
+
+#: templates/quiz_rule_form.html:83
+msgid "Description"
+msgstr ""
+
+#: templates/quiz_rule_form.html:88
+msgid "Commentaire interne"
+msgstr ""
+
+#: templates/quiz_rule_form.html:93
+msgid "Actif"
+msgstr ""
+
+#: templates/quiz_rule_form.html:98 templates/quiz_rule_form.html:200
+#: templates/quiz_rule_form.html:349 templates/quiz_rule_form.html:401
+#: templates/quiz_rule_form.html:469
+msgid "Suivant"
+msgstr ""
+
+#: templates/quiz_rule_form.html:105
+msgid "Pays utilisés"
+msgstr ""
+
+#: templates/quiz_rule_form.html:106
+msgid "Inclure les questions de tous les pays"
+msgstr ""
+
+#: templates/quiz_rule_form.html:123
+msgid "Thèmes utilisés"
+msgstr ""
+
+#: templates/quiz_rule_form.html:130
+msgid "Filtre principal (thème) — mode simple"
+msgstr ""
+
+#: templates/quiz_rule_form.html:132
+msgid "— Sélection personnalisée (ne rien changer) —"
+msgstr ""
+
+#: templates/quiz_rule_form.html:133
+msgid "Tous les thèmes"
+msgstr ""
+
+#: templates/quiz_rule_form.html:138
+msgid ""
+"Choisis un thème, et on ajuste automatiquement les sous-thèmes. Tu peux "
+"toujours affiner en \"Options avancées\"."
+msgstr ""
+
+#: templates/quiz_rule_form.html:143
+msgid "Inclure tous les sous-thèmes du thème choisi"
+msgstr ""
+
+#: templates/quiz_rule_form.html:145
+msgid "Décoche pour choisir des sous-thèmes spécifiques (avancé)."
+msgstr ""
+
+#: templates/quiz_rule_form.html:149
+msgid "Options avancées…"
+msgstr ""
+
+#: templates/quiz_rule_form.html:156
+msgid "Options avancées (thèmes & sous-thèmes)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:158
+msgid "Utiliser tous les thèmes larges"
+msgstr ""
+
+#: templates/quiz_rule_form.html:178
+msgid "Utiliser tous les sous-thèmes"
+msgstr ""
+
+#: templates/quiz_rule_form.html:207
+msgid "Sélection des questions"
+msgstr ""
+
+#: templates/quiz_rule_form.html:210
+msgid "Instructions :"
+msgstr ""
+
+#: templates/quiz_rule_form.html:210
+msgid ""
+"Sélectionnez les questions que vous souhaitez inclure dans ce quiz. Les "
+"questions affichées correspondent aux sous-thèmes et difficultés "
+"sélectionnés dans les onglets précédents."
+msgstr ""
+
+#: templates/quiz_rule_form.html:211 templates/quiz_rule_form.html:266
+msgid "Mode automatique :"
+msgstr ""
+
+#: templates/quiz_rule_form.html:211
+msgid ""
+"Si toutes les questions restent sélectionnées, le quiz utilisera "
+"automatiquement toutes les questions correspondant aux thèmes et "
+"difficultés choisis (y compris les nouvelles questions ajoutées "
+"ultérieurement)."
+msgstr ""
+
+#: templates/quiz_rule_form.html:212
+msgid "Mode manuel :"
+msgstr ""
+
+#: templates/quiz_rule_form.html:212
+msgid ""
+"Si vous désélectionnez des questions, le quiz utilisera uniquement la "
+"liste spécifique de questions que vous avez sélectionnées."
+msgstr ""
+
+#: templates/quiz_rule_form.html:216
+msgid "Mode: Automatique"
+msgstr ""
+
+#: templates/quiz_rule_form.html:217
+msgid "Toutes les questions correspondant aux critères seront utilisées"
+msgstr ""
+
+#: templates/quiz_rule_form.html:224
+msgid "Calcul en cours..."
+msgstr ""
+
+#: templates/quiz_rule_form.html:230
+msgid "Pool de questions"
+msgstr ""
+
+#: templates/quiz_rule_form.html:235
+msgid "Toutes les questions disponibles"
+msgstr ""
+
+#: templates/quiz_rule_form.html:236
+msgid "Questions publiques + vos questions"
+msgstr ""
+
+#: templates/quiz_rule_form.html:240
+msgid "Mes questions uniquement"
+msgstr ""
+
+#: templates/quiz_rule_form.html:241
+msgid "Uniquement vos questions (même non publiées)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:249
+msgid "Mode de sélection (UX)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:253
+msgid "Automatique (recommandé)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:254
+msgid ""
+"Pas besoin de choisir des questions : on utilise tout le pool selon "
+"thèmes/pays/difficultés."
+msgstr ""
+
+#: templates/quiz_rule_form.html:258
+msgid "Manuel (avancé)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:259
+msgid "Choisir précisément les questions (en excluant certaines)."
+msgstr ""
+
+#: templates/quiz_rule_form.html:266
+msgid ""
+"tu peux passer à l'onglet suivant. (Tu peux toujours revenir ici si tu "
+"veux exclure quelques questions.)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:278
+msgid "Rechercher une question... (tapez @ pour filtrer)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:282
+msgid "Filtrer par..."
+msgstr ""
+
+#: templates/quiz_rule_form.html:283
+msgid "Thème"
+msgstr ""
+
+#: templates/quiz_rule_form.html:284 templates/quiz_rule_form.html:327
+msgid "Sous-thème"
+msgstr ""
+
+#: templates/quiz_rule_form.html:287
+msgid "Auteur"
+msgstr ""
+
+#: templates/quiz_rule_form.html:293
+msgid "Sélectionner..."
+msgstr ""
+
+#: templates/quiz_rule_form.html:300
+msgid "Ordre des questions (mode automatique)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:305
+msgid "Difficulté croissante"
+msgstr ""
+
+#: templates/quiz_rule_form.html:306
+msgid ""
+"Les questions sont mélangées à l'intérieur de chaque niveau mais les "
+"niveaux restent triés du plus facile au plus difficile."
+msgstr ""
+
+#: templates/quiz_rule_form.html:311
+msgid "Mélange complet"
+msgstr ""
+
+#: templates/quiz_rule_form.html:312
+msgid ""
+"Toutes les difficultés sont entièrement mélangées pour une progression "
+"plus imprévisible."
+msgstr ""
+
+#: templates/quiz_rule_form.html:322
+msgid "Tout sélectionner / Tout désélectionner"
+msgstr ""
+
+#: templates/quiz_rule_form.html:324
+msgid "ID"
+msgstr ""
+
+#: templates/quiz_rule_form.html:326
+msgid "Thème large"
+msgstr ""
+
+#: templates/quiz_rule_form.html:328
+msgid "Difficulté"
+msgstr ""
+
+#: templates/quiz_rule_form.html:334
+msgid "Chargement des questions..."
+msgstr ""
+
+#: templates/quiz_rule_form.html:358
+msgid "Détail de la question"
+msgstr ""
+
+#: templates/quiz_rule_form.html:372
+msgid "Durée par question (secondes)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:378
+msgid "Difficultés utilisées"
+msgstr ""
+
+#: templates/quiz_rule_form.html:386
+msgid "Nombre de questions par difficulté"
+msgstr ""
+
+#: templates/quiz_rule_form.html:390 templates/quiz_rule_form.html:428
+msgid "Diff"
+msgstr ""
+
+#: templates/quiz_rule_form.html:410
+msgid "Points par question"
+msgstr ""
+
+#: templates/quiz_rule_form.html:414
+msgid "Bonus difficulté"
+msgstr ""
+
+#: templates/quiz_rule_form.html:417
+msgid "Aucun"
+msgstr ""
+
+#: templates/quiz_rule_form.html:418
+msgid "Addition (+N)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:419
+msgid "Multiplicatif (×N)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:423
+msgid "Valeurs bonus par difficulté"
+msgstr ""
+
+#: templates/quiz_rule_form.html:435
+msgid "Activer bonus de combo"
+msgstr ""
+
+#: templates/quiz_rule_form.html:438
+msgid "Taille du palier"
+msgstr ""
+
+#: templates/quiz_rule_form.html:442
+msgid "Points par palier"
+msgstr ""
+
+#: templates/quiz_rule_form.html:448
+msgid "Bonus perfect"
+msgstr ""
+
+#: templates/quiz_rule_form.html:452
+msgid "Nombre minimum de bonnes réponses pour gagner"
+msgstr ""
+
+#: templates/quiz_rule_form.html:454
+msgid "0 = toujours gagné si le quiz est terminé"
+msgstr ""
+
+#: templates/quiz_rule_form.html:461
+msgid "Score max théorique:"
+msgstr ""
+
+#: templates/quiz_rule_form.html:461
+msgid "points"
+msgstr ""
+
+#: templates/quiz_rule_form.html:478
+msgid "Message d'introduction"
+msgstr ""
+
+#: templates/quiz_rule_form.html:482
+msgid "Image du message d'introduction (optionnel)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:506 templates/quiz_rule_form.html:544
+#: templates/quiz_rule_form.html:582
+msgid "Ajouter une image"
+msgstr ""
+
+#: templates/quiz_rule_form.html:507 templates/quiz_rule_form.html:545
+#: templates/quiz_rule_form.html:583
+msgid "Ouvrir la galerie"
+msgstr ""
+
+#: templates/quiz_rule_form.html:508 templates/quiz_rule_form.html:546
+#: templates/quiz_rule_form.html:584
+msgid "Rafraîchir la liste des images"
+msgstr ""
+
+#: templates/quiz_rule_form.html:516
+msgid "Message de réussite"
+msgstr ""
+
+#: templates/quiz_rule_form.html:520
+msgid "Image du message de réussite (optionnel)"
+msgstr ""
+
+#: templates/quiz_rule_form.html:554
+msgid "Message d'échec"
+msgstr ""
+
+#: templates/quiz_rule_form.html:558
+msgid "Image du message d'échec (optionnel)"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:3
+msgid "Conversation"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:5
+msgid "Marquer comme non lu"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:6
+msgid "Marquer non lu"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:8
+msgid "Supprimer cette conversation"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:17
+msgid "Système"
+msgstr ""
+
+#: templates/partials/conversation_thread.html:28
+msgid "Tapez votre message ici..."
+msgstr ""
+
+#: templates/partials/conversation_thread.html:32
+msgid "Appuyez sur Entrée pour envoyer, Maj+Entrée pour un retour à la ligne"
 msgstr ""
 

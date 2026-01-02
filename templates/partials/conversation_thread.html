@@ -1,12 +1,12 @@
 <div class="thread" id="thread">
   <div class="thread-header" style="padding:1rem;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
-    <h3 style="margin:0">{{ conversation.subject or 'Conversation' }}</h3>
+    <h3 style="margin:0">{{ conversation.subject or _('Conversation') }}</h3>
     <div style="display:flex;gap:0.5rem">
-      <button class="btn btn-outline btn-sm" hx-post="/api/messages/mark-unread/{{ conversation.id }}" hx-target="#thread" hx-swap="none" hx-on::after-request="console.log('Marked as unread'); var convItem = document.querySelector('.conv-item.active'); if(convItem){ convItem.classList.remove('read'); convItem.classList.add('unread'); var title = convItem.querySelector('.conv-title span'); if(title && !title.classList.contains('unread-title')){ title.classList.add('unread-title'); } var text = convItem.querySelector('.conv-last'); if(text && !text.classList.contains('unread-text')){ text.classList.add('unread-text'); } var badge = document.createElement('span'); badge.className='badge unread-badge'; badge.textContent='1'; var titleSpan = convItem.querySelector('.conv-title'); if(titleSpan && !titleSpan.querySelector('.unread-badge')){ titleSpan.appendChild(badge); } }" title="Marquer comme non lu">
-        Marquer non lu
+      <button class="btn btn-outline btn-sm" hx-post="/api/messages/mark-unread/{{ conversation.id }}" hx-target="#thread" hx-swap="none" hx-on::after-request="console.log('Marked as unread'); var convItem = document.querySelector('.conv-item.active'); if(convItem){ convItem.classList.remove('read'); convItem.classList.add('unread'); var title = convItem.querySelector('.conv-title span'); if(title && !title.classList.contains('unread-title')){ title.classList.add('unread-title'); } var text = convItem.querySelector('.conv-last'); if(text && !text.classList.contains('unread-text')){ text.classList.add('unread-text'); } var badge = document.createElement('span'); badge.className='badge unread-badge'; badge.textContent='1'; var titleSpan = convItem.querySelector('.conv-title'); if(titleSpan && !titleSpan.querySelector('.unread-badge')){ titleSpan.appendChild(badge); } }" title="{{ _('Marquer comme non lu') }}">
+        {{ _('Marquer non lu') }}
       </button>
-      <button class="btn btn-danger btn-sm" onclick="showDeleteConversationModal({{ conversation.id }})" title="Supprimer cette conversation">
-        Supprimer
+      <button class="btn btn-danger btn-sm" onclick="showDeleteConversationModal({{ conversation.id }})" title="{{ _('Supprimer cette conversation') }}">
+        {{ _('Supprimer') }}
       </button>
     </div>
   </div>
@@ -14,7 +14,7 @@
     {% for m in messages %}
     <div class="msg" style="margin-bottom:1rem">
       <div class="msg-meta" style="font-size:.85rem;color:var(--text-light)">
-        <strong>{{ m.sender.username if m.sender else 'Système' }}</strong>
+        <strong>{{ m.sender.username if m.sender else _('Système') }}</strong>
         <span>· {{ m.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
       </div>
       <div class="msg-body" style="white-space:pre-wrap">{{ m.content }}</div>
@@ -25,14 +25,14 @@
     <form hx-post="/api/messages/send" hx-target="#thread" hx-swap="innerHTML" class="message-compose-form">
       <input type="hidden" name="conversation_id" value="{{ conversation.id }}" />
       <div class="message-input-container">
-        <textarea name="content" rows="4" class="message-textarea" placeholder="Tapez votre message ici..." required
+        <textarea name="content" rows="4" class="message-textarea" placeholder="{{ _('Tapez votre message ici...') }}" required
                   hx-on:keydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); this.form.requestSubmit(); }"></textarea>
         <div class="message-actions">
           <div class="message-hint">
-            <small class="desktop-only">Appuyez sur Entrée pour envoyer, Maj+Entrée pour un retour à la ligne</small>
+            <small class="desktop-only">{{ _('Appuyez sur Entrée pour envoyer, Maj+Entrée pour un retour à la ligne') }}</small>
           </div>
           <button type="submit" class="btn btn-primary btn-send">
-            <span class="btn-text">Envoyer</span>
+            <span class="btn-text">{{ _('Envoyer') }}</span>
             <span class="btn-icon">📤</span>
           </button>
         </div>

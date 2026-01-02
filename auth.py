@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, session, g, url_for, make_response
+from flask_babel import gettext
 from models import db, User
 from werkzeug.security import check_password_hash, generate_password_hash
 import json
@@ -10,7 +11,7 @@ def quick_login():
     """Connexion rapide sans mot de passe pour les utilisateurs existants ou création d'un nouveau compte."""
     pseudo = (request.form.get('pseudo') or '').strip()
     if not pseudo:
-        return "Pseudo requis", 400
+        return gettext("Pseudo requis"), 400
 
     next_url = (request.form.get('next') or request.headers.get('HX-Redirect') or url_for('play_quiz'))
     source = (request.form.get('source') or 'widget')
@@ -74,13 +75,13 @@ def widget_login():
     if not username or not password:
         if source == 'play-start':
             resp = make_response('')
-            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': "Pseudo et mot de passe requis"}})
+            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': gettext("Pseudo et mot de passe requis")}})
             return resp
         return render_template(
             'auth_widget.html',
             login_username=username,
             show_password_form=True,
-            error_message="Pseudo et mot de passe requis",
+            error_message=gettext("Pseudo et mot de passe requis"),
             next_url=next_url,
             source=source,
         )
@@ -100,14 +101,14 @@ def widget_login():
             
         if source == 'play-start':
             resp = make_response('')
-            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': "Identifiants invalides"}})
+            resp.headers['HX-Trigger'] = json.dumps({'quiz-login-password-error': {'message': gettext("Identifiants invalides")}})
             return resp
-            
+
         return render_template(
             'auth_widget.html',
             login_username=username,
             show_password_form=True,
-            error_message="Identifiants invalides",
+            error_message=gettext("Identifiants invalides"),
             show_reset_option=show_reset_option,
             next_url=next_url,
             source=source,
@@ -131,9 +132,9 @@ def widget_send_reset():
             send_reset_email_logic(user)
     
     # Retourne un message de succès (remplace le bouton/conteneur erreur)
-    return """
+    return f"""
     <div class="alert alert-success mt-2" style="font-size: 0.9em;">
-        Si un email est associé à ce compte, un lien de réinitialisation a été envoyé.
+        {gettext('Si un email est associé à ce compte, un lien de réinitialisation a été envoyé.')}
     </div>
     """
 
@@ -141,11 +142,11 @@ def widget_send_reset():
 def upgrade_account():
     """Permet à un utilisateur connecté sans mot de passe d'ajouter email/mot de passe."""
     if not getattr(g, 'current_user', None):
-        return "<div class='alert alert-danger'>Vous devez être connecté pour effectuer cette action.</div>", 403
+        return f"<div class='alert alert-danger'>{gettext('Vous devez être connecté pour effectuer cette action.')}</div>", 403
 
     user = g.current_user
     if user.password_hash:
-        return "<div class='alert alert-warning'>Votre compte est déjà sécurisé avec un mot de passe.</div>"
+        return f"<div class='alert alert-warning'>{gettext('Votre compte est déjà sécurisé avec un mot de passe.')}</div>"
 
     email = (request.form.get('email') or '').strip()
     password = request.form.get('password', '').strip()
@@ -155,15 +156,15 @@ def upgrade_account():
 
     # Validation email (optionnel)
     if email and not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
-        errors.append("Format d'email invalide")
+        errors.append(gettext("Format d'email invalide"))
 
     # Validation mot de passe
     if not password:
-        errors.append("Le mot de passe est requis")
+        errors.append(gettext("Le mot de passe est requis"))
     elif len(password) < 6:
-        errors.append("Le mot de passe doit contenir au moins 6 caractères")
+        errors.append(gettext("Le mot de passe doit contenir au moins 6 caractères"))
     elif password != password_confirm:
-        errors.append("Les mots de passe ne correspondent pas")
+        errors.append(gettext("Les mots de passe ne correspondent pas"))
 
     if errors:
         error_html = "<div class='alert alert-danger'><ul>"
@@ -202,14 +203,14 @@ def upgrade_account():
     db.session.commit()
 
     # Fermer la modal et afficher un message de succès
-    return """
+    return f"""
     <div class='success-message'>
         <div style='text-align: center; padding: 2rem;'>
-            <h3 style='color: var(--success-color); margin-bottom: 1rem;'>✅ Compte sécurisé !</h3>
-            <p>Votre compte est maintenant protégé par un mot de passe.</p>
-            <p>Vous pouvez accéder à vos statistiques détaillées et votre progression est sauvegardée.</p>
+            <h3 style='color: var(--success-color); margin-bottom: 1rem;'>✅ {gettext('Compte sécurisé !')}</h3>
+            <p>{gettext('Votre compte est maintenant protégé par un mot de passe.')}</p>
+            <p>{gettext('Vous pouvez accéder à vos statistiques détaillées et votre progression est sauvegardée.')}</p>
             <button type='button' class='btn btn-primary' onclick='hideUpgradeModal(); location.reload();' style='margin-top: 1rem;'>
-                Continuer à jouer
+                {gettext('Continuer à jouer')}
             </button>
         </div>
     </div>
@@ -222,10 +223,10 @@ def login_page():
         username = (request.form.get('username') or '').strip()
         password = (request.form.get('password') or '').strip()
         if not username or not password:
-            return render_template('login.html', error="Identifiants requis")
+            return render_template('login.html', error=gettext("Identifiants requis"))
         user = User.query.filter_by(username=username).first()
         if not user or not user.password_hash or not check_password_hash(user.password_hash, password):
-            return render_template('login.html', error="Identifiants invalides")
+            return render_template('login.html', error=gettext("Identifiants invalides"))
         session['user_id'] = user.id
         next_url = request.args.get('next') or url_for('play_quiz')
         return redirect(next_url)
@@ -241,11 +242,11 @@ def register_page():
         password = (request.form.get('password') or '').strip()
         password2 = (request.form.get('password2') or '').strip()
         if not username or not password:
-            return render_template('register.html', error="Nom d'utilisateur et mot de passe requis")
+            return render_template('register.html', error=gettext("Nom d'utilisateur et mot de passe requis"))
         if password != password2:
-            return render_template('register.html', error="Les mots de passe ne correspondent pas")
+            return render_template('register.html', error=gettext("Les mots de passe ne correspondent pas"))
         if User.query.filter_by(username=username).first():
-            return render_template('register.html', error="Ce nom d'utilisateur est déjà pris")
+            return render_template('register.html', error=gettext("Ce nom d'utilisateur est déjà pris"))
         # Créer l'utilisateur avec mot de passe hashé
         user = User(
             username=username,
@@ -281,10 +282,10 @@ def _ensure_perm_api(*perm_attrs: str):
     """
     user = getattr(g, 'current_user', None)
     if not _has_perm('can_access_admin'):
-        return (render_template('access_denied.html', reason="Accès à l'administration requis", current_user=user), 200)
+        return (render_template('access_denied.html', reason=gettext("Accès à l'administration requis"), current_user=user), 200)
     for p in perm_attrs:
         if not _has_perm(p):
-            return (render_template('access_denied.html', reason=f"Permission '{p}' requise", current_user=user), 200)
+            return (render_template('access_denied.html', reason=gettext("Permission '%(p)s' requise", p=p), current_user=user), 200)
     return None
 
 
@@ -316,7 +317,7 @@ def _ensure_creator_api():
     if not _is_creator_user():
         return (render_template(
             'creator_access_denied.html',
-            reason="Accès Créateur requis (compte protégé par mot de passe)",
+            reason=gettext("Accès Créateur requis (compte protégé par mot de passe)"),
             current_user=user
         ), 200)
     return None

@@ -1,6 +1,6 @@
 <div class="form-wrapper">
     <div class="form-header">
-        <h2>{% if image %}Éditer l'image{% else %}Nouvelle image{% endif %}</h2>
+        <h2>{% if image %}{{ _('Éditer l\'image') }}{% else %}{{ _('Nouvelle image') }}{% endif %}</h2>
         <button class="btn-close" type="button" onclick="{% if embedded %}closeEmbeddedImageModal(){% else %}document.getElementById('image-form-container').classList.add('hidden'){% endif %}">✕</button>
     </div>
 
@@ -16,38 +16,38 @@
                     <input type="hidden" name="embedded" value="1">
                     <input type="hidden" name="select_id" value="{{ select_id }}">
                     {% endif %}
-                    <label for="title">Titre *</label>
+                    <label for="title">{{ _('Titre') }} *</label>
                     <input type="text" id="title" name="title" value="{{ image.title if image else '' }}" required>
                 </div>
                 <div class="form-group">
-                    <label for="alt_text">Texte alternatif</label>
-                    <input type="text" id="alt_text" name="alt_text" value="{{ image.alt_text if image else '' }}" placeholder="Description de l'image">
+                    <label for="alt_text">{{ _('Texte alternatif') }}</label>
+                    <input type="text" id="alt_text" name="alt_text" value="{{ image.alt_text if image else '' }}" placeholder="{{ _('Description de l\'image') }}">
                 </div>
                 <div class="form-group">
-                    <label for="copyright_credits">Crédits</label>
-                    <input type="text" id="copyright_credits" name="copyright_credits" value="{{ image.copyright_credits if image else '' }}" placeholder="Auteur, source, etc.">
+                    <label for="copyright_credits">{{ _('Crédits') }}</label>
+                    <input type="text" id="copyright_credits" name="copyright_credits" value="{{ image.copyright_credits if image else '' }}" placeholder="{{ _('Auteur, source, etc.') }}">
                 </div>
                 <div class="form-group">
-                    <label for="copyright_link">Lien copyright</label>
+                    <label for="copyright_link">{{ _('Lien copyright') }}</label>
                     <input type="url" id="copyright_link" name="copyright_link" value="{{ image.copyright_link if image else '' }}" placeholder="https://...">
                 </div>
                 <div class="form-group">
-                    <label for="file">Fichier {% if not image %}*{% endif %}</label>
+                    <label for="file">{{ _('Fichier') }} {% if not image %}*{% endif %}</label>
                     <input type="file" id="file" name="file" {% if not image %}required{% endif %} accept="image/*">
                 </div>
             </div>
             <div class="form-column">
                 {% if image %}
                 <div class="form-group">
-                    <label>Aperçu</label>
+                    <label>{{ _('Aperçu') }}</label>
                     <div class="image-preview">
                         <img src="/uploads/{{ image.filename }}" alt="{{ image.alt_text or image.title }}">
                     </div>
                 </div>
                 <div class="form-info">
-                    <p><strong>Nom de fichier:</strong> {{ image.filename }}</p>
-                    <p><strong>Taille:</strong> {{ image.size_bytes or 0 }} o</p>
-                    <p><strong>Type:</strong> {{ image.mime_type }}</p>
+                    <p><strong>{{ _('Nom de fichier:') }}</strong> {{ image.filename }}</p>
+                    <p><strong>{{ _('Taille:') }}</strong> {{ image.size_bytes or 0 }} {{ _('o') }}</p>
+                    <p><strong>{{ _('Type:') }}</strong> {{ image.mime_type }}</p>
                 </div>
                 {% endif %}
             </div>
@@ -55,11 +55,11 @@
 
         <div class="form-actions">
             {% if embedded %}
-            <button type="button" class="btn btn-secondary" onclick="closeEmbeddedImageModal()">Annuler</button>
+            <button type="button" class="btn btn-secondary" onclick="closeEmbeddedImageModal()">{{ _('Annuler') }}</button>
             {% else %}
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('image-form-container').classList.add('hidden')">Annuler</button>
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('image-form-container').classList.add('hidden')">{{ _('Annuler') }}</button>
             {% endif %}
-            <button type="{% if embedded %}button" onclick="submitEmbeddedImageForm(this.form){% else %}submit{% endif %}" class="btn btn-primary">{% if image %}Mettre à jour{% else %}Créer{% endif %}</button>
+            <button type="{% if embedded %}button" onclick="submitEmbeddedImageForm(this.form){% else %}submit{% endif %}" class="btn btn-primary">{% if image %}{{ _('Mettre à jour') }}{% else %}{{ _('Créer') }}{% endif %}</button>
         </div>
     </form>
 </div>
@@ -121,7 +121,7 @@ function fallbackSubmitEmbeddedImageForm(formEl) {
       .catch(function(err){
           console.error('[fallback] error:', err);
           if (window.showAppModal) {
-              showAppModal({ title: "Erreur", message: "Erreur lors de la création de l'image: " + err.message, variant: "danger" });
+              showAppModal({ title: "{{ _('Erreur')|tojson }}", message: "{{ _('Erreur lors de la création de l\'image: ') }}" + err.message, variant: "danger" });
           }
       });
     return false;

@@ -2,14 +2,14 @@
 
 {% block content %}
 <div class="page-header">
-    <h2>🖼️ Mes images</h2>
+    <h2>🖼️ {{ _('Mes images') }}</h2>
     <div class="header-actions">
         <button class="btn btn-primary"
                 onclick="document.getElementById('image-form-container').classList.remove('hidden')"
                 hx-get="/creator/image/new"
                 hx-target="#image-form-container"
                 hx-swap="innerHTML">
-            + Nouvelle image
+            + {{ _('Nouvelle image') }}
         </button>
     </div>
 </div>
@@ -17,14 +17,14 @@
 <div id="image-form-container" class="hidden form-modal"></div>
 
 <div class="search-bar">
-    <input type="text" name="search" placeholder="Rechercher une image..."
+    <input type="text" name="search" placeholder="{{ _('Rechercher une image...') }}"
            hx-get="/api/creator/images" hx-trigger="keyup changed delay:300ms"
            hx-target="#images-list" hx-include="[name='search']">
     </input>
 </div>
 
 <div id="images-list" hx-get="/api/creator/images" hx-trigger="load" hx-swap="innerHTML">
-    <div class="loading">Chargement des images...</div>
+    <div class="loading">{{ _('Chargement des images...') }}</div>
 </div>
 
 <style>

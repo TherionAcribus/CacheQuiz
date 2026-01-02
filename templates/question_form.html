@@ -1,6 +1,6 @@
 <div class="form-wrapper">
     <div class="form-header">
-        <h2>{% if question %}Éditer la question{% else %}Nouvelle question{% endif %}</h2>
+        <h2>{% if question %}{{ _('Éditer la question') }}{% else %}{{ _('Nouvelle question') }}{% endif %}</h2>
         <button class="btn-close" type="button"
             onclick="document.getElementById('question-form-container').classList.add('hidden')">✕</button>
     </div>
@@ -16,12 +16,12 @@
         <div class="form-grid-rows">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="question_text">Question *</label>
+                    <label for="question_text">{{ _('Question') }} *</label>
                     <textarea id="question_text" name="question_text" rows="4"
                         required>{{ question.question_text if question else '' }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="question_image_id">Image complémentaire de la question (optionnel)</label>
+                    <label for="question_image_id">{{ _('Image complémentaire de la question (optionnel)') }}</label>
                     <div class="input-with-action">
                         <select id="question_image_id" name="question_image_id" class="answer-image-select" onchange="(function(sel){
                                 var opt = sel.options[sel.selectedIndex];
@@ -36,7 +36,7 @@
                                     prev.style.display = 'none';
                                 }
                             })(this)">
-                            <option value="">-- Pas d'image --</option>
+                            <option value="">{{ _('-- Pas d\'image --') }}</option>
                             {% for img in images %}
                             <option value="{{ img.id }}" data-filename="{{ img.filename }}"
                                 data-alt="{{ (img.alt_text or img.title) | e }}" {% if question and question.images and
@@ -57,10 +57,10 @@
                             src="{% if question and question.images %}/uploads/{{ question.images[0].filename }}{% endif %}"
                             alt="Aperçu">
                     </div>
-                    <small>Image illustrative complémentaire pour la question</small>
+                    <small>{{ _('Image illustrative complémentaire pour la question') }}</small>
                     {% if not creator_mode %}
                     <small>
-                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a>
+                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les images') }}</a>
                     </small>
                     {% endif %}
                 </div>
@@ -68,10 +68,10 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="broad_theme_id">Thématique large</label>
+                    <label for="broad_theme_id">{{ _('Thématique large') }}</label>
                     <div class="input-with-action">
                         <select id="broad_theme_id" name="broad_theme_id" onchange="updateSpecificThemes(this.value)" {% if creator_mode %}required{% endif %}>
-                            <option value="">{% if creator_mode %}-- Choisir un thème --{% else %}-- Aucun thème --{% endif %}</option>
+                            <option value="">{% if creator_mode %}{{ _('-- Choisir un thème --') }}{% else %}{{ _('-- Aucun thème --') }}{% endif %}</option>
                             {% for theme in themes %}
                             <option value="{{ theme.id }}" {% if question and question.broad_theme_id==theme.id
                                 %}selected{% endif %}>
@@ -89,15 +89,15 @@
                     </div>
                     <small>
                         {% if not creator_mode %}
-                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les thèmes</a>
+                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les thèmes') }}</a>
                         {% endif %}
                     </small>
                 </div>
                 <div class="form-group">
-                    <label for="specific_theme_id">Sous-thématique</label>
+                    <label for="specific_theme_id">{{ _('Sous-thématique') }}</label>
                     <div class="input-with-action">
                         <select id="specific_theme_id" name="specific_theme_id">
-                            <option value="">-- Aucun sous-thème --</option>
+                            <option value="">{{ _('-- Aucun sous-thème --') }}</option>
                             {% for specific_theme in specific_themes %}
                             <option value="{{ specific_theme.id }}"
                                 data-broad-theme-id="{{ specific_theme.broad_theme_id }}" {% if question and
@@ -117,7 +117,7 @@
                     </div>
                     <small>
                         {% if not creator_mode %}
-                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ Gérer les sous-thèmes</a>
+                        <a href="/themes" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les sous-thèmes') }}</a>
                         {% endif %}
                     </small>
                 </div>
@@ -125,7 +125,7 @@
 
             <div class="form-row full-width">
                 <div class="form-group full-width">
-                    <label for="keywords-input">Mots-clés / Sujets précis (optionnel)</label>
+                    <label for="keywords-input">{{ _('Mots-clés / Sujets précis (optionnel)') }}</label>
                     <div class="keywords-container">
                         <div id="keywords-tags" class="keywords-tags">
                             {% if question and question.keywords %}
@@ -142,19 +142,19 @@
                         </div>
                         <div class="keywords-input-wrapper">
                             <input type="text" id="keywords-input"
-                                placeholder="Tapez pour rechercher ou créer un mot-clé..." autocomplete="off"
+                                placeholder="{{ _('Tapez pour rechercher ou créer un mot-clé...') }}" autocomplete="off"
                                 onkeyup="searchKeywords(this.value)" onkeydown="handleKeywordInputKeydown(event)">
                             <div id="keywords-suggestions" class="keywords-suggestions" style="display: none;"></div>
                         </div>
                     </div>
-                    <small>Ajoutez des mots-clés pour identifier les sujets très précis (ex: "première cache", "mingo").
-                        Permet d'éviter les doublons dans les quiz.</small>
+                    <small>{{ _('Ajoutez des mots-clés pour identifier les sujets très précis (ex: "première cache", "mingo").') }}
+                        {{ _('Permet d\'éviter les doublons dans les quiz.') }}</small>
                 </div>
             </div>
 
             <div class="form-row full-width">
                 <div class="form-group full-width">
-                    <label>Réponses possibless *</label>
+                    <label>{{ _('Réponses possibles') }} *</label>
                     <div id="answers-container">
                         {% set answers = question.possible_answers.split('|||') if question and
                         question.possible_answers else ['', '', '', ''] %}
@@ -167,7 +167,7 @@
                             </div>
                             <div class="input-with-action answer-image-group">
                                 <select name="answer_image_id_{{ i }}" class="answer-image-select">
-                                    <option value="">-- Pas d'image --</option>
+                                    <option value="">{{ _('-- Pas d\'image --') }}</option>
                                     {% set link = question.answer_image_links | selectattr('answer_index','equalto', i)
                                     | list if question else [] %}
                                     {% for img in images %}
@@ -186,31 +186,30 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ Ajouter une
-                        réponse</button>
+                    <button type="button" class="btn btn-secondary" onclick="addNewAnswer()">+ {{ _('Ajouter une réponse') }}</button>
                 </div>
             </div>
 
             <div class="form-row full-width">
                 <div class="form-group">
-                    <label for="correct_answer">Bonne réponse (numéro) *</label>
+                    <label for="correct_answer">{{ _('Bonne réponse (numéro)') }} *</label>
                     <input type="number" id="correct_answer" name="correct_answer" min="1"
                         value="{{ question.correct_answer if question else '1' }}" required>
                 </div>
                 <div class="form-group">
-                    <label for="hint">Indice</label>
+                    <label for="hint">{{ _('Indice') }}</label>
                     <input type="text" id="hint" name="hint" value="{{ question.hint if question else '' }}">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="detailed_answer">Explication détaillée</label>
+                    <label for="detailed_answer">{{ _('Explication détaillée') }}</label>
                     <textarea id="detailed_answer" name="detailed_answer"
                         rows="4">{{ question.detailed_answer if question else '' }}</textarea>
                 </div>
                 <div class="form-group">
-                    <label for="detailed_answer_image_id">Image pour l'explication (optionnel)</label>
+                    <label for="detailed_answer_image_id">{{ _('Image pour l\'explication (optionnel)') }}</label>
                     <div class="input-with-action">
                         <select id="detailed_answer_image_id" name="detailed_answer_image_id"
                             class="answer-image-select" onchange="(function(sel){
@@ -226,7 +225,7 @@
                                     prev.style.display = 'none';
                                 }
                             })(this)">
-                            <option value="">-- Pas d'image --</option>
+                            <option value="">{{ _('-- Pas d\'image --') }}</option>
                             {% for img in images %}
                             <option value="{{ img.id }}" data-filename="{{ img.filename }}"
                                 data-alt="{{ (img.alt_text or img.title) | e }}" {% if question and
@@ -247,10 +246,10 @@
                             src="{% if question and question.detailed_answer_image %}/uploads/{{ question.detailed_answer_image.filename }}{% endif %}"
                             alt="Aperçu">
                     </div>
-                    <small>Image illustrative pour accompagner l'explication détaillée</small>
+                    <small>{{ _('Image illustrative pour accompagner l\'explication détaillée') }}</small>
                     {% if not creator_mode %}
                     <small>
-                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ Gérer les images</a>
+                        <a href="/images" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les images') }}</a>
                     </small>
                     {% endif %}
                 </div>
@@ -258,31 +257,26 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="source">Source (optionnel)</label>
+                    <label for="source">{{ _('Source (optionnel)') }}</label>
                     <input type="text" id="source" name="source" placeholder="https://exemple.com/source-officielle"
                         value="{{ question.source if question else '' }}">
-                    <small>URL ou référence où vérifier la réponse (site officiel, documentation, etc.)</small>
+                    <small>{{ _('URL ou référence où vérifier la réponse (site officiel, documentation, etc.)') }}</small>
                 </div>
                 <div class="form-group">
-                    <label for="difficulty_level">Niveau de difficulté</label>
+                    <label for="difficulty_level">{{ _('Niveau de difficulté') }}</label>
                     <select id="difficulty_level" name="difficulty_level">
-                        <option value="1" {% if question and question.difficulty_level==1 %}selected{% endif %}>1 - Très
-                            facile</option>
-                        <option value="2" {% if question and question.difficulty_level==2 %}selected{% endif %}>2 -
-                            Facile</option>
-                        <option value="3" {% if question and question.difficulty_level==3 %}selected{% endif %}>3 -
-                            Moyen</option>
-                        <option value="4" {% if question and question.difficulty_level==4 %}selected{% endif %}>4 -
-                            Difficile</option>
-                        <option value="5" {% if question and question.difficulty_level==5 %}selected{% endif %}>5 - Très
-                            difficile</option>
+                        <option value="1" {% if question and question.difficulty_level==1 %}selected{% endif %}>1 - {{ _('Très facile') }}</option>
+                        <option value="2" {% if question and question.difficulty_level==2 %}selected{% endif %}>2 - {{ _('Facile') }}</option>
+                        <option value="3" {% if question and question.difficulty_level==3 %}selected{% endif %}>3 - {{ _('Moyen') }}</option>
+                        <option value="4" {% if question and question.difficulty_level==4 %}selected{% endif %}>4 - {{ _('Difficile') }}</option>
+                        <option value="5" {% if question and question.difficulty_level==5 %}selected{% endif %}>5 - {{ _('Très difficile') }}</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Pays concernés</label>
+                    <label>{{ _('Pays concernés') }}</label>
                     <div class="countries-grid">
                         {% for country in countries %}
                         <label class="country-checkbox">
@@ -293,18 +287,18 @@
                         </label>
                         {% endfor %}
                     </div>
-                    <small>Sélectionnez tous les pays concernés par cette question</small>
+                    <small>{{ _('Sélectionnez tous les pays concernés par cette question') }}</small>
                     {% if not creator_mode %}
-                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ Gérer les pays</a></small>
+                    <small><a href="/countries" target="_blank" style="color: var(--primary-color)">→ {{ _('Gérer les pays') }}</a></small>
                     {% endif %}
                 </div>
                 {% if not creator_mode %}
                 <div class="form-group">
-                    <label for="translation_id">ID de traduction (question liée)</label>
+                    <label for="translation_id">{{ _('ID de traduction (question liée)') }}</label>
                     <input type="number" id="translation_id" name="translation_id"
                         placeholder="ID de la question dans une autre langue"
                         value="{{ question.translation_id if question and question.translation_id else '' }}">
-                    <small>Utilisé pour lier des questions dans différentes langues</small>
+                    <small>{{ _('Utilisé pour lier des questions dans différentes langues') }}</small>
                 </div>
                 {% endif %}
             </div>
@@ -314,7 +308,7 @@
                 <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_published" {% if question and question.is_published %}checked{% endif %}>
-                        Question en ligne (publiée)
+                        {{ _('Question en ligne (publiée)') }}
                     </label>
                 </div>
                 {% endif %}
@@ -323,9 +317,9 @@
                     <label class="checkbox-label">
                         <input type="checkbox" name="is_private" {% if question and question.is_private %}checked{%
                             endif %}>
-                        Question privée (utilisable uniquement par son créateur)
+                        {{ _('Question privée (utilisable uniquement par son créateur)') }}
                     </label>
-                    <small>Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur</small>
+                    <small>{{ _('Si cochée, cette question ne sera utilisable que dans les quiz créés par son auteur') }}</small>
                 </div>
                 {% endif %}
             </div>
@@ -333,15 +327,15 @@
             {% if question %}
             <div class="form-row full-width">
                 <div class="form-info">
-                    <p><strong>Statistiques:</strong></p>
-                    <p>Réponses: {{ question.times_answered }}</p>
-                    <p>Succès: {{ question.success_count }}/{{ question.times_answered }}</p>
-                    <p>Taux de réussite: {{ "%.1f"|format(question.success_rate) }}%</p>
+                    <p><strong>{{ _('Statistiques:') }}</strong></p>
+                    <p>{{ _('Réponses:') }} {{ question.times_answered }}</p>
+                    <p>{{ _('Succès:') }} {{ question.success_count }}/{{ question.times_answered }}</p>
+                    <p>{{ _('Taux de réussite:') }} {{ "%.1f"|format(question.success_rate) }}%</p>
                     {% if question.source %}
                     <p>Source: <a href="{{ question.source }}" target="_blank" rel="noopener noreferrer">{{
                             question.source }}</a></p>
                     {% endif %}
-                    <p>Créé: {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
+                    <p>{{ _('Créé:') }} {{ question.created_at.strftime('%d/%m/%Y %H:%M') if question.created_at }}</p>
                 </div>
             </div>
             {% endif %}
@@ -350,10 +344,10 @@
         <div class="form-actions">
             <button type="button" class="btn btn-secondary"
                 onclick="document.getElementById('question-form-container').classList.add('hidden')">
-                Annuler
+                {{ _('Annuler') }}
             </button>
             <button type="submit" class="btn btn-primary">
-                {% if question %}Mettre à jour{% else %}Créer{% endif %}
+                {% if question %}{{ _('Mettre à jour') }}{% else %}{{ _('Créer') }}{% endif %}
             </button>
         </div>
     </form>
@@ -443,7 +437,7 @@
             })
             .catch(error => {
                 console.error('Erreur lors de la récupération des sous-thèmes:', error);
-                specificThemeSelect.innerHTML = '<option value="">-- Erreur --</option>';
+                specificThemeSelect.innerHTML = '<option value="">{{ _('-- Erreur --') }}</option>';
             });
     }
 
@@ -499,11 +493,11 @@
                 }
 
                 // Message de confirmation
-                showToast('Listes des thèmes mises à jour', 'success');
+                showToast('{{ _('Listes des thèmes mises à jour') }}', 'success');
             })
             .catch(function (err) {
                 console.error('[refreshThemeSelects] Error:', err);
-                showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+                showToast('{{ _('Erreur lors du rafraîchissement: ') }}' + err.message, 'error');
             });
     }
 
@@ -554,11 +548,11 @@
                 });
 
                 // Message de confirmation
-                showToast('Liste des images mise à jour', 'success');
+                showToast('{{ _('Liste des images mise à jour') }}', 'success');
             })
             .catch(function (err) {
                 console.error('Erreur lors du rafraîchissement des images:', err);
-                showToast('Erreur lors du rafraîchissement: ' + err.message, 'error');
+                showToast('{{ _('Erreur lors du rafraîchissement: ') }}' + err.message, 'error');
             });
     }
 
@@ -761,12 +755,12 @@
                     input.focus();
                     // Cacher les suggestions
                     document.getElementById('keywords-suggestions').style.display = 'none';
-                    showToast('Mot-clé "' + data.keyword.name + '" créé avec succès', 'success');
+                    showToast('{{ _('Mot-clé') }} "' + data.keyword.name + '" {{ _('créé avec succès') }}', 'success');
                 }
             })
             .catch(function (error) {
                 console.error('[createAndAddKeyword] error:', error);
-                showToast('Erreur lors de la création du mot-clé', 'error');
+                showToast('{{ _('Erreur lors de la création du mot-clé') }}', 'error');
                 input.value = '';
                 input.disabled = false;
             });
@@ -846,7 +840,7 @@
             }
         }
         var wrap = document.getElementById('embedded-image-form-wrapper');
-        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">{{ _('Chargement...') }}</div>';
         overlay.style.display = 'flex';
         console.log('[openEmbeddedImageModal] overlay displayed');
 
@@ -892,7 +886,7 @@
             document.body.appendChild(overlay);
         }
         var wrap = document.getElementById('embedded-theme-form-wrapper');
-        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">{{ _('Chargement...') }}</div>';
         overlay.style.display = 'flex';
         console.log('[openEmbeddedThemeModal] overlay displayed');
 
@@ -930,7 +924,7 @@
             document.body.appendChild(overlay);
         }
         var wrap = document.getElementById('embedded-specific-theme-form-wrapper');
-        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">{{ _('Chargement...') }}</div>';
         overlay.style.display = 'flex';
         console.log('[openEmbeddedSpecificThemeModal] overlay displayed');
 
@@ -1140,7 +1134,7 @@
             .catch(function (err) {
                 console.error('Erreur lors de la création du sous-thème:', err);
                 if (window.showAppModal) {
-                    showAppModal({ title: "Erreur", message: "Erreur lors de la création du sous-thème: " + err.message, variant: "danger" });
+                    showAppModal({ title: "{{ _('Erreur') }}", message: "{{ _('Erreur lors de la création du sous-thème: ') }}" + err.message, variant: "danger" });
                 }
             });
 
@@ -1191,7 +1185,7 @@
             .catch(function (err) {
                 console.error('Erreur lors de la création du thème:', err);
                 if (window.showAppModal) {
-                    showAppModal({ title: "Erreur", message: "Erreur lors de la création du thème: " + err.message, variant: "danger" });
+                    showAppModal({ title: "{{ _('Erreur') }}", message: "{{ _('Erreur lors de la création du thème: ') }}" + err.message, variant: "danger" });
                 }
             });
 
@@ -1235,7 +1229,7 @@
             .catch(function (err) {
                 console.error('Erreur lors de la création d\'image:', err);
                 if (window.showAppModal) {
-                    showAppModal({ title: "Erreur", message: "Erreur lors de la création de l'image: " + err.message, variant: "danger" });
+                    showAppModal({ title: "{{ _('Erreur') }}", message: "{{ _('Erreur lors de la création de l\'image: ') }}" + err.message, variant: "danger" });
                 }
             });
         return false; // Empêcher la soumission par défaut du formulaire
@@ -1282,7 +1276,7 @@
         const imageSelects = document.querySelectorAll('select.answer-image-select');
         if (imageSelects.length > 0) {
             const firstSelect = imageSelects[0];
-            // Copier toutes les options sauf la première (qui est "-- Pas d'image --")
+            // Copier toutes les options sauf la première (qui est "{{ _('-- Pas d\'image --') }}")
             for (let i = 1; i < firstSelect.options.length; i++) {
                 const option = firstSelect.options[i].cloneNode(true);
                 select.appendChild(option);
@@ -1697,7 +1691,7 @@
             document.body.appendChild(overlay);
         }
         var wrap = document.getElementById('embedded-image-gallery-wrapper');
-        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">Chargement...</div>';
+        if (wrap) wrap.innerHTML = '<div style="padding:2rem;text-align:center;">{{ _('Chargement...') }}</div>';
         overlay.style.display = 'flex';
 
         // Stocker le selectId pour la confirmation et la recherche
